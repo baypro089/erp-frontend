@@ -20,7 +20,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@shared/*": ["../shared/*"] // <--- Thêm dòng này
+      "@shared/*": ["../shared/*"], // <--- Thêm dòng này
+      "@libs/*": ["./libs/*"]
     }
   },
   "include": [
