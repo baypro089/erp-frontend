@@ -1,7 +1,10 @@
-import { PagedResult } from "./pagedResult.type";
+import { PagedResponse } from '@libs/core/interfaces/apiResponse.interface';
+import { EmployeeResponse } from './employees.type';
+import { PagedResult } from './pagedResult.type';
+
 export type PayslipResponse = {
   id: string;
-  employeeId: string;
+  employee: EmployeeResponse;
   month: number;
   year: number;
   standardWorkDays: number;
@@ -10,11 +13,6 @@ export type PayslipResponse = {
   details: string | null;
   createdAt: Date;
   updatedAt: Date;
-};
-
-export type PayslipResponseList = {
-  items: PayslipResponse[];
-  total: number;
 };
 
 export type PagedAndFilteredPayslip = PagedResult<PayslipResponse>;
