@@ -15,7 +15,8 @@ type UserResponse = {
     username: string;
     email: string;
     role: RoleResponse;
-    isActive: boolean;
+    employee: EmployeeResponse;
+    isActive: boolean; // dòng này là thuộc tính thừa, không cần hiển thị ra ngoài
     createdAt: Date;
     updatedAt: Date;
     status?: UserStatus;
@@ -23,9 +24,8 @@ type UserResponse = {
 }
 
 type UpdateUserDto = {
-    password?: string;
     email?: string;
-    role_code?: string;
+    roleCode?: string;
     status?: UserStatus;
 }
 

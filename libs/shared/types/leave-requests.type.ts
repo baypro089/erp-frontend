@@ -1,4 +1,3 @@
-import { PagedResponse } from '@libs/core/interfaces/apiResponse.interface';
 import { LeaveRequestStatus } from '../enums/leave-request-status.enum';
 import { PagedResult } from './pagedResult.type';
 import { EmployeeResponse } from './employees.type';

@@ -27,6 +27,17 @@ export const checkAuth = createAsyncThunk(
     }
 );
 
+export const fetchCurrentUser = createAsyncThunk(
+    "auth/fetchCurrentUser",
+    async (_, { rejectWithValue }) => {
+        try {
+            return await authService.me();
+        } catch (err: any) {
+            return rejectWithValue(err.response?.data?.message || "Failed to fetch user");
+        }
+    }
+);
+
 
 interface AuthState {
     user: any | null;
@@ -76,6 +87,21 @@ const authSlice = createSlice({
                 state.user = null;
                 state.isAuth = false;
                 state.authChecked = true;
+            })
+            
+            // FETCH CURRENT USER
+            .addCase(fetchCurrentUser.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchCurrentUser.fulfilled, (state, action) => {
+                state.loading = false;
+                state.user = action.payload;
+                state.isAuth = true;
+            })
+            .addCase(fetchCurrentUser.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
             });
     },
 });

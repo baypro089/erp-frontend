@@ -40,7 +40,25 @@ export type CreateEmployeeDto = {
   currentPositionId: string;
 };
 
-export type UpdateEmployeeDto = Partial<EmployeeResponse>;
+export type UpdateEmployeeDto = {
+  userId?: string;
+  fullName: string;
+  gender?: Gender;
+  phone?: string;
+  identityNumber?: string;
+  identityIssuedDate?: Date;
+  identityIssuedPlace?: string;
+  addressPermanent?: string;
+  addressCurrent?: string;
+  nationality?: string;
+  dateOfBirth?: Date;
+  photoUrl?: string;
+  level?: Level;
+  departmentId?: string;
+  currentPositionId?: string;
+  managerId?: string;
+  status?: Status;
+};
 
 export type EmployeeTableResponse = {
   id: string;
