@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@libs/src/store";
-import { login } from "@libs/src/features/auth/auth.slice";
+import { checkAuth, login } from "@libs/src/features/auth/auth.slice";
 import Avatar from "@mui/material/Avatar";
 import Button from "@mui/material/Button";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -18,22 +18,54 @@ import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import CircularProgress from "@mui/material/CircularProgress";
 import { useRouter } from 'next/navigation';
+import { PORTAL_INFO, PORTAL_PERMISSION_VALUES } from '@libs/shared/constants/portal-permissions.constant';
+import { fetchRoleByCode } from "@libs/src/features/role/role.slice";
 
 export default function LoginPage() {
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error } = useSelector((s: RootState) => s.auth);
     const router = useRouter();
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault(); // ❗ không reload page
 
         const formData = new FormData(event.currentTarget);
         const username = formData.get("username") as string;
         const password = formData.get("password") as string;
 
-        dispatch(login({ username, password }))
-            .unwrap()
-            .then(() => router.push("/"));
+        try {
+            // Login first
+            await dispatch(login({ username, password })).unwrap();
+            
+            // Then check auth to get full user data
+            const userData = await dispatch(checkAuth()).unwrap();
+            
+            // Get user's portal access permissions
+            const role = await dispatch(fetchRoleByCode(userData.role)).unwrap();
+            const userPermissions = role.permissions?.map((p: any) => p.permission_code) || [];
+            const userPortalPermissions = userPermissions.filter((p: string) => 
+                PORTAL_PERMISSION_VALUES.includes(p as any)
+            );
+
+            // Redirect based on portal permissions
+            if (userPortalPermissions.length === 0) {
+                // No portal access - show error or redirect to error page
+                console.error('User has no portal access');
+                return;
+            } else if (userPortalPermissions.length === 1) {
+                // Only one portal - redirect directly
+                const portalInfo = PORTAL_INFO[userPortalPermissions[0]];
+                if (portalInfo && portalInfo.available) {
+                    router.push(portalInfo.path);
+                }
+            } else {
+                // Multiple portals - redirect to selection page
+                router.push('/portal-selection');
+            }
+        } catch (error) {
+            // Error is handled by Redux
+            console.error('Login failed:', error);
+        }
     };
 
     return (

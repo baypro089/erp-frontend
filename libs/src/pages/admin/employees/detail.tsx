@@ -4,12 +4,24 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import type { AppDispatch, RootState } from '@libs/src/store';
-import { Box, Grid, Alert, Snackbar } from '@mui/material';
+import { 
+  Box, 
+  Grid, 
+  Alert, 
+  Snackbar, 
+  Tabs, 
+  Tab, 
+  Card, 
+  CardContent,
+  Button,
+  Fab,
+} from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Edit as EditIcon,
   Save as SaveIcon,
   Cancel as CancelIcon,
+  Add as AddIcon,
 } from '@mui/icons-material';
 import { PageHeader, LoadingOverlay } from '@libs/src/components/common';
 import {
@@ -19,13 +31,20 @@ import {
   IdentificationCard,
   WorkInformationCard,
   SystemInformationCard,
+  JobHistoryTimeline,
+  JobHistoryFormDrawer,
 } from '@libs/src/components/employees';
 import { fetchEmployeeById, updateEmployee } from '@libs/src/features/employee/employee.slice';
 import { fetchDepartments } from '@libs/src/features/department/department.slice';
 import { fetchPositions } from '@libs/src/features/position/position.slice';
+import { 
+  fetchJobHistoriesByEmployeeId, 
+  createJobHistory 
+} from '@libs/src/features/job-history/job-history.slice';
 import { Status } from '@libs/shared/enums/employee-status.enum';
 import { Level } from '@libs/shared/enums/level.enum';
 import { Gender } from '@libs/shared/enums/gender.enum';
+import type { CreateJobHistoryDto } from '@libs/shared/types/job-histories.type';
 
 interface EmployeeFormData {
   fullName: string;
@@ -53,8 +72,13 @@ export default function EmployeeDetailPage() {
   );
   const { departments } = useSelector((state: RootState) => state.department);
   const { positions } = useSelector((state: RootState) => state.position);
+  const { jobHistories, operationLoading: jobHistoryLoading } = useSelector(
+    (state: RootState) => state.jobHistory
+  );
 
   const [isEditing, setIsEditing] = useState(false);
+  const [currentTab, setCurrentTab] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [formData, setFormData] = useState<EmployeeFormData>({
     fullName: '',
     gender: '',
@@ -82,6 +106,7 @@ export default function EmployeeDetailPage() {
   useEffect(() => {
     if (employeeId) {
       dispatch(fetchEmployeeById(employeeId));
+      dispatch(fetchJobHistoriesByEmployeeId(employeeId));
     }
     dispatch(fetchDepartments({}));
     dispatch(fetchPositions({}));
@@ -215,13 +240,36 @@ export default function EmployeeDetailPage() {
     }
   };
 
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+  };
+
+  const handleCreateJobHistory = async (data: CreateJobHistoryDto) => {
+    try {
+      await dispatch(createJobHistory(data)).unwrap();
+      setSnackbar({
+        open: true,
+        message: 'Lịch sử công việc được tạo thành công',
+        severity: 'success',
+      });
+      // Refresh job histories
+      dispatch(fetchJobHistoriesByEmployeeId(employeeId));
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: err || 'Không thể tạo lịch sử công việc',
+        severity: 'error',
+      });
+      throw err;
+    }
+  };
+
   return (
     <Box>
       <PageHeader
         title="Employee Details"
         subtitle="View and manage employee information"
         breadcrumbs={[
-          { label: 'Admin', href: '/' },
           { label: 'Employees', href: '/employees' },
           { label: currentEmployee?.fullName || 'Loading...' },
         ]}
@@ -261,72 +309,124 @@ export default function EmployeeDetailPage() {
       />
 
       {currentEmployee && (
-        <Grid container spacing={3}>
-          {/* Main Info Card */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <EmployeeAvatarCard
-              employee={currentEmployee}
-              isEditing={isEditing}
-              formData={formData}
-              onFormChange={handleFormChange}
-              statusMap={statusMap}
-              getLevelColor={getLevelColor}
-            />
-          </Grid>
+        <Box>
+          {/* Tabs */}
+          <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+            <Tabs value={currentTab} onChange={handleTabChange}>
+              <Tab label="Thông tin nhân viên" />
+              <Tab label="Lịch sử công việc" />
+            </Tabs>
+          </Box>
 
-          {/* Details Grid */}
-          <Grid size={{ xs: 12, md: 8 }}>
+          {/* Tab Content */}
+          {currentTab === 0 && (
             <Grid container spacing={3}>
-              {/* Basic Information */}
-              <Grid size={{ xs: 12 }}>
-                <BasicInformationCard
+              {/* Main Info Card */}
+              <Grid size={{ xs: 12, md: 4 }}>
+                <EmployeeAvatarCard
                   employee={currentEmployee}
                   isEditing={isEditing}
                   formData={formData}
                   onFormChange={handleFormChange}
-                />
-              </Grid>
-
-              {/* Contact Information */}
-              <Grid size={{ xs: 12 }}>
-                <ContactInformationCard
-                  employee={currentEmployee}
-                  isEditing={isEditing}
-                  formData={formData}
-                  onFormChange={handleFormChange}
-                />
-              </Grid>
-
-              {/* Identification */}
-              <Grid size={{ xs: 12 }}>
-                <IdentificationCard
-                  employee={currentEmployee}
-                  isEditing={isEditing}
-                  formData={formData}
-                  onFormChange={handleFormChange}
-                />
-              </Grid>
-
-              {/* Work Information */}
-              <Grid size={{ xs: 12 }}>
-                <WorkInformationCard
-                  employee={currentEmployee}
-                  isEditing={isEditing}
-                  formData={formData}
-                  onFormChange={handleFormChange}
-                  departments={departments}
-                  positions={positions}
                   statusMap={statusMap}
+                  getLevelColor={getLevelColor}
                 />
               </Grid>
 
-              {/* System Information */}
-              <Grid size={{ xs: 12 }}>
-                <SystemInformationCard employee={currentEmployee} />
+              {/* Details Grid */}
+              <Grid size={{ xs: 12, md: 8 }}>
+                <Grid container spacing={3}>
+                  {/* Basic Information */}
+                  <Grid size={{ xs: 12 }}>
+                    <BasicInformationCard
+                      employee={currentEmployee}
+                      isEditing={isEditing}
+                      formData={formData}
+                      onFormChange={handleFormChange}
+                    />
+                  </Grid>
+
+                  {/* Contact Information */}
+                  <Grid size={{ xs: 12 }}>
+                    <ContactInformationCard
+                      employee={currentEmployee}
+                      isEditing={isEditing}
+                      formData={formData}
+                      onFormChange={handleFormChange}
+                    />
+                  </Grid>
+
+                  {/* Identification */}
+                  <Grid size={{ xs: 12 }}>
+                    <IdentificationCard
+                      employee={currentEmployee}
+                      isEditing={isEditing}
+                      formData={formData}
+                      onFormChange={handleFormChange}
+                    />
+                  </Grid>
+
+                  {/* Work Information */}
+                  <Grid size={{ xs: 12 }}>
+                    <WorkInformationCard
+                      employee={currentEmployee}
+                      isEditing={isEditing}
+                      formData={formData}
+                      onFormChange={handleFormChange}
+                      departments={departments}
+                      positions={positions}
+                      statusMap={statusMap}
+                    />
+                  </Grid>
+
+                  {/* System Information */}
+                  <Grid size={{ xs: 12 }}>
+                    <SystemInformationCard employee={currentEmployee} />
+                  </Grid>
+                </Grid>
               </Grid>
             </Grid>
-          </Grid>
-        </Grid>
+          )}
+
+          {currentTab === 1 && (
+            <Card>
+              <CardContent>
+                <JobHistoryTimeline
+                  jobHistories={jobHistories}
+                  currentDepartment={currentEmployee.department?.name}
+                  currentPosition={currentEmployee.currentPosition?.name}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Floating Action Button - Only show in Job History tab */}
+          {currentTab === 1 && (
+            <Fab
+              color="primary"
+              aria-label="add job history"
+              sx={{
+                position: 'fixed',
+                bottom: 24,
+                right: 24,
+              }}
+              onClick={() => setDrawerOpen(true)}
+            >
+              <AddIcon />
+            </Fab>
+          )}
+
+          {/* Job History Form Drawer */}
+          <JobHistoryFormDrawer
+            open={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            onSubmit={handleCreateJobHistory}
+            employeeId={employeeId}
+            departments={departments}
+            positions={positions}
+            loading={jobHistoryLoading}
+          />
+        </Box>
       )}
 
       <LoadingOverlay open={loading} message="Loading employee details..." />

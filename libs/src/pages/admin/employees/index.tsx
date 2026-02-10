@@ -213,7 +213,7 @@ export default function EmployeesPage() {
   };
 
   const handleViewDetail = (row: EmployeeTableResponse) => {
-    router.push(`/employees/${row.id}`);
+    router.push(`/hr/employees/${row.id}`);
   };
 
   const handleDelete = (row: EmployeeTableResponse) => {

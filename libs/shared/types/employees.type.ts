@@ -23,12 +23,14 @@ export type EmployeeResponse = {
   employeeCode: string;
   startDate: Date;
   level?: Level;
-  department: DepartmentResponse;
-  currentPosition: PositionResponse;
+  department?: DepartmentResponse;
+  currentPosition?: PositionResponse;
   managerId?: string;
   createdAt: Date;
   updatedAt: Date;
   status: Status;
+  totalAnnualLeave: number;
+  usedAnnualLeave: number;
 };
 
 export type CreateEmployeeDto = {

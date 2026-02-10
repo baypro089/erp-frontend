@@ -120,7 +120,6 @@ export default function UsersPage() {
 
     const statusMap: Record<UserStatus, 'active' | 'inactive' | 'rejected'> = {
         [UserStatus.ACTIVE]: 'active',
-        [UserStatus.INACTIVE]: 'inactive',
         [UserStatus.BANNED]: 'rejected',
     };
 
@@ -213,7 +212,6 @@ export default function UsersPage() {
                 title="User Management"
                 subtitle="Manage system user accounts"
                 breadcrumbs={[
-                    { label: 'Admin', href: '/' },
                     { label: 'Users', icon: <PeopleIcon fontSize="small" /> },
                 ]}
                 actions={[

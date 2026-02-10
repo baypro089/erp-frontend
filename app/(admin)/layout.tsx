@@ -1,46 +1,64 @@
 'use client';
 
-import { useState } from 'react';
-import { Box, Toolbar, useMediaQuery, useTheme } from '@mui/material';
+
+import { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from '@libs/src/store';
+import { Box, Toolbar, useTheme } from '@mui/material';
 import ClientOnly from '@libs/src/components/ClientOnly';
 import AdminSidebar from '@libs/src/components/layout/AdminSidebar';
 import AdminHeader from '@libs/src/components/layout/AdminHeader';
+import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { checkAuth } from '@libs/src/features/auth/auth.slice';
 
 export default function MainLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const dispatch = useDispatch<AppDispatch>();
+  const { currentUser } = useSelector((state: RootState) => state.user);
 
-  const handleSidebarToggle = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
+  useEffect(() => {
+    // Get user from auth (JWT token)
+    const loadUser = async () => {
+      try {
+        const result = await dispatch(checkAuth()).unwrap();
+        if (result?.id) {
+          dispatch(fetchUserById(result.id));
+        }
+      } catch (error) {
+        console.error('Failed to check auth:', error);
+      }
+    };
+    
+    loadUser();
+  }, [dispatch]);
 
-  // Mock user data - replace with actual user data from your auth system
-  const user = {
-    name: 'Admin User',
-    email: 'admin@erp.com',
-  };
+  // Use actual user data from Redux store
+  const user = currentUser ? {
+    name: currentUser.username || 'User',
+    email: currentUser.email || '',
+    role: currentUser.role?.role_name || 'Admin',
+  } : undefined;
 
   return (
     <ClientOnly>
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Header */}
+
         <AdminHeader
-          onMenuClick={handleSidebarToggle}
           title="Admin Dashboard"
-          showMenuButton={isMobile}
+          showMenuButton={false}
           user={user}
           notificationCount={5}
         />
 
         {/* Sidebar */}
         <AdminSidebar
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+          open={true}
           collapsible
         />
 

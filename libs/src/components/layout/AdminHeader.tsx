@@ -86,13 +86,13 @@ export default function AdminHeader({
   const handleProfile = () => {
     handleCloseUserMenu();
     // Navigate to profile page
-    router.push('/profile');
+    router.push('/admin/profile');
   };
 
   const handleSettings = () => {
     handleCloseUserMenu();
     // Navigate to settings page
-    router.push('/settings');
+    router.push('/admin/settings');
   };
 
   return (

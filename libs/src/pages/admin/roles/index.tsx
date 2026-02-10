@@ -9,6 +9,7 @@ import {
   Typography,
   Alert,
   Snackbar,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,6 +35,7 @@ import {
   clearError,
 } from '@libs/src/features/role/role.slice';
 import type { RoleResponse, CreateRoleDTO, UpdateRoleDTO } from '@libs/shared/types/roles.type';
+import { PORTAL_PERMISSION_VALUES } from '@libs/shared/constants/portal-permissions.constant';
 
 export default function RolesPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -94,15 +96,6 @@ export default function RolesPage() {
       ),
     },
     { id: 'role_name', label: 'Role Name', minWidth: 200 },
-    {
-      id: 'AdminSiteAccess',
-      label: 'Admin Access',
-      minWidth: 120,
-      align: 'center',
-      format: (value) => (
-        <StatusChip status={value ? 'active' : 'inactive'} showIcon />
-      ),
-    },
     {
       id: 'is_active',
       label: 'Status',
@@ -221,7 +214,6 @@ export default function RolesPage() {
         title="Role Management"
         subtitle="Manage system roles and permissions"
         breadcrumbs={[
-          { label: 'Admin', href: '/' },
           { label: 'Roles', icon: <SecurityIcon fontSize="small" /> },
         ]}
         actions={[

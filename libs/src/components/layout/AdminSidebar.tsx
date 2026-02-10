@@ -22,6 +22,9 @@ import {
   AccountTree as AccountTreeIcon,
   Security as SecurityIcon,
   AccountCircle as AccountCircleIcon,
+  Assessment as AssessmentIcon,
+  EventNote as EventNoteIcon,
+  Event as EventIcon,
   ExpandLess,
   ExpandMore,
   ChevronLeft,
@@ -52,32 +55,44 @@ const menuItems: MenuItem[] = [
     id: 'departments',
     label: 'Departments',
     icon: <AccountTreeIcon />,
-    path: '/departments',
+    path: '/admin/departments',
   },
   {
     id: 'positions',
     label: 'Positions',
     icon: <BusinessCenterIcon />,
-    path: '/positions',
-  },
-  {
-    id: 'employees',
-    label: 'Employees',
-    icon: <PeopleIcon />,
-    path: '/employees',
+    path: '/admin/positions',
   },
   {
     id: 'roles',
     label: 'Roles',
     icon: <SecurityIcon />,
-    path: '/roles',
+    path: '/admin/roles',
   },
   {
     id: 'users',
     label: 'Users',
     icon: <AccountCircleIcon />,
-    path: '/users',
+    path: '/admin/users',
   },
+  {
+    id: 'holidays',
+    label: 'Holidays',
+    icon: <EventIcon />,
+    path: '/admin/holidays',
+  },
+  {
+    id: 'leaves',
+    label: 'My Leaves',
+    icon: <EventNoteIcon />,
+    path: '/admin/leaves',
+  },
+  {
+    id: 'reports',
+    label: 'Reports',
+    icon: <AssessmentIcon />,
+    path: '/admin/reports',
+  }
 ];
 
 export default function AdminSidebar({

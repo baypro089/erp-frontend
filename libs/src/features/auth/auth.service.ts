@@ -21,7 +21,7 @@ const logout = async () => {
     return response.data.message;
 }
 
-const me = async (): Promise<UserResponse> => {
+const me = async (): Promise<{id: string, role: string}> => {
     const response = await api.get('/auth/me');
     return response.data;
 }

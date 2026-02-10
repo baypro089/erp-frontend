@@ -253,7 +253,6 @@ export default function PositionsPage() {
         title="Position Management"
         subtitle="Manage job positions and salary ranges"
         breadcrumbs={[
-          { label: 'Admin', href: '/' },
           { label: 'Positions', icon: <WorkIcon fontSize="small" /> },
         ]}
         actions={[

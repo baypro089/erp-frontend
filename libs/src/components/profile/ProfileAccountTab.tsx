@@ -24,6 +24,7 @@ import {
 import type { UserResponse } from '@libs/shared/types/users.type';
 import { UserStatus } from '@libs/shared/enums/user-status.enum';
 import { StatusChip } from '@libs/src/components/common';
+import { PORTAL_PERMISSION_VALUES } from '@libs/shared/constants/portal-permissions.constant';
 import ChangePasswordDialog from './ChangePasswordDialog';
 
 interface ProfileAccountTabProps {
@@ -35,7 +36,6 @@ export default function ProfileAccountTab({ user }: ProfileAccountTabProps) {
 
   const statusMap: Record<UserStatus, 'active' | 'inactive' | 'rejected'> = {
     [UserStatus.ACTIVE]: 'active',
-    [UserStatus.INACTIVE]: 'inactive',
     [UserStatus.BANNED]: 'rejected',
   };
 
@@ -93,9 +93,9 @@ export default function ProfileAccountTab({ user }: ProfileAccountTabProps) {
                 </Typography>
                 <Box display="flex" alignItems="center" gap={1} mt={1}>
                   <Security color="action" />
-                  <Chip 
-                    label={user.role?.role_name || 'N/A'} 
-                    color="primary" 
+                  <Chip
+                    label={user.role?.role_name || 'N/A'}
+                    color="primary"
                     size="small"
                   />
                 </Box>
@@ -129,22 +129,6 @@ export default function ProfileAccountTab({ user }: ProfileAccountTabProps) {
                 />
               </Grid>
             )}
-
-            {/* Admin Access */}
-            <Grid size={{ xs: 12, md: 6 }}>
-              <Box>
-                <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Admin Site Access
-                </Typography>
-                <Box display="flex" alignItems="center" gap={1} mt={1}>
-                  <Security color="action" />
-                  <StatusChip 
-                    status={user.role?.AdminSiteAccess ? 'active' : 'inactive'} 
-                    showIcon 
-                  />
-                </Box>
-              </Box>
-            </Grid>
           </Grid>
 
           <Divider sx={{ my: 3 }} />

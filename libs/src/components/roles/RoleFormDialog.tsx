@@ -40,7 +40,6 @@ export default function RoleFormDialog({
     roleCode: '',
     roleName: '',
     permissionCodes: [] as string[],
-    AdminSiteAccess: false,
   });
   const dispatch = useDispatch<AppDispatch>();
   const { currentRole } = useSelector((state: RootState) => state.role);
@@ -61,7 +60,6 @@ export default function RoleFormDialog({
           roleCode: currentRole.role_code,
           roleName: currentRole.role_name,
           permissionCodes: currentRole.permissions?.map((p) => p.permission_code) || [],
-          AdminSiteAccess: currentRole.AdminSiteAccess,
         });
       } else if (!selectedRole) {
         // New role
@@ -69,7 +67,6 @@ export default function RoleFormDialog({
           roleCode: '',
           roleName: '',
           permissionCodes: [],
-          AdminSiteAccess: false,
         });
       }
     }
@@ -89,7 +86,6 @@ export default function RoleFormDialog({
         roleCode: formData.roleCode,
         roleName: formData.roleName,
         permissionCodes: formData.permissionCodes,
-        AdminSiteAccess: formData.AdminSiteAccess,
       };
       onSubmit(createData, false);
     }
@@ -201,29 +197,6 @@ export default function RoleFormDialog({
                 )}
               </Box>
             </Box>
-          </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.AdminSiteAccess}
-                  onChange={(e) =>
-                    setFormData({ ...formData, AdminSiteAccess: e.target.checked })
-                  }
-                />
-              }
-              label={
-                <Box>
-                  <Typography variant="body2" fontWeight={600}>
-                    Admin Site Access
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Allow this role to access admin panel
-                  </Typography>
-                </Box>
-              }
-            />
           </Grid>
         </Grid>
       </FormDialog>

@@ -6,3 +6,5 @@ export { default as ContactInformationCard } from './ContactInformationCard';
 export { default as IdentificationCard } from './IdentificationCard';
 export { default as WorkInformationCard } from './WorkInformationCard';
 export { default as SystemInformationCard } from './SystemInformationCard';
+export { default as JobHistoryTimeline } from './JobHistoryTimeline';
+export { default as JobHistoryFormDrawer } from './JobHistoryFormDrawer';

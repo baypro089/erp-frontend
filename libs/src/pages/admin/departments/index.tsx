@@ -236,7 +236,6 @@ export default function DepartmentsPage() {
         title="Department Management"
         subtitle="Manage company departments and organizational structure"
         breadcrumbs={[
-          { label: 'Admin', href: '/' },
           { label: 'Departments', icon: <BusinessIcon fontSize="small" /> },
         ]}
         actions={[
