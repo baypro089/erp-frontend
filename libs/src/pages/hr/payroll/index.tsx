@@ -47,7 +47,7 @@ import {
   clearError,
   clearGenerationResult,
 } from '@libs/src/features/payslip/payslip.slice';
-import type { PayslipResponse } from '@libs/shared/types/payslips.type';
+import type { PayslipResponse, PaySlipTableResponse } from '@libs/shared/types/payslips.type';
 
 export default function PayrollPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -66,7 +66,7 @@ export default function PayrollPage() {
   const [openGenerateDialog, setOpenGenerateDialog] = useState(false);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const [openResultDialog, setOpenResultDialog] = useState(false);
-  const [selectedPayslip, setSelectedPayslip] = useState<PayslipResponse | null>(null);
+  const [selectedPayslip, setSelectedPayslip] = useState<PaySlipTableResponse | null>(null);
 
   // Filter states
   const currentDate = new Date();
@@ -118,7 +118,7 @@ export default function PayrollPage() {
   }, [generationResult]);
 
   // Define table columns
-  const columns: Column<PayslipResponse>[] = [
+  const columns: Column<PaySlipTableResponse>[] = [
     {
       id: 'employeeCode',
       label: 'Mã NV',
@@ -137,32 +137,6 @@ export default function PayrollPage() {
         <Typography variant="body2" fontWeight={600}>
           {row.employee.fullName}
         </Typography>
-      ),
-    },
-    {
-      id: 'department',
-      label: 'Phòng ban',
-      minWidth: 150,
-      format: (value, row) => (
-        <Chip
-          label={row.employee.department?.name || 'N/A'}
-          size="small"
-          variant="outlined"
-          color="primary"
-        />
-      ),
-    },
-    {
-      id: 'position',
-      label: 'Chức vụ',
-      minWidth: 150,
-      format: (value, row) => (
-        <Chip
-          label={row.employee.currentPosition?.name || 'N/A'}
-          size="small"
-          variant="outlined"
-          color="secondary"
-        />
       ),
     },
     {
@@ -233,7 +207,7 @@ export default function PayrollPage() {
     }
   };
 
-  const handleRowClick = (payslip: PayslipResponse) => {
+  const handleRowClick = (payslip: PaySlipTableResponse) => {
     setSelectedPayslip(payslip);
     setOpenDetailDialog(true);
   };
@@ -366,7 +340,7 @@ export default function PayrollPage() {
       <PayslipDetailDialog
         open={openDetailDialog}
         onClose={() => setOpenDetailDialog(false)}
-        payslip={selectedPayslip}
+        payslipId={selectedPayslip?.id || ''}
         onMarkAsPaid={handleMarkAsPaid}
         isMarkingPaid={operationLoading}
         showMarkPaidButton={true}

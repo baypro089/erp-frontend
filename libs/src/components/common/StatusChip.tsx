@@ -22,7 +22,10 @@ export type StatusType =
   | 'info'
   | 'warning'
   | 'success'
-  | 'error';
+  | 'error'
+  | 'resigned'
+  | 'probation'
+  | 'maternity';
 
 interface StatusChipProps extends Omit<ChipProps, 'color'> {
   status: StatusType | string;
@@ -49,6 +52,9 @@ const statusConfig: Record<
   warning: { color: 'warning', icon: <Warning /> },
   success: { color: 'success', icon: <CheckCircle /> },
   error: { color: 'error', icon: <Cancel /> },
+  resigned: { color: 'error', icon: <Info /> },
+  probation: { color: 'default', icon: <Info /> },
+  maternity: { color: 'default', icon: <Info /> },
 };
 
 export default function StatusChip({

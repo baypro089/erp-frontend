@@ -179,11 +179,12 @@ export default function EmployeesPage() {
       minWidth: 120,
       align: 'center',
       format: (value) => {
-        const statusMap: Record<Status, 'active' | 'inactive' | 'pending' | 'rejected'> = {
+        const statusMap: Record<Status, 'active' | 'pending' | 'maternity' | 'resigned' | 'probation'> = {
           [Status.ACTIVE]: 'active',
-          [Status.INACTIVE]: 'inactive',
           [Status.DRAFT]: 'pending',
-          [Status.TERMINATED]: 'rejected',
+          [Status.MATERNITY_LEAVE]: 'maternity',
+          [Status.RESIGNED]: 'resigned',
+          [Status.PROBATION]: 'probation',
         };
         return <StatusChip status={statusMap[value as Status]} showIcon />;
       },
@@ -361,9 +362,10 @@ export default function EmployeesPage() {
             type: 'select',
             options: [
               { value: Status.ACTIVE, label: 'Active' },
-              { value: Status.INACTIVE, label: 'Inactive' },
               { value: Status.DRAFT, label: 'Draft' },
-              { value: Status.TERMINATED, label: 'Terminated' },
+              { value: Status.MATERNITY_LEAVE, label: 'Maternity Leave' },
+              { value: Status.RESIGNED, label: 'Resigned' },
+              { value: Status.PROBATION, label: 'Probation' },
             ],
             value: filterStatus,
           },

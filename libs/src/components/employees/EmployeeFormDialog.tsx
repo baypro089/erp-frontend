@@ -43,6 +43,7 @@ export default function EmployeeFormDialog({
     startDate: new Date(),
     departmentId: '',
     currentPositionId: '',
+    initSalary: 0,
   });
 
   const [errors, setErrors] = useState<{
@@ -51,6 +52,7 @@ export default function EmployeeFormDialog({
     startDate?: string;
     departmentId?: string;
     currentPositionId?: string;
+    initSalary?: string;
   }>({});
 
   // Reset form when dialog opens
@@ -62,6 +64,7 @@ export default function EmployeeFormDialog({
         startDate: new Date(),
         departmentId: '',
         currentPositionId: '',
+        initSalary: 0,
       });
       setErrors({});
     }
@@ -90,6 +93,12 @@ export default function EmployeeFormDialog({
       newErrors.startDate = 'Start date is required';
     }
 
+    if (formData.initSalary === undefined || formData.initSalary === 0) {
+      newErrors.initSalary = 'Initial salary is required and must be greater than 0';
+    } else if (isNaN(Number(formData.initSalary))) {
+      newErrors.initSalary = 'Initial salary must be a number';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -116,15 +125,15 @@ export default function EmployeeFormDialog({
         sx: { borderRadius: 2 },
       }}
     >
-      <DialogTitle sx={{ pb: 2 }}>
-        Add New Employee
+      <DialogTitle sx={{ pb: 2, fontWeight: 'bold', backgroundColor: 'primary.main', color: 'primary.contrastText' }}>
+        Thêm mới nhân viên
       </DialogTitle>
 
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, py: 1 }}>
           {/* Full Name */}
           <TextField
-            label="Full Name"
+            label="Họ và tên"
             value={formData.fullName}
             onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
             error={!!errors.fullName}
@@ -133,12 +142,12 @@ export default function EmployeeFormDialog({
             required
             autoFocus
             disabled={loading}
-            placeholder="Enter employee full name"
+            placeholder="Nhập họ và tên nhân viên"
           />
 
           {/* Employee Code */}
           <TextField
-            label="Employee Code"
+            label="Mã nhân viên"
             value={formData.employeeCode}
             onChange={(e) => setFormData({ ...formData, employeeCode: e.target.value })}
             error={!!errors.employeeCode}
@@ -151,7 +160,7 @@ export default function EmployeeFormDialog({
 
           {/* Start Date */}
           <TextField
-            label="Start Date"
+            label="Ngày bắt đầu"
             type="date"
             value={
               formData.startDate instanceof Date
@@ -169,7 +178,7 @@ export default function EmployeeFormDialog({
 
           {/* Department */}
           <TextField
-            label="Department"
+            label="Phòng ban"
             select
             value={formData.departmentId}
             onChange={(e) => setFormData({ ...formData, departmentId: e.target.value })}
@@ -180,7 +189,7 @@ export default function EmployeeFormDialog({
             disabled={loading}
           >
             <MenuItem value="">
-              <em>Select Department</em>
+              <em>Chọn phòng ban</em>
             </MenuItem>
             {departments.map((dept) => (
               <MenuItem key={dept.id} value={dept.id}>
@@ -191,7 +200,7 @@ export default function EmployeeFormDialog({
 
           {/* Position */}
           <TextField
-            label="Position"
+            label="Chức vụ"
             select
             value={formData.currentPositionId}
             onChange={(e) => setFormData({ ...formData, currentPositionId: e.target.value })}
@@ -202,7 +211,7 @@ export default function EmployeeFormDialog({
             disabled={loading}
           >
             <MenuItem value="">
-              <em>Select Position</em>
+              <em>Chọn chức vụ</em>
             </MenuItem>
             {positions.map((pos) => (
               <MenuItem key={pos.id} value={pos.id}>
@@ -210,12 +219,26 @@ export default function EmployeeFormDialog({
               </MenuItem>
             ))}
           </TextField>
+
+          {/* Initial Salary */}
+          <TextField
+            label="Lương khởi điểm"
+            type="number"
+            value={formData.initSalary}
+            onChange={(e) => setFormData({ ...formData, initSalary: Number(e.target.value) })}
+            error={!!errors.initSalary}
+            helperText={errors.initSalary}
+            fullWidth
+            required
+            disabled={loading}
+            placeholder="Nhập lương khởi điểm"
+          />
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={handleClose} disabled={loading} color="inherit">
-          Cancel
+          Hủy
         </Button>
         <Button
           onClick={handleSubmit}
@@ -223,7 +246,7 @@ export default function EmployeeFormDialog({
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : null}
         >
-          Create
+          Tạo
         </Button>
       </DialogActions>
     </Dialog>

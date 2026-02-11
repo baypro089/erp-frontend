@@ -1,4 +1,3 @@
-import { UserResponse } from './users.type';
 import { DepartmentResponse } from './departments.type';
 import { PositionResponse } from './positions.type';
 import { PagedResult } from './pagedResult.type';
@@ -40,6 +39,7 @@ export type CreateEmployeeDto = {
   employeeCode: string;
   departmentId: string;
   currentPositionId: string;
+  initSalary?: number;
 };
 
 export type UpdateEmployeeDto = {
@@ -62,13 +62,14 @@ export type UpdateEmployeeDto = {
   status?: Status;
 };
 
+
 export type EmployeeTableResponse = {
   id: string;
   employeeCode: string;
   fullName: string;
   startDate: Date;
-  departmentName: string;
-  positionName: string;
+  departmentName?: string;
+  positionName?: string;
   createdAt: Date;
   updatedAt: Date;
   status: Status;

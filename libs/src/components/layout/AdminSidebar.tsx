@@ -25,6 +25,7 @@ import {
   Assessment as AssessmentIcon,
   EventNote as EventNoteIcon,
   Event as EventIcon,
+  Settings as SettingsIcon,
   ExpandLess,
   ExpandMore,
   ChevronLeft,
@@ -86,6 +87,12 @@ const menuItems: MenuItem[] = [
     label: 'My Leaves',
     icon: <EventNoteIcon />,
     path: '/admin/leaves',
+  },
+  {
+    id: 'settings',
+    label: 'Cấu hình Lương',
+    icon: <SettingsIcon />,
+    path: '/admin/settings',
   },
   {
     id: 'reports',

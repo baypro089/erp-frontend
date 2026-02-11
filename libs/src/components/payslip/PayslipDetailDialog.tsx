@@ -7,10 +7,6 @@ import {
   Button,
   Box,
   Typography,
-  Table,
-  TableBody,
-  TableRow,
-  TableCell,
   Divider,
   IconButton,
   Chip,
@@ -21,12 +17,17 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import type { PayslipResponse } from '@libs/shared/types/payslips.type';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { AppDispatch, RootState } from '@libs/src/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { getPayslipById } from '@libs/src/features/payslip/payslip.slice';
+import { fetchSalaryComponents } from '@libs/src/features/system-setting/system-setting.slice';
+import { groupPayslipItems } from '@libs/src/utils/payslip-helper';
 
 interface PayslipDetailDialogProps {
   open: boolean;
   onClose: () => void;
-  payslip: PayslipResponse | null;
+  payslipId?: string;
   onMarkAsPaid?: (id: string) => void;
   isMarkingPaid?: boolean;
   showMarkPaidButton?: boolean;
@@ -35,14 +36,41 @@ interface PayslipDetailDialogProps {
 export default function PayslipDetailDialog({
   open,
   onClose,
-  payslip,
+  payslipId = undefined,
   onMarkAsPaid,
   isMarkingPaid = false,
   showMarkPaidButton = true,
 }: PayslipDetailDialogProps) {
   const printAreaRef = useRef<HTMLDivElement>(null);
+  const dispatch = useDispatch<AppDispatch>();
+  const { currentPayslip, operationError, operationLoading } = useSelector((state: RootState) => state.payslip);
+  const { salaryComponents } = useSelector((state: RootState) => state.systemSetting);
+  
+  useEffect(() => {
+    if (open && payslipId) {
+      dispatch(getPayslipById(payslipId));
+      dispatch(fetchSalaryComponents());
+    }
+  }, [open, payslipId, dispatch]);
 
+  // Early returns after all hooks
+  if (!payslipId) return null;
+
+  const payslip = currentPayslip;
   if (!payslip) return null;
+
+  // Calculate base salary by work days
+  const baseSalaryByWorkDays = 
+    payslip.standardWorkDays > 0 
+      ? (payslip.baseSalary * payslip.actualWorkDays) / payslip.standardWorkDays 
+      : payslip.baseSalary;
+
+  // Separate earnings and deductions
+  const { earnings, deductions } = groupPayslipItems(payslip, salaryComponents);
+
+  // Calculate totals
+  const totalEarnings = earnings.reduce((sum, item) => sum + item.amount, 0) + baseSalaryByWorkDays;
+  const totalDeductions = deductions.reduce((sum, item) => sum + item.amount, 0);
 
   const handlePrint = () => {
     window.print();
@@ -65,13 +93,6 @@ export default function PayslipDetailDialog({
 
   const monthYear = `${payslip.month.toString().padStart(2, '0')}/${payslip.year}`;
 
-  // Calculate deductions and allowances from details
-  const allowances = Object.entries(payslip.details || {})
-    .filter(([key]) => key.toLowerCase().includes('allowance') || key.toLowerCase().includes('phụ cấp'))
-    .reduce((sum, [, value]) => sum + value, 0);
-
-  const unpaidLeaveDeduction = payslip.unpaidLeaveDays * (payslip.baseSalary / payslip.standardWorkDays);
-
   return (
     <Dialog
       open={open}
@@ -92,9 +113,10 @@ export default function PayslipDetailDialog({
       </Box>
 
       <DialogContent sx={{ p: 4 }}>
-        {/* Paper-style payslip */}
+        {/* Printable Payslip */}
         <Box
           ref={printAreaRef}
+          id="print-area"
           sx={{
             bgcolor: 'white',
             p: 4,
@@ -106,164 +128,225 @@ export default function PayslipDetailDialog({
             },
           }}
         >
-          {/* Header */}
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
+          {/* Header Section */}
+          <Box sx={{ mb: 4 }}>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: 'primary.main',
+                mb: 0.5,
+              }}
+            >
+              CÔNG TY CỔ PHẦN ERP
+            </Typography>
             <Typography
               variant="h4"
               sx={{
                 fontWeight: 700,
-                color: 'primary.main',
+                textAlign: 'center',
+                color: 'text.primary',
                 mb: 1,
                 letterSpacing: 1,
               }}
             >
-              PHIẾU LƯƠNG
-            </Typography>
-            <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
-              THÁNG {monthYear}
+              PHIẾU LƯƠNG - THÁNG {monthYear}
             </Typography>
           </Box>
 
           <Divider sx={{ mb: 3 }} />
 
-          {/* Employee Info */}
-          <Box sx={{ mb: 3 }}>
-            <Table size="small">
-              <TableBody>
-                <TableRow>
-                  <TableCell sx={{ border: 'none', py: 0.5, fontWeight: 600, width: '30%' }}>
-                    Mã nhân viên:
-                  </TableCell>
-                  <TableCell sx={{ border: 'none', py: 0.5 }}>
-                    {payslip.employee.employeeCode}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ border: 'none', py: 0.5, fontWeight: 600 }}>
-                    Họ và tên:
-                  </TableCell>
-                  <TableCell sx={{ border: 'none', py: 0.5 }}>
-                    {payslip.employee.fullName}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ border: 'none', py: 0.5, fontWeight: 600 }}>
-                    Phòng ban:
-                  </TableCell>
-                  <TableCell sx={{ border: 'none', py: 0.5 }}>
-                    {payslip.employee.department?.name || 'N/A'}
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ border: 'none', py: 0.5, fontWeight: 600 }}>
-                    Chức vụ:
-                  </TableCell>
-                  <TableCell sx={{ border: 'none', py: 0.5 }}>
-                    {payslip.employee.currentPosition?.name || 'N/A'}
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </Box>
-
-          <Divider sx={{ mb: 3 }} />
-
-          {/* Salary Details */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              CHI TIẾT LƯƠNG
-            </Typography>
-            <Table size="small">
-              <TableBody>
-                {/* Base Salary */}
-                <TableRow>
-                  <TableCell sx={{ border: 'none', py: 1 }}>
-                    Lương cứng
-                  </TableCell>
-                  <TableCell sx={{ border: 'none', py: 1, textAlign: 'right' }}>
-                    {formatCurrency(payslip.baseSalary)}
-                  </TableCell>
-                </TableRow>
-
-                {/* Work Days */}
-                <TableRow>
-                  <TableCell sx={{ border: 'none', py: 1, pl: 3, fontSize: '0.875rem', color: 'text.secondary' }}>
-                    Số ngày chuẩn: {payslip.standardWorkDays} ngày
-                  </TableCell>
-                  <TableCell sx={{ border: 'none', py: 1 }}></TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell sx={{ border: 'none', py: 1, pl: 3, fontSize: '0.875rem', color: 'text.secondary' }}>
-                    Số ngày làm việc: {payslip.actualWorkDays} ngày
-                  </TableCell>
-                  <TableCell sx={{ border: 'none', py: 1 }}></TableCell>
-                </TableRow>
-
-                {/* Allowances */}
-                {allowances > 0 && (
-                  <TableRow>
-                    <TableCell sx={{ border: 'none', py: 1, color: 'success.main' }}>
-                      (+) Phụ cấp
-                    </TableCell>
-                    <TableCell sx={{ border: 'none', py: 1, textAlign: 'right', color: 'success.main' }}>
-                      +{formatCurrency(allowances)}
-                    </TableCell>
-                  </TableRow>
-                )}
-
-                {/* Unpaid Leave Deduction */}
-                {payslip.unpaidLeaveDays > 0 && (
-                  <TableRow>
-                    <TableCell sx={{ border: 'none', py: 1, color: 'error.main' }}>
-                      (-) Nghỉ không lương ({payslip.unpaidLeaveDays} ngày)
-                    </TableCell>
-                    <TableCell sx={{ border: 'none', py: 1, textAlign: 'right', color: 'error.main' }}>
-                      -{formatCurrency(unpaidLeaveDeduction)}
-                    </TableCell>
-                  </TableRow>
-                )}
-
-                {/* Other details */}
-                {Object.entries(payslip.details || {}).map(([key, value]) => {
-                  if (key.toLowerCase().includes('allowance') || key.toLowerCase().includes('phụ cấp')) {
-                    return null;
-                  }
-                  return (
-                    <TableRow key={key}>
-                      <TableCell sx={{ border: 'none', py: 1, pl: 3, fontSize: '0.875rem' }}>
-                        {key}
-                      </TableCell>
-                      <TableCell sx={{ border: 'none', py: 1, textAlign: 'right', fontSize: '0.875rem' }}>
-                        {formatCurrency(value)}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </Box>
-
-          <Divider sx={{ mb: 2, borderStyle: 'dashed', borderWidth: 2 }} />
-
-          {/* Final Salary */}
+          {/* Employee Info - 2 Column Grid */}
           <Box
             sx={{
-              bgcolor: 'primary.lighter',
-              p: 2,
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 2,
+              mb: 3,
+              pb: 2,
+              borderBottom: '2px solid',
+              borderColor: 'divider',
+            }}
+          >
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                Họ và tên:
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {payslip.employee.fullName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                Phòng ban:
+              </Typography>
+              <Typography variant="body1">
+                {payslip.employee.department?.name || 'N/A'}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                Mã nhân viên:
+              </Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {payslip.employee.employeeCode}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                Chức vụ:
+              </Typography>
+              <Typography variant="body1">
+                {payslip.employee.currentPosition?.name || 'N/A'}
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Salary Details - 2 Column Grid */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 3,
+              mb: 3,
+            }}
+          >
+            {/* Left Column - EARNINGS */}
+            <Box>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: 'success.main',
+                  mb: 2,
+                  pb: 1,
+                  borderBottom: '2px solid',
+                  borderColor: 'success.main',
+                }}
+              >
+                THU NHẬP
+              </Typography>
+
+              {/* Base Salary */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
+                <Typography variant="body2">
+                  Lương cơ bản (Ngày: {payslip.actualWorkDays})
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {formatCurrency(baseSalaryByWorkDays)}
+                </Typography>
+              </Box>
+
+              {/* Earnings List */}
+              {earnings.map((item) => (
+                <Box key={item.code} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2">{item.name}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {formatCurrency(item.amount)}
+                  </Typography>
+                </Box>
+              ))}
+
+              {/* Total Earnings */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  mt: 2,
+                  pt: 1.5,
+                  borderTop: '2px solid',
+                  borderColor: 'divider',
+                }}
+              >
+                <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                  Tổng thu nhập
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 700, color: 'success.main' }}>
+                  {formatCurrency(totalEarnings)}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Right Column - DEDUCTIONS */}
+            <Box>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: 'error.main',
+                  mb: 2,
+                  pb: 1,
+                  borderBottom: '2px solid',
+                  borderColor: 'error.main',
+                }}
+              >
+                KHẤU TRỪ
+              </Typography>
+
+              {/* Deductions List */}
+              {deductions.length > 0 ? (
+                <>
+                  {deductions.map((item) => (
+                    <Box key={item.code} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="body2">{item.name}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main' }}>
+                        - {formatCurrency(item.amount)}
+                      </Typography>
+                    </Box>
+                  ))}
+
+                  {/* Total Deductions */}
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      mt: 2,
+                      pt: 1.5,
+                      borderTop: '2px solid',
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                      Tổng khấu trừ
+                    </Typography>
+                    <Typography variant="body1" sx={{ fontWeight: 700, color: 'error.main' }}>
+                      - {formatCurrency(totalDeductions)}
+                    </Typography>
+                  </Box>
+                </>
+              ) : (
+                <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                  Không có khoản khấu trừ
+                </Typography>
+              )}
+            </Box>
+          </Box>
+
+          <Divider sx={{ mb: 3, borderStyle: 'dashed', borderWidth: 2 }} />
+
+          {/* Summary Section - NET SALARY */}
+          <Box
+            sx={{
+              bgcolor: 'grey.50',
+              p: 3,
               borderRadius: 1,
+              borderTop: '3px solid',
+              borderColor: 'primary.main',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              TỔNG THỰC LĨNH:
-            </Typography>
             <Typography
               variant="h5"
               sx={{
                 fontWeight: 700,
-                color: 'success.main',
+                textTransform: 'uppercase',
+              }}
+            >
+              Lương thực lĩnh
+            </Typography>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: 'primary.main',
               }}
             >
               {formatCurrency(payslip.finalSalary)}

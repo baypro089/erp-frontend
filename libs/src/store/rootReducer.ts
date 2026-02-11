@@ -10,6 +10,7 @@ import leaveRequestReducer from '../features/leave-request/leave-request.slice';
 import payslipReducer from '../features/payslip/payslip.slice';
 import holidayReducer from '../features/holiday/holiday.slice';
 import resignationRequestReducer from '../features/resignation-request/resignation-request.slice';
+import systemSettingReducer from '../features/system-setting/system-setting.slice';
 
 // Import your reducers here
 // import userReducer from './userReducer';
@@ -29,6 +30,7 @@ const rootReducer = combineReducers({
     payslip: payslipReducer,
     holiday: holidayReducer,
     resignationRequest: resignationRequestReducer,
+    systemSetting: systemSettingReducer,
 });
 
 export default rootReducer;

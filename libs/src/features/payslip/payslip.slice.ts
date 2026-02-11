@@ -4,10 +4,11 @@ import type {
   PayslipResponse,
   PagedAndFilteredPayslip,
   PayrollGenerationResult,
+  PaySlipTableResponse,
 } from '@libs/shared/types/payslips.type';
 
 interface PayslipState {
-  payslips: PayslipResponse[];
+  payslips: PaySlipTableResponse[];
   currentPayslip: PayslipResponse | null;
   totalCount: number;
   totalPages: number;
@@ -109,6 +110,18 @@ export const markPayslipAsPaid = createAsyncThunk(
   }
 );
 
+export const getPayslipById = createAsyncThunk(
+  'payslip/getPayslipById',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await payslipService.getPayslipById(id);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to get payslip by id');
+    }
+  }
+);
+
 // Slice
 const payslipSlice = createSlice({
   name: 'payslip',
@@ -199,6 +212,21 @@ const payslipSlice = createSlice({
       .addCase(markPayslipAsPaid.rejected, (state, action) => {
         state.operationLoading = false;
         state.operationError = action.payload as string;
+      });
+
+    // Get payslip by id
+    builder
+      .addCase(getPayslipById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(getPayslipById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentPayslip = action.payload;
+      })
+      .addCase(getPayslipById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
       });
   },
 });

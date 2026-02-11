@@ -31,7 +31,7 @@ import {
   fetchMyPayslips,
   clearError,
 } from '@libs/src/features/payslip/payslip.slice';
-import type { PayslipResponse } from '@libs/shared/types/payslips.type';
+import type { PayslipResponse, PaySlipTableResponse } from '@libs/shared/types/payslips.type';
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
 import { fetchUserById } from '@libs/src/features/user/user.slice';
 
@@ -52,7 +52,7 @@ export default function EmployeePayslipsPage() {
 
   // Dialog states
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
-  const [selectedPayslip, setSelectedPayslip] = useState<PayslipResponse | null>(null);
+  const [selectedPayslip, setSelectedPayslip] = useState<PaySlipTableResponse | null>(null);
 
   // Filter states
   const currentDate = new Date();
@@ -117,22 +117,7 @@ export default function EmployeePayslipsPage() {
   }, [error, dispatch]);
 
   // Define table columns
-  const columns: Column<PayslipResponse>[] = [
-    {
-      id: 'month',
-      label: 'Tháng',
-      minWidth: 100,
-      align: 'center',
-      format: (value, row) => (
-        <Chip
-          icon={<CalendarMonthIcon />}
-          label={`${value.toString().padStart(2, '0')}/${row.year}`}
-          size="small"
-          color="primary"
-          variant="outlined"
-        />
-      ),
-    },
+  const columns: Column<PaySlipTableResponse>[] = [
     {
       id: 'standardWorkDays',
       label: 'Ngày chuẩn',
@@ -151,17 +136,6 @@ export default function EmployeePayslipsPage() {
       align: 'center',
       format: (value) => (
         <Typography variant="body2" fontWeight={600}>
-          {value} ngày
-        </Typography>
-      ),
-    },
-    {
-      id: 'unpaidLeaveDays',
-      label: 'Nghỉ KL',
-      minWidth: 100,
-      align: 'center',
-      format: (value) => (
-        <Typography variant="body2" color={value > 0 ? 'error.main' : 'text.secondary'}>
           {value} ngày
         </Typography>
       ),
@@ -209,7 +183,7 @@ export default function EmployeePayslipsPage() {
     },
   ];
 
-  const handleRowClick = (payslip: PayslipResponse) => {
+  const handleRowClick = (payslip: PaySlipTableResponse) => {
     setSelectedPayslip(payslip);
     setOpenDetailDialog(true);
   };
@@ -367,7 +341,7 @@ export default function EmployeePayslipsPage() {
       <PayslipDetailDialog
         open={openDetailDialog}
         onClose={() => setOpenDetailDialog(false)}
-        payslip={selectedPayslip}
+        payslipId={selectedPayslip?.id || undefined}
         showMarkPaidButton={false}
       />
 

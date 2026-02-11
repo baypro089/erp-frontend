@@ -57,6 +57,12 @@ class PayslipService {
     const response = await api.patch<any>(`${this.BASE_URL}/${id}/mark-paid`);
     return response.data.data;
   }
+
+  //Get payslip by id
+  async getPayslipById(id: string): Promise<PayslipResponse> {
+    const response = await api.get<any>(`${this.BASE_URL}/${id}`);
+    return response.data.data;
+  }
 }
 
 export default new PayslipService();

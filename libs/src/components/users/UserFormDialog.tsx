@@ -57,7 +57,7 @@ export default function UserFormDialog({
     username: '',
     password: '123456',
     email: '',
-    role_code: '',
+    roleCode: '',
     status: UserStatus.ACTIVE,
   });
 
@@ -79,7 +79,7 @@ export default function UserFormDialog({
           username: '',
           password: '123456',
           email: '',
-          role_code: '',
+          roleCode: '',
           status: UserStatus.ACTIVE,
         });
         setSelectedEmployee('');
@@ -103,7 +103,7 @@ export default function UserFormDialog({
         username: currentUser.username || '',
         password: '',
         email: currentUser.email || '',
-        role_code: currentUser.role?.role_code || '',
+        roleCode: currentUser.role?.role_code || '',
         status: currentUser.status || UserStatus.ACTIVE,
       });
     }
@@ -133,7 +133,7 @@ export default function UserFormDialog({
       if (mode === 'edit' && userId) {
         const updateData: UpdateUserDto = {
           email: formData.email,
-          roleCode: formData.role_code,
+          roleCode: formData.roleCode,
           status: formData.status,
         };
         await dispatch(updateUser({ id: userId, data: updateData })).unwrap();
@@ -152,7 +152,7 @@ export default function UserFormDialog({
       username: '',
       password: '123456',
       email: '',
-      role_code: '',
+      roleCode: '',
       status: UserStatus.ACTIVE,
     });
     setSelectedEmployee('');
@@ -292,8 +292,8 @@ export default function UserFormDialog({
                 <TextField
                   select
                   label="Role"
-                  value={formData.role_code}
-                  onChange={(e) => setFormData({ ...formData, role_code: e.target.value })}
+                  value={formData.roleCode}
+                  onChange={(e) => setFormData({ ...formData, roleCode: e.target.value })}
                   required
                   fullWidth
                 >
@@ -314,7 +314,6 @@ export default function UserFormDialog({
                     fullWidth
                   >
                     <MenuItem value={UserStatus.ACTIVE}>Active</MenuItem>
-                    <MenuItem value={UserStatus.INACTIVE}>Inactive</MenuItem>
                     <MenuItem value={UserStatus.BANNED}>Banned</MenuItem>
                   </TextField>
                 )}
