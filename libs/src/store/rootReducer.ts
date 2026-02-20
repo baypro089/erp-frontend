@@ -11,14 +11,17 @@ import payslipReducer from '../features/payslip/payslip.slice';
 import holidayReducer from '../features/holiday/holiday.slice';
 import resignationRequestReducer from '../features/resignation-request/resignation-request.slice';
 import systemSettingReducer from '../features/system-setting/system-setting.slice';
+import categoryReducer from '../features/category/category.slice';
+import brandReducer from '../features/brand/brand.slice';
+import productReducer from '../features/product/product.slice';
+import warehouseReducer from '../features/warehouse/warehouse.slice';
+import productStockReducer from '../features/product-stock/product-stock.slice';
+import productSerialReducer from '../features/product-serial/product-serial.slice';
+import supplierReducer from '../features/supplier/supplier.slice';
+import importReceiptReducer from '../features/import-receipt/import-receipt.slice';
 
 // Import your reducers here
-// import userReducer from './userReducer';
-// import productReducer from './productReducer';
-
 const rootReducer = combineReducers({
-    // user: userReducer,
-    // product: productReducer,
     auth: authReducer,
     role: roleReducer,
     department: departmentReducer,
@@ -31,6 +34,14 @@ const rootReducer = combineReducers({
     holiday: holidayReducer,
     resignationRequest: resignationRequestReducer,
     systemSetting: systemSettingReducer,
+    category: categoryReducer,
+    brand: brandReducer,
+    product: productReducer,
+    warehouse: warehouseReducer,
+    productStock: productStockReducer,
+    productSerial: productSerialReducer,
+    supplier: supplierReducer,
+    importReceipt: importReceiptReducer,
 });
 
 export default rootReducer;

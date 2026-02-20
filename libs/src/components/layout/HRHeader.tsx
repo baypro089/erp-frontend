@@ -106,9 +106,10 @@ export default function HRHeader({
       elevation={0}
       sx={{
         zIndex: theme.zIndex.drawer + 1,
-        backgroundColor: theme.palette.background.paper,
-        color: theme.palette.text.primary,
-        borderBottom: `1px solid ${theme.palette.divider}`,
+        background: `linear-gradient(135deg, #0D47A1 0%, #1976D2 50%, #0288D1 100%)`,
+        color: 'white',
+        borderBottom: `4px solid #00BCD4`,
+        boxShadow: '0 4px 20px rgba(13, 71, 161, 0.3)',
       }}
     >
       <Toolbar sx={{ gap: 2 }}>
@@ -125,19 +126,48 @@ export default function HRHeader({
           </IconButton>
         )}
 
-        {/* Title */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
+        {/* Title with HR Icon */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box
             sx={{
-              display: { xs: 'none', sm: 'block' },
-              fontWeight: 600,
+              display: { xs: 'none', sm: 'flex' },
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 42,
+              height: 42,
+              borderRadius: 2,
+              background: alpha(theme.palette.common.white, 0.2),
+              backdropFilter: 'blur(10px)',
             }}
           >
-            {title}
-          </Typography>
+            <PeopleIcon sx={{ fontSize: 26, color: '#00BCD4' }} />
+          </Box>
+          <Box>
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{
+                display: { xs: 'none', sm: 'block' },
+                fontWeight: 700,
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                letterSpacing: 0.5,
+              }}
+            >
+              {title}
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                display: { xs: 'none', md: 'block' },
+                color: alpha(theme.palette.common.white, 0.85),
+                fontSize: '0.7rem',
+              }}
+            >
+              People Management System
+            </Typography>
+          </Box>
         </Box>
 
         {/* Search Bar */}
@@ -145,9 +175,11 @@ export default function HRHeader({
           sx={{
             position: 'relative',
             borderRadius: 2,
-            backgroundColor: alpha(theme.palette.primary.main, 0.05),
+            backgroundColor: alpha(theme.palette.common.white, 0.15),
+            backdropFilter: 'blur(10px)',
+            border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
             '&:hover': {
-              backgroundColor: alpha(theme.palette.primary.main, 0.1),
+              backgroundColor: alpha(theme.palette.common.white, 0.25),
             },
             marginLeft: { xs: 0, sm: 3 },
             width: { xs: '100%', sm: 'auto' },
@@ -172,12 +204,16 @@ export default function HRHeader({
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             sx={{
-              color: 'inherit',
+              color: 'white',
               '& .MuiInputBase-input': {
                 padding: theme.spacing(1, 1, 1, 0),
                 paddingLeft: `calc(1em + ${theme.spacing(4)})`,
                 transition: theme.transitions.create('width'),
                 width: { xs: '100%', sm: '20ch', md: '35ch' },
+                '&::placeholder': {
+                  color: alpha(theme.palette.common.white, 0.7),
+                  opacity: 1,
+                },
               },
             }}
           />
@@ -186,32 +222,56 @@ export default function HRHeader({
         {/* Spacer */}
         <Box sx={{ flexGrow: 1 }} />
 
-        {/* Quick Stats - Hidden on mobile */}
+        {/* Quick Stats - Enhanced HR Metrics */}
         <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, mr: 2 }}>
-          {pendingLeaveRequests > 0 && (
-            <Tooltip title="Đơn nghỉ chờ duyệt">
-              <Chip
-                icon={<EventNoteIcon />}
-                label={`${pendingLeaveRequests} đơn`}
-                size="small"
-                color="warning"
-                variant="outlined"
-                onClick={() => router.push('/leave-requests')}
-                sx={{ cursor: 'pointer' }}
-              />
-            </Tooltip>
-          )}
-          {todayAttendance > 0 && (
-            <Tooltip title="Nhân viên đi làm hôm nay">
-              <Chip
-                icon={<PeopleIcon />}
-                label={`${todayAttendance} người`}
-                size="small"
-                color="success"
-                variant="outlined"
-              />
-            </Tooltip>
-          )}
+          <Chip
+            icon={<EventNoteIcon sx={{ color: '#FF6B35 !important' }} />}
+            label={
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 0.5 }}>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'rgba(0,0,0,0.6)' }}>
+                  Đơn chờ duyệt
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#D32F2F' }}>
+                  {pendingLeaveRequests}
+                </Typography>
+              </Box>
+            }
+            sx={{
+              height: 'auto',
+              py: 1,
+              px: 1.5,
+              backgroundColor: alpha(theme.palette.common.white, 0.95),
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              cursor: 'pointer',
+              '&:hover': {
+                backgroundColor: 'white',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+              },
+              transition: 'all 0.2s',
+            }}
+            onClick={() => router.push('/hr/leave-approvals')}
+          />
+          <Chip
+            icon={<PeopleIcon sx={{ color: '#00897B !important' }} />}
+            label={
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 0.5 }}>
+                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'rgba(0,0,0,0.6)' }}>
+                  Đang làm việc
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, color: '#00695C' }}>
+                  {todayAttendance}
+                </Typography>
+              </Box>
+            }
+            sx={{
+              height: 'auto',
+              py: 1,
+              px: 1.5,
+              backgroundColor: alpha(theme.palette.common.white, 0.95),
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            }}
+          />
         </Box>
 
         {/* Actions */}
@@ -228,9 +288,15 @@ export default function HRHeader({
           {/* Notifications */}
           <Tooltip title="Thông báo">
             <IconButton
-              color="inherit"
               onClick={handleOpenNotifications}
-              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+              sx={{
+                display: { xs: 'none', sm: 'inline-flex' },
+                color: 'white',
+                backgroundColor: alpha(theme.palette.common.white, 0.1),
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.common.white, 0.2),
+                },
+              }}
             >
               <Badge badgeContent={notificationCount} color="error">
                 <NotificationsIcon />
@@ -240,14 +306,26 @@ export default function HRHeader({
 
           {/* User Menu */}
           <Tooltip title="Tài khoản">
-            <IconButton onClick={handleOpenUserMenu} sx={{ p: 0.5 }}>
+            <IconButton
+              onClick={handleOpenUserMenu}
+              sx={{
+                p: 0.5,
+                backgroundColor: alpha(theme.palette.common.white, 0.1),
+                '&:hover': {
+                  backgroundColor: alpha(theme.palette.common.white, 0.2),
+                },
+              }}
+            >
               <Avatar
                 alt={user?.name || 'User'}
                 src={user?.avatar}
                 sx={{
-                  width: 36,
-                  height: 36,
-                  bgcolor: theme.palette.primary.main,
+                  width: 38,
+                  height: 38,
+                  bgcolor: '#00BCD4',
+                  fontWeight: 700,
+                  border: '2px solid white',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                 }}
               >
                 {user?.name?.charAt(0).toUpperCase() || 'U'}

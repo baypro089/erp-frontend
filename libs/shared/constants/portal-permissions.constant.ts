@@ -41,11 +41,11 @@ export const PORTAL_INFO: Record<string, PortalInfo> = {
   },
   [PORTAL_PERMISSIONS.SALE]: {
     permission: PORTAL_PERMISSIONS.SALE,
-    name: 'Sales Portal',
-    path: '/sales/dashboard',
+    name: 'Commercial Portal',
+    path: '/commercial/dashboards',
     description: 'Quản lý bán hàng',
     icon: 'ShoppingCart',
-    available: false, // Coming soon
+    available: true, // Coming soon
   },
   [PORTAL_PERMISSIONS.WAREHOUSE]: {
     permission: PORTAL_PERMISSIONS.WAREHOUSE,

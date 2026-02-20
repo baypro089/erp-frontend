@@ -21,7 +21,7 @@ interface EmployeeAvatarCardProps {
     status: Status;
   };
   onFormChange: (field: string, value: any) => void;
-  statusMap: Record<Status, 'active' | 'inactive' | 'pending' | 'rejected'>;
+  statusMap: Record<Status, 'active' | 'maternity' | 'pending' | 'probation' | 'resigned'>;
   getLevelColor: (level?: Level) => 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 }
 

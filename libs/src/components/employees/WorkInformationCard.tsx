@@ -21,7 +21,7 @@ interface WorkInformationCardProps {
   onFormChange: (field: string, value: any) => void;
   departments: DepartmentResponse[];
   positions: PositionResponse[];
-  statusMap: Record<Status, 'active' | 'inactive' | 'pending' | 'rejected'>;
+  statusMap: Record<Status, 'active' | 'maternity' | 'pending' | 'probation' | 'resigned'>;
 }
 
 export default function WorkInformationCard({

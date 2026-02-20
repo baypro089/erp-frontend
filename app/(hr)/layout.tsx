@@ -45,10 +45,10 @@ export default function HRLayout({
 
   return (
     <ClientOnly>
-      <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: theme.palette.background.default }}>
         {/* Header */}
         <HRHeader
-          title="Human Resources Dashboard"
+          title="Human Resources"
           showMenuButton={false}
           user={user}
           notificationCount={3}
@@ -66,7 +66,7 @@ export default function HRLayout({
           component="main"
           sx={{
             flexGrow: 1,
-            bgcolor: 'background.default',
+            bgcolor: theme.palette.background.default,
             minHeight: '100vh',
             display: 'flex',
             flexDirection: 'column',

@@ -10,6 +10,7 @@ import type {
 
 interface EmployeeState {
     employees: EmployeeTableResponse[];
+    allEmployees: EmployeeResponse[]; // For dropdowns or other components that need the full list
     deletedEmployees: EmployeeTableResponse[];
     deletedTotalCount: number;
     deletedTotalPages: number;
@@ -25,6 +26,7 @@ interface EmployeeState {
 
 const initialState: EmployeeState = {
     employees: [],
+    allEmployees: [],
     deletedEmployees: [],
     deletedTotalCount: 0,
     deletedTotalPages: 0,
@@ -39,16 +41,21 @@ const initialState: EmployeeState = {
 };
 
 // Async thunks
-export const fetchEmployees = createAsyncThunk(
-    'employee/fetchEmployees',
-    async (_params, { rejectWithValue }) => {
-        try {
-            const response = await employeeService.getEmployees();
-            return response;
-        } catch (error: any) {
-            return rejectWithValue(error.response?.data?.message || 'Failed to fetch employees');
-        }
+export const fetchEmployees = createAsyncThunk<
+  EmployeeResponse[],
+  { permissionPortal?: string } | void,
+  { rejectValue: string }
+>(
+  'employee/fetchEmployees',
+  async (params, { rejectWithValue }) => {
+    try {
+      const permissionPortal = (params as { permissionPortal?: string } | undefined)?.permissionPortal;
+      const response = await employeeService.getEmployees(permissionPortal);
+      return response;
+    } catch (e: any) {
+      return rejectWithValue(e.response?.data?.message || 'Failed to fetch employees');
     }
+  }
 );
 
 export const fetchEmployeesWithOptional = createAsyncThunk(
@@ -196,6 +203,7 @@ const employeeSlice = createSlice({
             .addCase(fetchEmployees.fulfilled, (state, action) => {
                 state.loading = false;
                 state.employees = action.payload;
+                state.allEmployees = action.payload;
             })
             .addCase(fetchEmployees.rejected, (state, action) => {
                 state.loading = false;

@@ -1,5 +1,5 @@
 'use client';
 
-import AdminProfilePage from '@libs/src/pages/admin/profile/index-admin';
+import HRProfilePage from '@libs/src/pages/admin/profile/index-hr';
 
-export default AdminProfilePage;
+export default HRProfilePage;

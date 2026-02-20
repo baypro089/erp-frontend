@@ -20,11 +20,18 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { useRouter } from 'next/navigation';
 import { PORTAL_INFO, PORTAL_PERMISSION_VALUES } from '@libs/shared/constants/portal-permissions.constant';
 import { fetchRoleByCode } from "@libs/src/features/role/role.slice";
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import ChangePasswordDialog from '@libs/src/components/profile/ChangePasswordDialog';
 
 export default function LoginPage() {
     const dispatch = useDispatch<AppDispatch>();
     const { loading, error } = useSelector((s: RootState) => s.auth);
     const router = useRouter();
+    const [showPassword, setShowPassword] = React.useState(false);
+    const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault(); // ❗ không reload page
@@ -107,14 +114,22 @@ export default function LoginPage() {
                     fullWidth
                     name="password"
                     label="Mật khẩu"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     id="password"
                     autoComplete="current-password"
-                />
-
-                <FormControlLabel
-                    control={<Checkbox value="remember" color="primary" />}
-                    label="Ghi nhớ đăng nhập"
+                    InputProps={{
+                        endAdornment: (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    edge="end"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
                 />
 
                 {error && (
@@ -135,12 +150,25 @@ export default function LoginPage() {
 
                 <Grid container justifyContent="flex-end">
                     <Grid>
-                        <Link href="#" variant="body2">
+                        <Link 
+                            href="#" 
+                            variant="body2"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setForgotPasswordOpen(true);
+                            }}
+                            sx={{ cursor: 'pointer' }}
+                        >
                             Quên mật khẩu?
                         </Link>
                     </Grid>
                 </Grid>
             </Box>
+
+            <ChangePasswordDialog
+                open={forgotPasswordOpen}
+                onClose={() => setForgotPasswordOpen(false)}
+            />
         </Box>
     );
 }

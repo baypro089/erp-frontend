@@ -29,13 +29,13 @@ import { authService } from '@libs/src/features/auth/auth.service';
 interface ChangePasswordDialogProps {
   open: boolean;
   onClose: () => void;
-  userEmail: string;
+  userEmail?: string; // Make optional for forgot password flow
 }
 
 export default function ChangePasswordDialog({
   open,
   onClose,
-  userEmail,
+  userEmail: initialEmail,
 }: ChangePasswordDialogProps) {
   const [step, setStep] = useState<'request' | 'verify'>('request');
   const [loading, setLoading] = useState(false);
@@ -43,6 +43,7 @@ export default function ChangePasswordDialog({
   const [success, setSuccess] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
+    email: initialEmail || '',
     otp: '',
     newPassword: '',
     confirmPassword: '',
@@ -52,10 +53,15 @@ export default function ChangePasswordDialog({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleRequestOTP = async () => {
+    if (!formData.email) {
+      setError('Please enter your email address');
+      return;
+    }
+    
     setLoading(true);
     setError(null);
     try {
-      const result = await authService.forgotPassword(userEmail);
+      const result = await authService.forgotPassword(formData.email);
       setSuccess(result.message || 'OTP sent to your email successfully');
       setStep('verify');
     } catch (err: any) {
@@ -86,7 +92,7 @@ export default function ChangePasswordDialog({
     setError(null);
     try {
       const result = await authService.resetPassword(
-        userEmail,
+        formData.email,
         formData.otp,
         formData.newPassword
       );
@@ -105,7 +111,7 @@ export default function ChangePasswordDialog({
 
   const handleClose = () => {
     setStep('request');
-    setFormData({ otp: '', newPassword: '', confirmPassword: '' });
+    setFormData({ email: initialEmail || '', otp: '', newPassword: '', confirmPassword: '' });
     setError(null);
     setSuccess(null);
     setShowPassword(false);
@@ -139,12 +145,15 @@ export default function ChangePasswordDialog({
           )}
 
           <Stack spacing={3}>
-            {/* Email Display */}
+            {/* Email Input/Display */}
             <TextField
               label="Email"
-              value={userEmail}
-              disabled
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              disabled={!!initialEmail || step === 'verify'}
+              required
               fullWidth
+              type="email"
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -263,6 +272,7 @@ export default function ChangePasswordDialog({
                 setStep('request');
                 setFormData({ ...formData, otp: '', newPassword: '', confirmPassword: '' });
                 setError(null);
+                setSuccess(null);
               }}
               disabled={loading}
             >

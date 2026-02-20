@@ -26,10 +26,14 @@ import {
   EventNote as EventNoteIcon,
   Event as EventIcon,
   Settings as SettingsIcon,
+  AttachMoney as AttachMoneyIcon,
   ExpandLess,
   ExpandMore,
   ChevronLeft,
   ChevronRight,
+  InventoryOutlined as ProductIcon,
+  CategoryOutlined as CategoryIcon,
+  BrandingWatermarkOutlined as BrandIcon,
 } from '@mui/icons-material';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -86,7 +90,37 @@ const menuItems: MenuItem[] = [
     id: 'leaves',
     label: 'My Leaves',
     icon: <EventNoteIcon />,
-    path: '/admin/leaves',
+    path: '/admin/my-leaves',
+  },
+  {
+    id: 'resignations',
+    label: 'My Resignations',
+    icon: <EventNoteIcon />,
+    path: '/admin/my-resignations',
+  },
+  {
+    id: 'payslips',
+    label: 'My Payslips',
+    icon: <AttachMoneyIcon />,
+    path: '/admin/my-payslips',
+  },
+  {
+    id: 'categories',
+    label: 'Categories',
+    icon: <CategoryIcon />,
+    path: '/admin/categories',
+  },
+  {
+    id: 'brands',
+    label: 'Brands',
+    icon: <BrandIcon />,
+    path: '/admin/brands',
+  },
+  {
+    id: 'products',
+    label: 'Products',
+    icon: <ProductIcon />,
+    path: '/admin/products',
   },
   {
     id: 'settings',

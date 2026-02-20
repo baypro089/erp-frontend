@@ -11,8 +11,8 @@ class EmployeeService {
   private readonly BASE_URL = '/employees';
 
   // Get all employees
-  async getEmployees(): Promise<EmployeeTableResponse[]> {
-    const response = await api.get<any>(this.BASE_URL);
+  async getEmployees(permissionPortal?: string): Promise<EmployeeResponse[]> {
+    const response = await api.get<any>(this.BASE_URL + (permissionPortal ? `?permissionPortal=${permissionPortal}` : ``));
     return response.data.data;
   }
 

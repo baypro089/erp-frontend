@@ -171,6 +171,7 @@ export default function LeaveApprovalsPage() {
           [LeaveRequestType.ANNUAL]: 'Phép năm',
           [LeaveRequestType.SICK]: 'Nghỉ ốm',
           [LeaveRequestType.UNPAID]: 'Không lương',
+          [LeaveRequestType.MATERNITY]: 'Nghỉ thai sản',
           [LeaveRequestType.OTHER]: 'Khác',
         };
         return (

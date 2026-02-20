@@ -14,6 +14,8 @@ import {
     Divider,
     useTheme,
     useMediaQuery,
+    alpha,
+    Chip,
 } from '@mui/material';
 import {
     Dashboard as DashboardIcon,
@@ -40,6 +42,8 @@ export interface MenuItem {
     label: string;
     icon: React.ReactNode;
     path?: string;
+    badge?: number;
+    badgeColor?: 'primary' | 'secondary' | 'error' | 'warning' | 'info' | 'success';
     children?: MenuItem[];
 }
 
@@ -57,11 +61,11 @@ const menuItems: MenuItem[] = [
         id: 'dashboards',
         label: 'Dashboard',
         icon: <DashboardIcon />,
-        path: '/hr/dashboards',
+        path: '/hr',
     },
     {
         id: 'employees',
-        label: 'Employees Management',
+        label: 'Employees',
         icon: <PeopleIcon />,
         path: '/hr/employees',
     },
@@ -69,13 +73,15 @@ const menuItems: MenuItem[] = [
         id: 'my-leaves',
         label: 'My Leaves',
         icon: <EventNoteIcon />,
-        path: '/hr/leaves',
+        path: '/hr/my-leaves',
     },
     {
         id: 'leave-approvals',
         label: 'Leave Approvals',
         icon: <CheckCircleIcon />,
         path: '/hr/leave-approvals',
+        badge: 5,
+        badgeColor: 'warning',
     },
     {
         id: 'my-resignation',
@@ -85,9 +91,11 @@ const menuItems: MenuItem[] = [
     },
     {
         id: 'resignation-management',
-        label: 'Resignation Management',
+        label: 'Resignations',
         icon: <AssignmentTurnedInIcon />,
         path: '/hr/resignations',
+        badge: 2,
+        badgeColor: 'info',
     },
     {
         id: 'payroll-list',
@@ -103,7 +111,7 @@ const menuItems: MenuItem[] = [
     },
     {
         id: 'reports',
-        label: 'Reports & Statistics',
+        label: 'Reports & Analytics',
         icon: <AssessmentIcon />,
         path: '/hr/reports',
     },
@@ -164,24 +172,30 @@ export default function HRSidebar({
                     sx={{
                         pl: 2 + level * 2,
                         py: 1.5,
+                        mb: 0.5,
+                        mx: 1,
+                        borderRadius: 2,
                         backgroundColor: active
-                            ? theme.palette.primary.main + '20'
+                            ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
                             : 'transparent',
+                        color: active ? 'white' : 'inherit',
                         borderLeft: active
-                            ? `3px solid ${theme.palette.primary.main}`
-                            : '3px solid transparent',
+                            ? `4px solid #00BCD4`
+                            : '4px solid transparent',
                         '&:hover': {
                             backgroundColor: active
-                                ? theme.palette.primary.main + '30'
-                                : theme.palette.action.hover,
+                                ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
+                                : alpha(theme.palette.primary.main, 0.08),
+                            transform: 'translateX(4px)',
                         },
-                        transition: 'all 0.2s',
+                        transition: 'all 0.2s ease-in-out',
+                        boxShadow: active ? '0 4px 12px rgba(13, 71, 161, 0.2)' : 'none',
                     }}
                 >
                     <ListItemIcon
                         sx={{
                             minWidth: 40,
-                            color: active ? theme.palette.primary.main : 'inherit',
+                            color: active ? 'white' : theme.palette.primary.main,
                             justifyContent: 'center',
                         }}
                     >
@@ -191,10 +205,22 @@ export default function HRSidebar({
                         primary={item.label}
                         primaryTypographyProps={{
                             fontSize: '0.9rem',
-                            fontWeight: active ? 600 : 400,
-                            color: active ? theme.palette.primary.main : 'inherit',
+                            fontWeight: active ? 700 : 500,
                         }}
                     />
+                    {item.badge !== undefined && item.badge > 0 && (
+                        <Chip
+                            label={item.badge}
+                            size="small"
+                            color={item.badgeColor || 'primary'}
+                            sx={{
+                                height: 20,
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                minWidth: 20,
+                            }}
+                        />
+                    )}
                     {hasChildren && (expanded ? <ExpandLess /> : <ExpandMore />)}
                 </ListItemButton>
                 {hasChildren && (
@@ -214,9 +240,59 @@ export default function HRSidebar({
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
-                backgroundColor: theme.palette.background.paper,
+                background: `linear-gradient(180deg, ${alpha(theme.palette.primary.main, 0.03)} 0%, ${theme.palette.background.paper} 100%)`,
             }}
         >
+            {/* HR Branded Header */}
+            <Box
+                sx={{
+                    p: 2.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 1,
+                    background: `linear-gradient(135deg, #0D47A1 0%, #1976D2 50%, #0288D1 100%)`,
+                    borderBottom: `3px solid #00BCD4`,
+                }}
+            >
+                <Box
+                    sx={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: 3,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: alpha(theme.palette.common.white, 0.2),
+                        backdropFilter: 'blur(10px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                    }}
+                >
+                    <PeopleIcon sx={{ fontSize: 40, color: '#00BCD4' }} />
+                </Box>
+                <Typography
+                    variant="h6"
+                    sx={{
+                        fontWeight: 800,
+                        color: 'white',
+                        textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                        letterSpacing: 1,
+                    }}
+                >
+                    HR PORTAL
+                </Typography>
+                <Chip
+                    label="People First"
+                    size="small"
+                    sx={{
+                        backgroundColor: '#00BCD4',
+                        color: 'white',
+                        fontWeight: 700,
+                        fontSize: '0.7rem',
+                    }}
+                />
+            </Box>
 
             <Divider />
 
@@ -228,9 +304,17 @@ export default function HRSidebar({
             </Box>
 
             <Divider />
-            <Box sx={{ p: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                    © 2026 ERP System - HR Module
+            <Box
+                sx={{
+                    p: 2,
+                    background: alpha(theme.palette.primary.main, 0.05),
+                }}
+            >
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                    © 2026 ERP System
+                </Typography>
+                <Typography variant="caption" display="block" color="text.secondary">
+                    Human Resources
                 </Typography>
             </Box>
         </Box>

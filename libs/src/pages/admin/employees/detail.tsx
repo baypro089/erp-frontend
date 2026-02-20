@@ -145,11 +145,12 @@ export default function EmployeeDetailPage() {
     );
   }
 
-  const statusMap: Record<Status, 'active' | 'inactive' | 'pending' | 'rejected'> = {
+  const statusMap: Record<Status, 'active' | 'maternity' | 'pending' | 'probation' | 'resigned'> = {
     [Status.ACTIVE]: 'active',
-    [Status.INACTIVE]: 'inactive',
+    [Status.MATERNITY_LEAVE]: 'maternity',
     [Status.DRAFT]: 'pending',
-    [Status.TERMINATED]: 'rejected',
+    [Status.PROBATION]: 'probation',
+    [Status.RESIGNED]: 'resigned',
   };
 
   const getLevelColor = (level?: Level) => {
