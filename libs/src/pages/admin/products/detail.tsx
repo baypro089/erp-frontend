@@ -6,8 +6,6 @@ import { useRouter } from 'next/navigation';
 import type { AppDispatch, RootState } from '@libs/src/store';
 import {
   Box,
-  Tabs,
-  Tab,
   Paper,
   Alert,
   Snackbar,
@@ -15,33 +13,16 @@ import {
 } from '@mui/material';
 import {
   Inventory as ProductIcon,
-  Info as InfoIcon,
-  QrCode as SerialIcon,
   Edit as EditIcon,
   ArrowBack as ArrowBackIcon,
 } from '@mui/icons-material';
 import { PageHeader, LoadingOverlay } from '@libs/src/components/common';
 import ProductForm from '@libs/src/components/products/ProductForm';
-import SerialLookup from '@libs/src/components/products/SerialLookup';
 import {
   fetchProductById,
   clearError,
   clearCurrentProduct,
 } from '@libs/src/features/product/product.slice';
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel({ children, value, index }: TabPanelProps) {
-  return (
-    <div role="tabpanel" hidden={value !== index}>
-      {value === index && <Box>{children}</Box>}
-    </div>
-  );
-}
 
 interface ProductDetailPageProps {
   productId: string;
@@ -54,7 +35,6 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     (state: RootState) => state.product
   );
 
-  const [activeTab, setActiveTab] = useState(0);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -83,10 +63,6 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
       dispatch(clearError());
     }
   }, [error, operationError, dispatch]);
-
-  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-  };
 
   const handleEdit = () => {
     router.push(`/admin/products/${productId}/edit`);
@@ -149,52 +125,16 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         ]}
       />
 
-      {/* Tabs */}
-      <Paper sx={{ mt: 3 }}>
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
-          indicatorColor="primary"
-          textColor="primary"
-          sx={{
-            borderBottom: 1,
-            borderColor: 'divider',
-            px: 2,
-          }}
-        >
-          <Tab
-            icon={<InfoIcon />}
-            iconPosition="start"
-            label="Thông tin sản phẩm"
-            sx={{ minHeight: 60, textTransform: 'none', fontWeight: 600 }}
+      {/* Product Form */}
+      <Paper sx={{ mt: 3, p: 3 }}>
+        {currentProduct && (
+          <ProductForm
+            selectedProduct={currentProduct}
+            onSubmit={async () => {}}
+            loading={false}
+            readOnly
           />
-          <Tab
-            icon={<SerialIcon />}
-            iconPosition="start"
-            label="Tra cứu Serial/IMEI"
-            sx={{ minHeight: 60, textTransform: 'none', fontWeight: 600 }}
-          />
-        </Tabs>
-
-        {/* Tab Panels */}
-        <TabPanel value={activeTab} index={0}>
-          <Box sx={{ p: 3 }}>
-            {currentProduct && (
-              <Box>
-                <ProductForm
-                  selectedProduct={currentProduct}
-                  onSubmit={async () => {}}
-                  loading={false}
-                  readOnly
-                />
-              </Box>
-            )}
-          </Box>
-        </TabPanel>
-
-        <TabPanel value={activeTab} index={1}>
-          <SerialLookup />
-        </TabPanel>
+        )}
       </Paper>
 
       {/* Snackbar */}
