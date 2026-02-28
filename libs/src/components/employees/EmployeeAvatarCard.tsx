@@ -1,16 +1,20 @@
 'use client';
 
-import { Box, Card, CardContent, Typography, Chip, Avatar, Divider, TextField } from '@mui/material';
+import { useState, useEffect } from 'react';
+import { Box, Card, CardContent, Typography, Chip, Avatar, Divider, TextField, Button, IconButton, Badge } from '@mui/material';
 import {
   Person as PersonIcon,
   AccountCircle as AccountCircleIcon,
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
+  CloudUpload as CloudUploadIcon,
+  PhotoCamera as PhotoCameraIcon,
 } from '@mui/icons-material';
 import { StatusChip } from '@libs/src/components/common';
 import { Status } from '@libs/shared/enums/employee-status.enum';
 import { Level } from '@libs/shared/enums/level.enum';
 import type { EmployeeResponse } from '@libs/shared/types/employees.type';
+import type { AttachmentResponse } from '@libs/shared/types/attachment.type';
 
 interface EmployeeAvatarCardProps {
   employee: EmployeeResponse;
@@ -21,8 +25,10 @@ interface EmployeeAvatarCardProps {
     status: Status;
   };
   onFormChange: (field: string, value: any) => void;
+  onPhotoUpload?: (file: File) => Promise<void>;
   statusMap: Record<Status, 'active' | 'maternity' | 'pending' | 'probation' | 'resigned'>;
   getLevelColor: (level?: Level) => 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  photoAttachment?: AttachmentResponse | null;
 }
 
 export default function EmployeeAvatarCard({
@@ -30,19 +36,102 @@ export default function EmployeeAvatarCard({
   isEditing,
   formData,
   onFormChange,
+  onPhotoUpload,
   statusMap,
   getLevelColor,
+  photoAttachment,
 }: EmployeeAvatarCardProps) {
+  const [photoPreview, setPhotoPreview] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    // Priority: photoAttachment.publicUrl > employee.photoUrl
+    if (photoAttachment?.publicUrl) {
+      setPhotoPreview(photoAttachment.publicUrl);
+    } else if (employee.photoUrl) {
+      setPhotoPreview(employee.photoUrl);
+    }
+  }, [photoAttachment?.publicUrl, employee.photoUrl]);
+
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onPhotoUpload) {
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload
+      setUploading(true);
+      try {
+        await onPhotoUpload(file);
+      } catch (error) {
+        console.error('Failed to upload photo:', error);
+        // Restore original photo on error
+        setPhotoPreview(employee.photoUrl || '');
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+
   return (
     <Card>
       <CardContent>
         <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
-          <Avatar
-            src={employee.photoUrl}
-            sx={{ width: 120, height: 120, bgcolor: 'primary.main' }}
-          >
-            <PersonIcon sx={{ fontSize: 60 }} />
-          </Avatar>
+          <Box position="relative">
+            <Avatar
+              src={photoPreview || employee.photoUrl}
+              sx={{ width: 120, height: 120, bgcolor: 'primary.main' }}
+            >
+              <PersonIcon sx={{ fontSize: 60 }} />
+            </Avatar>
+            {isEditing && onPhotoUpload && (
+              <IconButton
+                component="label"
+                sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  bgcolor: 'primary.main',
+                  color: 'white',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
+                  boxShadow: 2,
+                }}
+                disabled={uploading}
+              >
+                <PhotoCameraIcon fontSize="small" />
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handlePhotoChange}
+                />
+              </IconButton>
+            )}
+          </Box>
+
+          {isEditing && onPhotoUpload && (
+            <Button
+              component="label"
+              variant="outlined"
+              startIcon={<CloudUploadIcon />}
+              size="small"
+              disabled={uploading}
+            >
+              {uploading ? 'Uploading...' : 'Change Photo'}
+              <input
+                type="file"
+                hidden
+                accept="image/*"
+                onChange={handlePhotoChange}
+              />
+            </Button>
+          )}
 
           {isEditing ? (
             <TextField

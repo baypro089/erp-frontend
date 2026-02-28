@@ -143,6 +143,30 @@ export const deleteEmployees = createAsyncThunk(
     }
 );
 
+export const updateEmployeePhoto = createAsyncThunk(
+    'employee/updateEmployeePhoto',
+    async ({ id, photo }: { id: string; photo: File }, { rejectWithValue }) => {
+        try {
+            const response = await employeeService.updateEmployeePhoto(id, photo);
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to update employee photo');
+        }
+    }
+);
+
+export const updateEmployeeCV = createAsyncThunk(
+    'employee/updateEmployeeCV',
+    async ({ id, cv }: { id: string; cv: File }, { rejectWithValue }) => {
+        try {
+            const response = await employeeService.updateEmployeeCV(id, cv);
+            return response;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to update employee CV');
+        }
+    }
+);
+
 export const fetchDeletedEmployees = createAsyncThunk(
     'employee/fetchDeletedEmployees',
     async (
@@ -281,6 +305,36 @@ const employeeSlice = createSlice({
                 state.employees = state.employees.filter((e) => !action.payload.includes(e.id));
             })
             .addCase(deleteEmployees.rejected, (state, action) => {
+                state.operationLoading = false;
+                state.operationError = action.payload as string;
+            });
+
+        // Update employee photo
+        builder
+            .addCase(updateEmployeePhoto.pending, (state) => {
+                state.operationLoading = true;
+                state.operationError = null;
+            })
+            .addCase(updateEmployeePhoto.fulfilled, (state, action) => {
+                state.operationLoading = false;
+                state.currentEmployee = action.payload;
+            })
+            .addCase(updateEmployeePhoto.rejected, (state, action) => {
+                state.operationLoading = false;
+                state.operationError = action.payload as string;
+            });
+
+        // Update employee CV
+        builder
+            .addCase(updateEmployeeCV.pending, (state) => {
+                state.operationLoading = true;
+                state.operationError = null;
+            })
+            .addCase(updateEmployeeCV.fulfilled, (state, action) => {
+                state.operationLoading = false;
+                state.currentEmployee = action.payload;
+            })
+            .addCase(updateEmployeeCV.rejected, (state, action) => {
                 state.operationLoading = false;
                 state.operationError = action.payload as string;
             });

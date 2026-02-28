@@ -150,8 +150,8 @@ const customerSlice = createSlice({
           rewardPoints: 0,
           note: '',
           isActive: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         }));
       })
       .addCase(fetchCustomers.rejected, (state, action) => {

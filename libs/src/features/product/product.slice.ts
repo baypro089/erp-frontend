@@ -76,9 +76,9 @@ export const fetchProductById = createAsyncThunk(
 
 export const createProduct = createAsyncThunk(
   'product/createProduct',
-  async (data: CreateProductDto, { rejectWithValue }) => {
+  async ({ data, thumbnail }: { data: CreateProductDto; thumbnail?: File }, { rejectWithValue }) => {
     try {
-      const response = await productService.createProduct(data);
+      const response = await productService.createProduct(data, thumbnail);
       return response;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create product');
@@ -88,9 +88,9 @@ export const createProduct = createAsyncThunk(
 
 export const updateProduct = createAsyncThunk(
   'product/updateProduct',
-  async ({ id, data }: { id: string; data: UpdateProductDto }, { rejectWithValue }) => {
+  async ({ id, data, thumbnail }: { id: string; data: UpdateProductDto; thumbnail?: File }, { rejectWithValue }) => {
     try {
-      const response = await productService.updateProduct(id, data);
+      const response = await productService.updateProduct(id, data, thumbnail);
       return response;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update product');

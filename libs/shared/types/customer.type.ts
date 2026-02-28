@@ -12,8 +12,8 @@ export type CustomerResponse = {
   rewardPoints: number;
   note?: string;
   isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type CustomerTableResponse = {

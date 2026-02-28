@@ -6,6 +6,7 @@ import type {
   UpdateEmployeeDto,
   PagedAndFilteredEmployee,
 } from '@libs/shared/types/employees.type';
+import type { AttachmentResponse } from '@libs/shared/types/attachment.type';
 
 class EmployeeService {
   private readonly BASE_URL = '/employees';
@@ -95,6 +96,52 @@ class EmployeeService {
   // Delete employees
   async deleteEmployees(ids: string[]): Promise<void> {
     await api.delete(`${this.BASE_URL}/delete`, { data: ids });
+  }
+
+  // Upload or update employee photo
+  async updateEmployeePhoto(id: string, photo: File): Promise<EmployeeResponse> {
+    const formData = new FormData();
+    formData.append('photo', photo);
+    
+    const response = await api.put<any>(`${this.BASE_URL}/${id}/photo`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.data;
+  }
+
+  // Upload or update employee CV
+  async updateEmployeeCV(id: string, cv: File): Promise<EmployeeResponse> {
+    const formData = new FormData();
+    formData.append('cv', cv);
+    
+    const response = await api.put<any>(`${this.BASE_URL}/${id}/cv`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data.data;
+  }
+
+  // Get employee photo
+  async getEmployeePhoto(id: string): Promise<AttachmentResponse | null> {
+    try {
+      const response = await api.get<any>(`${this.BASE_URL}/${id}/photo`);
+      return response.data.data;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  // Get employee CV
+  async getEmployeeCV(id: string): Promise<AttachmentResponse | null> {
+    try {
+      const response = await api.get<any>(`${this.BASE_URL}/${id}/cv`);
+      return response.data.data;
+    } catch (error) {
+      return null;
+    }
   }
 }
 

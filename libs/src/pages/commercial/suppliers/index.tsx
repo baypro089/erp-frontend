@@ -287,7 +287,7 @@ export default function SuppliersPage() {
         title="Quản lý Nhà Cung Cấp"
         subtitle="Quản lý thông tin nhà cung cấp và đối tác"
         breadcrumbs={[
-          { label: 'Commercial', href: '/commercial' },
+          { label: 'Commercial', href: '/commercial/dashboards' },
           { label: 'Nhà cung cấp', icon: <SupplierIcon fontSize="small" /> },
         ]}
         actions={[

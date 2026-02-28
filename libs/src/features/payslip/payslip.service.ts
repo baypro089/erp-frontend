@@ -36,7 +36,6 @@ class PayslipService {
 
   // Get my payslips (for employee)
   async getMyPayslips(
-    employeeId: string,
     month?: number,
     year?: number,
     page?: number,
@@ -48,7 +47,17 @@ class PayslipService {
     if (page) params.page = page;
     if (pageSize) params.pageSize = pageSize;
 
-    const response = await api.get<any>(`${this.BASE_URL}/my-payslips/${employeeId}`, { params });
+    const response = await api.get<any>(`${this.BASE_URL}/my-payslips`, { params });
+    return response.data.data;
+  }
+
+  // Get yearly payslips (for employee)
+  async getYearlyPayslips(
+    year: number
+  ): Promise<{ details: PayslipResponse[], totalSalary: number, totalBaseSalary: number }> {
+    const response = await api.get<any>(`${this.BASE_URL}/my-payslips/yearly`, { 
+      params: { year } 
+    });
     return response.data.data;
   }
 

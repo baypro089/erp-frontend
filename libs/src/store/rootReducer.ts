@@ -21,6 +21,9 @@ import supplierReducer from '../features/supplier/supplier.slice';
 import importReceiptReducer from '../features/import-receipt/import-receipt.slice';
 import customerReducer from '../features/customer/customer.slice';
 import orderReducer from '../features/order/order.slice';
+import returnRequestReducer from '../features/return-request/return-request.slice';
+import warehouseReportReducer from '../features/warehouse-report/warehouse-report.slice';
+import hrReportReducer from '../features/hr-report/hr-report.slice';
 
 // Import your reducers here
 const rootReducer = combineReducers({
@@ -46,6 +49,9 @@ const rootReducer = combineReducers({
     importReceipt: importReceiptReducer,
     customer: customerReducer,
     order: orderReducer,
+    returnRequest: returnRequestReducer,
+    warehouseReport: warehouseReportReducer,
+    hrReport: hrReportReducer,
 });
 
 export default rootReducer;

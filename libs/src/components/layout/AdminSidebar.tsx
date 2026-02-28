@@ -14,6 +14,8 @@ import {
   Divider,
   useTheme,
   useMediaQuery,
+  alpha,
+  Chip,
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -34,6 +36,7 @@ import {
   InventoryOutlined as ProductIcon,
   CategoryOutlined as CategoryIcon,
   BrandingWatermarkOutlined as BrandIcon,
+  AdminPanelSettings as AdminIcon,
 } from '@mui/icons-material';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -56,6 +59,12 @@ const DRAWER_WIDTH = 280;
 const COLLAPSED_WIDTH = 64;
 
 const menuItems: MenuItem[] = [
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: <DashboardIcon />,
+    path: '/admin/dashboard',
+  },
   {
     id: 'departments',
     label: 'Departments',
@@ -85,24 +94,6 @@ const menuItems: MenuItem[] = [
     label: 'Holidays',
     icon: <EventIcon />,
     path: '/admin/holidays',
-  },
-  {
-    id: 'leaves',
-    label: 'My Leaves',
-    icon: <EventNoteIcon />,
-    path: '/admin/my-leaves',
-  },
-  {
-    id: 'resignations',
-    label: 'My Resignations',
-    icon: <EventNoteIcon />,
-    path: '/admin/my-resignations',
-  },
-  {
-    id: 'payslips',
-    label: 'My Payslips',
-    icon: <AttachMoneyIcon />,
-    path: '/admin/my-payslips',
   },
   {
     id: 'categories',
@@ -193,24 +184,27 @@ export default function AdminSidebar({
           sx={{
             pl: 2 + level * 2,
             py: 1.5,
-            backgroundColor: active
-              ? theme.palette.primary.main + '20'
+            mb: 0.5,
+            mx: 1,
+            borderRadius: 2,
+            background: active
+              ? `linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)`
               : 'transparent',
-            borderLeft: active
-              ? `3px solid ${theme.palette.primary.main}`
-              : '3px solid transparent',
+            color: active ? 'white' : 'inherit',
+            borderLeft: active ? `4px solid #ff6b6b` : '4px solid transparent',
             '&:hover': {
-              backgroundColor: active
-                ? theme.palette.primary.main + '30'
-                : theme.palette.action.hover,
+              background: active
+                ? `linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)`
+                : alpha(theme.palette.primary.main, 0.08),
+              transform: 'translateX(4px)',
             },
-            transition: 'all 0.2s',
+            transition: 'all 0.2s ease',
           }}
         >
           <ListItemIcon
             sx={{
               minWidth: collapsed ? 0 : 40,
-              color: active ? theme.palette.primary.main : 'inherit',
+              color: active ? 'white' : 'inherit',
               justifyContent: 'center',
             }}
           >
@@ -222,8 +216,8 @@ export default function AdminSidebar({
                 primary={item.label}
                 primaryTypographyProps={{
                   fontSize: '0.9rem',
-                  fontWeight: active ? 600 : 400,
-                  color: active ? theme.palette.primary.main : 'inherit',
+                  fontWeight: active ? 700 : 500,
+                  color: active ? 'white' : 'inherit',
                 }}
               />
               {hasChildren && (expanded ? <ExpandLess /> : <ExpandMore />)}
@@ -247,39 +241,76 @@ export default function AdminSidebar({
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        backgroundColor: theme.palette.background.paper,
+        background: `linear-gradient(180deg, ${alpha('#6a11cb', 0.03)} 0%, ${theme.palette.background.paper} 100%)`,
       }}
     >
       {/* Logo Section */}
       <Box
         sx={{
-          p: collapsed ? 1 : 2,
+          p: collapsed ? 1.5 : 2.5,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'space-between',
-          minHeight: 64,
+          justifyContent: 'center',
+          gap: collapsed ? 0 : 1,
+          background: `linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)`,
+          borderBottom: `3px solid #ff6b6b`,
+          minHeight: collapsed ? 64 : 'auto',
         }}
       >
-        {!collapsed && (
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 700,
-              background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            ERP System
-          </Typography>
+        {!collapsed ? (
+          <>
+            <Box
+              sx={{
+                width: 60,
+                height: 60,
+                borderRadius: 3,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: alpha(theme.palette.common.white, 0.15),
+                backdropFilter: 'blur(10px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+              }}
+            >
+              <AdminIcon sx={{ fontSize: 36, color: '#ff6b6b' }} />
+            </Box>
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 800,
+                color: 'white',
+                textShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                letterSpacing: 0.5,
+              }}
+            >
+              ADMIN PANEL
+            </Typography>
+            <Chip
+              label="Control System"
+              size="small"
+              sx={{
+                backgroundColor: '#ff6b6b',
+                color: 'white',
+                fontWeight: 700,
+                fontSize: '0.7rem',
+              }}
+            />
+          </>
+        ) : (
+          <AdminIcon sx={{ fontSize: 32, color: '#ff6b6b' }} />
         )}
         {collapsible && !isMobile && (
           <IconButton
             onClick={handleToggleCollapse}
             size="small"
             sx={{
-              color: theme.palette.text.secondary,
+              color: 'white',
+              mt: collapsed ? 0 : 1,
+              backgroundColor: alpha(theme.palette.common.white, 0.15),
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.common.white, 0.25),
+              },
             }}
           >
             {collapsed ? <ChevronRight /> : <ChevronLeft />}
@@ -290,8 +321,8 @@ export default function AdminSidebar({
       <Divider />
 
       {/* Menu Items */}
-      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-        <List sx={{ pt: 2 }}>
+      <Box sx={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', pt: 2 }}>
+        <List sx={{ px: 0 }}>
           {menuItems.map((item) => renderMenuItem(item))}
         </List>
       </Box>
@@ -300,9 +331,17 @@ export default function AdminSidebar({
       {!collapsed && (
         <>
           <Divider />
-          <Box sx={{ p: 2 }}>
-            <Typography variant="caption" color="text.secondary">
+          <Box
+            sx={{
+              p: 2,
+              background: alpha('#6a11cb', 0.05),
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
               © 2026 ERP System
+            </Typography>
+            <Typography variant="caption" display="block" color="text.secondary">
+              Admin Module
             </Typography>
           </Box>
         </>

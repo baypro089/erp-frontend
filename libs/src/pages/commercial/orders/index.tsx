@@ -9,26 +9,13 @@ import {
   Typography,
   Alert,
   Snackbar,
-  Chip,
-  IconButton,
-  Tooltip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Button,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
 } from '@mui/material';
 import {
   ShoppingCart as CartIcon,
   Add as AddIcon,
   Refresh as RefreshIcon,
   Visibility as ViewIcon,
-  LocalShipping as ShippingIcon,
-  Cancel as CancelIcon,
   Edit as EditIcon,
 } from '@mui/icons-material';
 import {
@@ -58,9 +45,7 @@ export default function OrdersPage() {
   const { warehouses } = useSelector((state: RootState) => state.warehouse);
 
   // Dialog states
-  const [openDetail, setOpenDetail] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
-  const [openCancel, setOpenCancel] = useState(false);
   const [openUpdateStatus, setOpenUpdateStatus] = useState(false);
 
   // Filter states
@@ -125,56 +110,11 @@ export default function OrdersPage() {
     });
   };
 
-  const handleView = async (row: OrderTableReponse) => {
-    try {
-      // Fetch full order details
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/orders/${row.id}`, {
-        credentials: 'include',
-      });
-      const result = await response.json();
-      
-      if (result.data) {
-        setSelectedOrder(result.data);
-        setOpenDetail(true);
-      } else {
-        setSnackbar({
-          open: true,
-          message: 'Không thể tải chi tiết đơn hàng',
-          severity: 'error',
-        });
-      }
-    } catch (error) {
-      setSnackbar({
-        open: true,
-        message: 'Lỗi khi tải chi tiết đơn hàng',
-        severity: 'error',
-      });
-    }
+  const handleView = (row: OrderTableReponse) => {
+    router.push(`/commercial/orders/${row.id}`);
   };
 
-  const handleCancelOrder = async () => {
-    if (!selectedOrder) return;
 
-    try {
-      await dispatch(
-        updateOrderStatus({
-          orderId: selectedOrder.id,
-          status: OrderStatus.CANCELLED,
-        })
-      ).unwrap();
-
-      setSnackbar({
-        open: true,
-        message: 'Hủy đơn hàng thành công',
-        severity: 'success',
-      });
-      setOpenCancel(false);
-      setOpenDetail(false);
-      loadOrders();
-    } catch (error) {
-      // Error handled by useEffect
-    }
-  };
 
   const handleSearch = () => {
     setPage(0);
@@ -226,7 +166,6 @@ export default function OrdersPage() {
         severity: 'success',
       });
       setOpenUpdateStatus(false);
-      setOpenDetail(false);
       loadOrders();
     } catch (error) {
       // Error handled by useEffect
@@ -246,8 +185,8 @@ export default function OrdersPage() {
     const config: Record<OrderStatus, string> = {
       [OrderStatus.PENDING]: 'pending',
       [OrderStatus.PROCESSING]: 'processing',
-      [OrderStatus.SHIPPED]: 'completed',
-      [OrderStatus.DELIVERED]: 'delivered',
+      [OrderStatus.SHIPPED]: 'shipped',
+      [OrderStatus.DELIVERED]: 'completed',
       [OrderStatus.CANCELLED]: 'cancelled',
     };
     return <StatusChip status={config[status]} />;
@@ -414,172 +353,6 @@ export default function OrdersPage() {
         ]}
         emptyMessage="Không có đơn hàng nào"
       />
-
-      {/* Order Detail Dialog */}
-      <Dialog open={openDetail} onClose={() => setOpenDetail(false)} maxWidth="md" fullWidth>
-        <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Typography variant="h6">Chi tiết đơn hàng</Typography>
-            {selectedOrder?.status && getStatusChip(selectedOrder.status)}
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          {selectedOrder && (
-            <Box>
-              {/* Order Info */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" color="text.secondary">
-                  Mã đơn hàng
-                </Typography>
-                <Typography variant="h6" color="primary" gutterBottom>
-                  {selectedOrder.code}
-                </Typography>
-
-                <Typography variant="subtitle2" color="text.secondary">
-                  Ngày tạo
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  {new Date(selectedOrder.createdAt).toLocaleString('vi-VN')}
-                </Typography>
-
-                <Typography variant="subtitle2" color="text.secondary">
-                  Người tạo
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  {selectedOrder.creator.username}
-                </Typography>
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* Customer Info */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Thông tin khách hàng
-                </Typography>
-                <Typography variant="body1">
-                  <strong>Tên:</strong> {selectedOrder.customer.fullName}
-                </Typography>
-                <Typography variant="body1">
-                  <strong>SĐT:</strong> {selectedOrder.customer.phoneNumber}
-                </Typography>
-                {selectedOrder.customer.address && (
-                  <Typography variant="body1">
-                    <strong>Địa chỉ:</strong> {selectedOrder.customer.address}
-                  </Typography>
-                )}
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* Order Items */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" gutterBottom>
-                  Sản phẩm ({selectedOrder.items.length})
-                </Typography>
-                <List>
-                  {selectedOrder.items.map((item) => (
-                    <ListItem key={item.id} divider>
-                      <ListItemText
-                        primary={item.product.name}
-                        secondary={
-                          <>
-                            Số lượng: {item.quantity} x{' '}
-                            {item.unitPrice.toLocaleString('vi-VN')}₫
-                            {item.assignedSerials && item.assignedSerials.length > 0 && (
-                              <>
-                                <br />
-                                Serial: {item.assignedSerials.join(', ')}
-                              </>
-                            )}
-                          </>
-                        }
-                      />
-                      <Typography variant="body1" fontWeight="bold" color="primary">
-                        {item.amount.toLocaleString('vi-VN')}₫
-                      </Typography>
-                    </ListItem>
-                  ))}
-                </List>
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              {/* Order Summary */}
-              <Box>
-                {selectedOrder.discountAmount > 0 && (
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography>Chiết khấu:</Typography>
-                    <Typography color="error">
-                      -{selectedOrder.discountAmount.toLocaleString('vi-VN')}₫
-                    </Typography>
-                  </Box>
-                )}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography variant="h6">Tổng cộng:</Typography>
-                  <Typography variant="h6" color="primary">
-                    {selectedOrder.totalAmount.toLocaleString('vi-VN')}₫
-                  </Typography>
-                </Box>
-              </Box>
-
-              {selectedOrder.note && (
-                <>
-                  <Divider sx={{ my: 2 }} />
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Ghi chú
-                    </Typography>
-                    <Typography variant="body2">{selectedOrder.note}</Typography>
-                  </Box>
-                </>
-              )}
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          {selectedOrder?.status === OrderStatus.PENDING && (
-            <Button
-              color="error"
-              startIcon={<CancelIcon />}
-              onClick={() => setOpenCancel(true)}
-            >
-              Hủy đơn
-            </Button>
-          )}
-          {selectedOrder?.status === OrderStatus.PENDING && (
-            <Button
-              variant="contained"
-              startIcon={<ShippingIcon />}
-              onClick={() => router.push('/commercial/warehouse/fulfillment')}
-            >
-              Đi xuất kho
-            </Button>
-          )}
-          <Button onClick={() => setOpenDetail(false)}>Đóng</Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Cancel Confirmation Dialog */}
-      <Dialog open={openCancel} onClose={() => setOpenCancel(false)}>
-        <DialogTitle>Xác nhận hủy đơn hàng</DialogTitle>
-        <DialogContent>
-          <Alert severity="warning">
-            Bạn có chắc chắn muốn hủy đơn hàng <strong>{selectedOrder?.code}</strong>?
-          </Alert>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenCancel(false)}>Không</Button>
-          <Button
-            variant="contained"
-            color="error"
-            onClick={handleCancelOrder}
-            disabled={operationLoading}
-          >
-            Hủy đơn
-          </Button>
-        </DialogActions>
-      </Dialog>
 
       {/* Update Status Dialog */}
       <UpdateOrderStatusDialog

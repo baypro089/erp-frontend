@@ -110,12 +110,6 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         ]}
         actions={[
           {
-            label: 'Quay lại',
-            onClick: handleBack,
-            icon: <ArrowBackIcon />,
-            variant: 'outlined',
-          },
-          {
             label: 'Chỉnh sửa',
             onClick: handleEdit,
             icon: <EditIcon />,

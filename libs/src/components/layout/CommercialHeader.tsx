@@ -31,6 +31,7 @@ import {
   TrendingUp,
   AttachMoney,
   Add,
+  SwapHoriz,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -87,12 +88,17 @@ export default function CommercialHeader({
 
   const handleProfile = () => {
     handleCloseUserMenu();
-    router.push('/commercial/profile');
+    router.push('/personal-page/profile');
   };
 
   const handleSettings = () => {
     handleCloseUserMenu();
     router.push('/commercial/settings');
+  };
+
+  const handleSwitchSite = () => {
+    handleCloseUserMenu();
+    router.push('/portal-selection');
   };
 
   const handleLogout = () => {
@@ -377,6 +383,12 @@ export default function CommercialHeader({
               <Settings fontSize="small" />
             </ListItemIcon>
             <ListItemText>Cài đặt</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={handleSwitchSite}>
+            <ListItemIcon>
+              <SwapHoriz fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Chuyển đổi site</ListItemText>
           </MenuItem>
           <Divider />
           <MenuItem onClick={handleLogout}>

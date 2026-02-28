@@ -39,7 +39,7 @@ import { fetchCategories } from '@libs/src/features/category/category.slice';
 interface ProductFormDrawerProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateProductDto | UpdateProductDto, isEdit: boolean) => Promise<void>;
+  onSubmit: (data: CreateProductDto | UpdateProductDto, isEdit: boolean, thumbnail?: File) => Promise<void>;
   selectedProduct: ProductResponse | null;
   loading?: boolean;
 }
@@ -101,18 +101,25 @@ export default function ProductFormDrawer({
         retailPrice: selectedProduct.retailPrice,
         warrantyMonths: selectedProduct.warrantyMonths,
         hasSerialNumber: selectedProduct.hasSerialNumber,
-        specifications: selectedProduct.specifications || {},
+        specifications: (() => { try { const r = selectedProduct.specifications; return typeof r === 'string' ? JSON.parse(r) : (r || {}); } catch { return {}; } })(),
         thumbnailUrl: selectedProduct.thumbnailUrl || '',
         isActive: selectedProduct.isActive,
       });
 
+      // Parse specifications (may come from API as JSON string)
+      let parsedSpecs: Record<string, any> = {};
+      try {
+        const raw = selectedProduct.specifications;
+        parsedSpecs = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});
+      } catch {
+        parsedSpecs = {};
+      }
+
       // Convert specifications object to array
-      const specsArray = Object.entries(selectedProduct.specifications || {}).map(
-        ([key, value]) => ({
-          key,
-          value: String(value),
-        })
-      );
+      const specsArray = Object.entries(parsedSpecs).map(([key, value]) => ({
+        key,
+        value: String(value),
+      }));
       setSpecs(specsArray.length > 0 ? specsArray : [{ key: '', value: '' }]);
     } else {
       setFormData({
@@ -168,7 +175,8 @@ export default function ProductFormDrawer({
       specifications: specificationsObj,
     };
 
-    await onSubmit(submitData, isEdit);
+    // TODO: Add thumbnail upload support to drawer
+    await onSubmit(submitData, isEdit, undefined);
   };
 
   const handleClose = () => {

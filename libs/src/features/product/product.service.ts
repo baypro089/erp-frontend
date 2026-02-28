@@ -6,6 +6,7 @@ import type {
   UpdateProductDto,
   PagedAndFilteredProduct,
 } from '@libs/shared/types/product.type';
+import type { AttachmentResponse } from '@libs/shared/types/attachment.type';
 
 class ProductService {
   private readonly BASE_URL = '/products';
@@ -42,14 +43,66 @@ class ProductService {
   }
 
   // Create new product
-  async createProduct(data: CreateProductDto): Promise<ProductResponse> {
-    const response = await api.post<any>(this.BASE_URL, data);
+  async createProduct(data: CreateProductDto, thumbnail?: File): Promise<ProductResponse> {
+    const formData = new FormData();
+    
+    // Append all fields to FormData
+    Object.keys(data).forEach((key) => {
+      const value = data[key as keyof CreateProductDto];
+      if (value !== undefined && value !== null) {
+        if (key === 'specifications' && typeof value === 'object') {
+          formData.append(key, JSON.stringify(value));
+        } else if (typeof value === 'boolean') {
+          // Explicitly handle boolean values
+          formData.append(key, value ? 'true' : 'false');
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+    
+    // Append thumbnail file if provided
+    if (thumbnail) {
+      formData.append('thumbnail', thumbnail);
+    }
+    
+    const response = await api.post<any>(this.BASE_URL, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data.data;
   }
 
   // Update product
-  async updateProduct(id: string, data: UpdateProductDto): Promise<ProductResponse> {
-    const response = await api.put<any>(`${this.BASE_URL}/${id}`, data);
+  async updateProduct(id: string, data: UpdateProductDto, thumbnail?: File): Promise<ProductResponse> {
+    const formData = new FormData();
+    
+    // Append all fields to FormData
+    Object.keys(data).forEach((key) => {
+      const value = data[key as keyof UpdateProductDto];
+      if (value !== undefined && value !== null) {
+        if (key === 'specifications' && typeof value === 'object') {
+          formData.append(key, JSON.stringify(value));
+        } else if (typeof value === 'boolean') {
+          // Explicitly handle boolean values
+          formData.append(key, value ? 'true' : 'false');
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+    
+    // Append thumbnail file if provided
+    if (thumbnail) {
+      formData.append('thumbnail', thumbnail);
+    }
+    
+    const response = await api.put<any>(`${this.BASE_URL}/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data.data;
   }
 
@@ -68,6 +121,16 @@ class ProductService {
       return response.data.data.available;
     } catch (error) {
       return false;
+    }
+  }
+
+  // Get product thumbnail
+  async getProductThumbnail(id: string): Promise<AttachmentResponse | null> {
+    try {
+      const response = await api.get<any>(`${this.BASE_URL}/${id}/thumbnail`);
+      return response.data.data;
+    } catch (error) {
+      return null;
     }
   }
 }

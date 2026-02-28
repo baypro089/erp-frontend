@@ -1,323 +1,450 @@
 'use client';
 
-import { Box, Grid, Paper, Typography, Card, CardContent, alpha, useTheme } from '@mui/material';
 import {
-  People,
-  Security,
-  BusinessCenter,
-  AccountTree,
-  Event,
-  Settings,
-  Category,
-  BrandingWatermark,
+  Box,
+  Grid,
+  Paper,
+  Typography,
+  Card,
+  CardContent,
+  alpha,
+  useTheme,
+  MenuItem,
+  Select,
+  FormControl,
+  TextField,
+  Button,
+  Alert,
+  CircularProgress,
+  Chip,
+} from '@mui/material';
+import {
   TrendingUp,
-  CheckCircle,
+  TrendingDown,
+  ShoppingCart,
+  Inventory2,
+  AccountBalance,
+  People,
   Warning,
-  Schedule,
+  CheckCircle,
 } from '@mui/icons-material';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { useState, useEffect, useCallback } from 'react';
+import { format, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear } from 'date-fns';
+import { AdminDashboardService } from '@libs/src/services/admin-dashboard.service';
+import type { IAdminDashboard } from '@libs/shared/types/statistics.type';
+import Link from 'next/link';
+
+type DatePreset = 'this-month' | 'last-month' | 'this-quarter' | 'this-year' | 'custom';
+
+const COLORS = {
+  pending: '#FFA726',
+  processing: '#42A5F5',
+  shipped: '#AB47BC',
+  delivered: '#66BB6A',
+  cancelled: '#EF5350',
+};
 
 export default function AdminDashboard() {
   const theme = useTheme();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [dashboardData, setDashboardData] = useState<IAdminDashboard | null>(null);
+  
+  // Date filter states
+  const [datePreset, setDatePreset] = useState<DatePreset>('this-month');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
-  const stats = [
+  // Initialize dates based on preset
+  useEffect(() => {
+    const now = new Date();
+    let from: Date;
+    let to: Date;
+
+    switch (datePreset) {
+      case 'this-month':
+        from = startOfMonth(now);
+        to = endOfMonth(now);
+        break;
+      case 'last-month':
+        from = startOfMonth(subMonths(now, 1));
+        to = endOfMonth(subMonths(now, 1));
+        break;
+      case 'this-quarter':
+        from = startOfQuarter(now);
+        to = endOfQuarter(now);
+        break;
+      case 'this-year':
+        from = startOfYear(now);
+        to = endOfYear(now);
+        break;
+      case 'custom':
+        return; // Don't auto-set dates for custom
+      default:
+        from = startOfMonth(now);
+        to = endOfMonth(now);
+    }
+
+    setFromDate(format(from, 'yyyy-MM-dd'));
+    setToDate(format(to, 'yyyy-MM-dd'));
+  }, [datePreset]);
+
+  // Fetch dashboard data
+  const fetchDashboardData = useCallback(async () => {
+    if (!fromDate || !toDate) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await AdminDashboardService.getMasterDashboard({
+        fromDate,
+        toDate,
+      });
+      setDashboardData(data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Không thể tải dữ liệu dashboard');
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [fromDate, toDate]);
+
+  // Auto fetch when dates change
+  useEffect(() => {
+    if (fromDate && toDate) {
+      fetchDashboardData();
+    }
+  }, [fromDate, toDate, fetchDashboardData]);
+
+  // Format currency
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(value);
+  };
+
+  // Prepare chart data
+  const orderChartData = dashboardData
+    ? [
+        { name: 'Chờ xử lý', value: dashboardData.orderStats.pending, color: COLORS.pending },
+        { name: 'Đang xử lý', value: dashboardData.orderStats.processing, color: COLORS.processing },
+        { name: 'Đang giao', value: dashboardData.orderStats.shipped, color: COLORS.shipped },
+        { name: 'Đã giao', value: dashboardData.orderStats.delivered, color: COLORS.delivered },
+        { name: 'Đã hủy', value: dashboardData.orderStats.cancelled, color: COLORS.cancelled },
+      ]
+    : [];
+
+  const topProductsData = dashboardData?.topProducts || [];
+
+  // Widget data
+  const widgets = [
     {
-      title: 'Tổng Người dùng',
-      value: '156',
-      change: '+12 tháng này',
+      title: 'Doanh thu',
+      value: dashboardData?.overview.totalRevenue || 0,
+      icon: <ShoppingCart sx={{ fontSize: 40 }} />,
+      color: '#66BB6A',
+      gradient: 'linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%)',
+    },
+    {
+      title: 'Chi phí nhập hàng',
+      value: dashboardData?.overview.totalCost || 0,
+      icon: <Inventory2 sx={{ fontSize: 40 }} />,
+      color: '#FF9800',
+      gradient: 'linear-gradient(135deg, #FFB74D 0%, #FF9800 100%)',
+    },
+    {
+      title: 'Lợi nhuận gộp',
+      value: dashboardData?.overview.grossProfit || 0,
+      icon: <TrendingUp sx={{ fontSize: 40 }} />,
+      color: '#42A5F5',
+      gradient: 'linear-gradient(135deg, #42A5F5 0%, #2196F3 100%)',
+    },
+    {
+      title: 'Quỹ lương',
+      value: dashboardData?.overview.totalPayroll || 0,
       icon: <People sx={{ fontSize: 40 }} />,
-      color: theme.palette.primary.main,
-      gradient: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
-    },
-    {
-      title: 'Vai trò Hoạt động',
-      value: '8',
-      change: '100% active',
-      icon: <Security sx={{ fontSize: 40 }} />,
-      color: theme.palette.success.main,
-      gradient: `linear-gradient(135deg, ${theme.palette.success.light} 0%, ${theme.palette.success.main} 100%)`,
-    },
-    {
-      title: 'Phòng ban',
-      value: '12',
-      change: '+2 mới',
-      icon: <AccountTree sx={{ fontSize: 40 }} />,
-      color: theme.palette.info.main,
-      gradient: `linear-gradient(135deg, ${theme.palette.info.light} 0%, ${theme.palette.info.main} 100%)`,
-    },
-    {
-      title: 'Ngày nghỉ lễ',
-      value: '15',
-      change: 'Năm 2026',
-      icon: <Event sx={{ fontSize: 40 }} />,
-      color: theme.palette.warning.main,
-      gradient: `linear-gradient(135deg, ${theme.palette.warning.light} 0%, ${theme.palette.warning.main} 100%)`,
-    },
-  ];
-
-  const quickStats = [
-    {
-      label: 'Vị trí công việc',
-      value: '24',
-      icon: <BusinessCenter />,
-    },
-    {
-      label: 'Cài đặt hệ thống',
-      value: '18',
-      icon: <Settings />,
-    },
-    {
-      label: 'Danh mục sản phẩm',
-      value: '45',
-      icon: <Category />,
-    },
-    {
-      label: 'Thương hiệu',
-      value: '32',
-      icon: <BrandingWatermark />,
-    },
-  ];
-
-  const recentActivities = [
-    {
-      title: 'Người dùng đăng nhập',
-      count: '142',
-      time: 'Hôm nay',
-      icon: <CheckCircle />,
-      color: theme.palette.success.main,
-    },
-    {
-      title: 'Đang chờ phê duyệt',
-      count: '8',
-      time: 'Cần xử lý',
-      icon: <Schedule />,
-      color: theme.palette.warning.main,
-    },
-    {
-      title: 'Cảnh báo hệ thống',
-      count: '2',
-      time: 'Ưu tiên thấp',
-      icon: <Warning />,
-      color: theme.palette.error.main,
-    },
-    {
-      title: 'Hiệu suất hệ thống',
-      count: '98%',
-      time: 'Tốt',
-      icon: <TrendingUp />,
-      color: theme.palette.info.main,
+      color: '#757575',
+      gradient: 'linear-gradient(135deg, #9E9E9E 0%, #757575 100%)',
     },
   ];
 
   return (
     <Box>
-      {/* Page Header */}
-      <Box sx={{ mb: 4 }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 800,
-            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-            backgroundClip: 'text',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            mb: 1,
-          }}
-        >
-          Admin Dashboard
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
-          Tổng quan quản trị hệ thống ERP
-        </Typography>
+      {/* Header with Date Filter */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4, flexWrap: 'wrap', gap: 2 }}>
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 800,
+              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              mb: 1,
+            }}
+          >
+            Admin Dashboard
+          </Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
+            Tổng quan quản trị hệ thống ERP
+          </Typography>
+        </Box>
+
+        {/* Date Filter */}
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <Select
+              value={datePreset}
+              onChange={(e) => setDatePreset(e.target.value as DatePreset)}
+              displayEmpty
+            >
+              <MenuItem value="this-month">Tháng này</MenuItem>
+              <MenuItem value="last-month">Tháng trước</MenuItem>
+              <MenuItem value="this-quarter">Quý này</MenuItem>
+              <MenuItem value="this-year">Năm nay</MenuItem>
+              <MenuItem value="custom">Tùy chỉnh</MenuItem>
+            </Select>
+          </FormControl>
+
+          <TextField
+            type="date"
+            size="small"
+            label="Từ ngày"
+            value={fromDate}
+            onChange={(e) => {
+              setFromDate(e.target.value);
+              setDatePreset('custom');
+            }}
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: 160 }}
+          />
+
+          <TextField
+            type="date"
+            size="small"
+            label="Đến ngày"
+            value={toDate}
+            onChange={(e) => {
+              setToDate(e.target.value);
+              setDatePreset('custom');
+            }}
+            InputLabelProps={{ shrink: true }}
+            sx={{ width: 160 }}
+          />
+        </Box>
       </Box>
 
-      {/* Main Stats Grid */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {stats.map((stat, index) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
-            <Card
-              sx={{
-                height: '100%',
-                background: stat.gradient,
-                color: 'white',
-                position: 'relative',
-                overflow: 'hidden',
-                transition: 'transform 0.2s, box-shadow 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: '0 12px 24px rgba(0,0,0,0.15)',
-                },
-              }}
-            >
-              <CardContent sx={{ position: 'relative', zIndex: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                  <Box>
-                    <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 600, mb: 1 }}>
-                      {stat.title}
-                    </Typography>
-                    <Typography variant="h4" sx={{ fontWeight: 800, mb: 0.5 }}>
-                      {stat.value}
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 600 }}>
-                      {stat.change}
-                    </Typography>
-                  </Box>
+      {/* Error Alert */}
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress />
+        </Box>
+      )}
+
+      {/* Dashboard Content */}
+      {!loading && dashboardData && (
+        <>
+          {/* 4 Widget Cards */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {widgets.map((widget, index) => (
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    background: widget.gradient,
+                    color: 'white',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 12px 24px rgba(0,0,0,0.15)',
+                    },
+                  }}
+                >
+                  <CardContent sx={{ position: 'relative', zIndex: 1 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                      <Box>
+                        <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 600, mb: 1 }}>
+                          {widget.title}
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.5 }}>
+                          {formatCurrency(widget.value)}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          backgroundColor: alpha(theme.palette.common.white, 0.2),
+                          borderRadius: 2,
+                          p: 1.5,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {widget.icon}
+                      </Box>
+                    </Box>
+                  </CardContent>
+                  {/* Decorative circles */}
                   <Box
                     sx={{
-                      backgroundColor: alpha(theme.palette.common.white, 0.2),
-                      borderRadius: 2,
-                      p: 1.5,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      position: 'absolute',
+                      bottom: -20,
+                      right: -20,
+                      width: 100,
+                      height: 100,
+                      borderRadius: '50%',
+                      backgroundColor: alpha(theme.palette.common.white, 0.1),
                     }}
-                  >
-                    {stat.icon}
-                  </Box>
-                </Box>
-              </CardContent>
-              {/* Decorative circles */}
-              <Box
-                sx={{
-                  position: 'absolute',
-                  bottom: -20,
-                  right: -20,
-                  width: 100,
-                  height: 100,
-                  borderRadius: '50%',
-                  backgroundColor: alpha(theme.palette.common.white, 0.1),
-                }}
-              />
-              <Box
-                sx={{
-                  position: 'absolute',
-                  top: -30,
-                  left: -30,
-                  width: 80,
-                  height: 80,
-                  borderRadius: '50%',
-                  backgroundColor: alpha(theme.palette.common.white, 0.1),
-                }}
-              />
-            </Card>
+                  />
+                </Card>
+              </Grid>
+            ))}
           </Grid>
-        ))}
-      </Grid>
 
-      {/* Quick Stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {quickStats.map((stat, index) => (
-          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+          {/* Charts Row */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {/* Pie Chart - Order Status */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 3, height: 400 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
+                  Tỷ lệ trạng thái đơn hàng
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <PieChart>
+                    <Pie
+                      data={orderChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {orderChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => `${value || 0} đơn`} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+
+            {/* Bar Chart - Top Products */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 3, height: 400 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
+                  Top 5 Sản phẩm bán chạy nhất
+                </Typography>
+                <ResponsiveContainer width="100%" height="85%">
+                  <BarChart data={topProductsData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="productName" angle={-15} textAnchor="end" height={80} />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value, name) => {
+                        const val = value || 0;
+                        if (name === 'revenue') return [formatCurrency(val as number), 'Doanh thu'];
+                        return [val, 'Số lượng bán'];
+                      }}
+                    />
+                    <Bar dataKey="totalSold" fill={theme.palette.primary.main} name="Số lượng bán" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+          </Grid>
+
+          {/* Low Stock Alert */}
+          {dashboardData.lowStockAlerts > 0 && (
             <Paper
               sx={{
                 p: 3,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                transition: 'all 0.2s',
-                border: `1px solid ${theme.palette.divider}`,
-                '&:hover': {
-                  transform: 'translateY(-2px)',
-                  boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
-                  borderColor: theme.palette.primary.main,
-                },
+                background: alpha(theme.palette.error.main, 0.05),
+                border: `2px solid ${alpha(theme.palette.error.main, 0.3)}`,
               }}
             >
-              <Box
-                sx={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background: `linear-gradient(135deg, ${theme.palette.primary.light} 0%, ${theme.palette.primary.main} 100%)`,
-                  color: 'white',
-                }}
-              >
-                {stat.icon}
-              </Box>
-              <Box>
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  {stat.label}
-                </Typography>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  {stat.value}
-                </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Recent Activities */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
-          Hoạt động gần đây
-        </Typography>
-        <Grid container spacing={3}>
-          {recentActivities.map((activity, index) => (
-            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
-              <Paper
-                sx={{
-                  p: 2.5,
-                  border: `2px solid ${alpha(activity.color, 0.2)}`,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    borderColor: activity.color,
-                    boxShadow: `0 4px 12px ${alpha(activity.color, 0.2)}`,
-                  },
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 1.5,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: alpha(activity.color, 0.1),
-                      color: activity.color,
-                    }}
-                  >
-                    {activity.icon}
-                  </Box>
-                  <Typography variant="h5" sx={{ fontWeight: 800, color: activity.color }}>
-                    {activity.count}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: alpha(theme.palette.error.main, 0.1),
+                    color: theme.palette.error.main,
+                  }}
+                >
+                  <Warning sx={{ fontSize: 32 }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.error.main, mb: 0.5 }}>
+                    Cảnh báo tồn kho
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    Hiện có <strong style={{ color: theme.palette.error.main }}>{dashboardData.lowStockAlerts} mã sản phẩm</strong> sắp hết hàng.{' '}
+                    <Link href="/commercial/inventory" style={{ color: theme.palette.primary.main, fontWeight: 600, textDecoration: 'none' }}>
+                      [Click vào đây để xem chi tiết ở site Kho]
+                    </Link>
                   </Typography>
                 </Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  {activity.title}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {activity.time}
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
+              </Box>
+            </Paper>
+          )}
 
-      {/* System Info */}
-      <Paper
-        sx={{
-          p: 4,
-          textAlign: 'center',
-          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(
-            theme.palette.primary.main,
-            0.02
-          )} 100%)`,
-          border: `2px dashed ${theme.palette.divider}`,
-        }}
-      >
-        <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: theme.palette.primary.main }}>
-          Admin Portal
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Quản trị toàn diện hệ thống ERP - Người dùng, Phân quyền, Cấu hình
-        </Typography>
-      </Paper>
+          {dashboardData.lowStockAlerts === 0 && (
+            <Paper
+              sx={{
+                p: 3,
+                background: alpha(theme.palette.success.main, 0.05),
+                border: `2px solid ${alpha(theme.palette.success.main, 0.3)}`,
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box
+                  sx={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: alpha(theme.palette.success.main, 0.1),
+                    color: theme.palette.success.main,
+                  }}
+                >
+                  <CheckCircle sx={{ fontSize: 32 }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 700, color: theme.palette.success.main, mb: 0.5 }}>
+                    Tồn kho ổn định
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary">
+                    Tất cả sản phẩm đang có số lượng tồn kho đầy đủ.
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+          )}
+        </>
+      )}
     </Box>
   );
 }

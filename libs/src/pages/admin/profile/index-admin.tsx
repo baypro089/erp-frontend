@@ -52,7 +52,7 @@ export default function AdminProfilePage() {
         title="Admin Profile"
         subtitle="View and manage your account information"
         breadcrumbs={[
-          { label: 'Admin', href: '/' },
+          { label: 'Admin', href: '/admin/dashboard' },
           { label: 'Profile', icon: <PersonIcon fontSize="small" /> },
         ]}
         actions={[

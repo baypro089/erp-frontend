@@ -197,6 +197,15 @@ export default function CreateImportReceiptPage() {
       return false;
     }
 
+    if (!supplier) {
+      setSnackbar({
+        open: true,
+        message: 'Vui lòng chọn nhà cung cấp',
+        severity: 'error',
+      });
+      return false;
+    }
+
     if (items.length === 0) {
       setSnackbar({
         open: true,

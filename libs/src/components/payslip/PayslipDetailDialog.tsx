@@ -130,16 +130,52 @@ export default function PayslipDetailDialog({
         >
           {/* Header Section */}
           <Box sx={{ mb: 4 }}>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                color: 'primary.main',
-                mb: 0.5,
-              }}
-            >
-              CÔNG TY CỔ PHẦN ERP
-            </Typography>
+            {/* Company Logo and Info */}
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 3 }}>
+              <Box
+                sx={{
+                  width: 80,
+                  height: 80,
+                  border: '2px solid',
+                  borderColor: 'primary.main',
+                  borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  mr: 2,
+                  bgcolor: 'primary.lighter',
+                }}
+              >
+                <Typography
+                  variant="h4"
+                  sx={{
+                    fontWeight: 700,
+                    color: 'primary.main',
+                  }}
+                >
+                  ERP
+                </Typography>
+              </Box>
+              <Box sx={{ flex: 1 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    color: 'text.primary',
+                    mb: 0.5,
+                  }}
+                >
+                  CÔNG TY CỔ PHẦN ERP
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Địa chỉ: 123 Đường ABC, Quận XYZ, TP.HCM
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Điện thoại: (028) 1234 5678 | Email: contact@erp.vn
+                </Typography>
+              </Box>
+            </Box>
+
             <Typography
               variant="h4"
               sx={{
@@ -148,9 +184,10 @@ export default function PayslipDetailDialog({
                 color: 'text.primary',
                 mb: 1,
                 letterSpacing: 1,
+                textTransform: 'uppercase',
               }}
             >
-              PHIẾU LƯƠNG - THÁNG {monthYear}
+              PHIẾU LƯƠNG THÁNG {monthYear}
             </Typography>
           </Box>
 
@@ -376,6 +413,48 @@ export default function PayslipDetailDialog({
               </Typography>
             </Box>
           )}
+
+          {/* Signature Section */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr 1fr',
+              gap: 3,
+              mt: 4,
+              pt: 3,
+            }}
+          >
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="body2" fontWeight={600} gutterBottom>
+                Người lập phiếu
+              </Typography>
+              <Typography variant="caption" color="text.secondary" gutterBottom>
+                (Ký, họ tên)
+              </Typography>
+              <Box sx={{ mt: 6 }} />
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="body2" fontWeight={600} gutterBottom>
+                Người nhận
+              </Typography>
+              <Typography variant="caption" color="text.secondary" gutterBottom>
+                (Ký, họ tên)
+              </Typography>
+              <Box sx={{ mt: 6 }} />
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                {payslip.employee.fullName}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography variant="body2" fontWeight={600} gutterBottom>
+                Giám đốc
+              </Typography>
+              <Typography variant="caption" color="text.secondary" gutterBottom>
+                (Ký, đóng dấu, họ tên)
+              </Typography>
+              <Box sx={{ mt: 6 }} />
+            </Box>
+          </Box>
         </Box>
       </DialogContent>
 
@@ -409,6 +488,14 @@ export default function PayslipDetailDialog({
       {/* Print styles */}
       <style jsx global>{`
         @media print {
+          @page {
+            size: A4 portrait;
+            margin: 1.5cm;
+          }
+          body {
+            background: white;
+            color: black;
+          }
           body * {
             visibility: hidden;
           }
@@ -421,6 +508,8 @@ export default function PayslipDetailDialog({
             left: 0;
             top: 0;
             width: 100%;
+            background: white;
+            color: black;
           }
         }
       `}</style>

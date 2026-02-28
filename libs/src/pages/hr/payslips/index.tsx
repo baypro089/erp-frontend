@@ -13,12 +13,14 @@ import {
   Chip,
   Card,
   CardContent,
+  Button,
 } from '@mui/material';
 import {
   Refresh as RefreshIcon,
   Receipt as ReceiptIcon,
   AccountBalance as AccountBalanceIcon,
   CalendarMonth as CalendarMonthIcon,
+  CalendarToday as CalendarTodayIcon,
 } from '@mui/icons-material';
 import {
   DataTable,
@@ -26,10 +28,12 @@ import {
   LoadingOverlay,
   Column,
 } from '@libs/src/components/common';
-import { PayslipDetailDialog } from '@libs/src/components/payslip';
+import { PayslipDetailDialog, YearlyPayslipsDialog } from '@libs/src/components/payslip';
 import {
   fetchMyPayslips,
+  fetchYearlyPayslips,
   clearError,
+  clearYearlyPayslips,
 } from '@libs/src/features/payslip/payslip.slice';
 import type { PayslipResponse, PaySlipTableResponse } from '@libs/shared/types/payslips.type';
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
@@ -42,6 +46,9 @@ export default function EmployeePayslipsPage() {
     totalCount,
     loading,
     error,
+    yearlyPayslips,
+    operationLoading,
+    operationError,
   } = useSelector((state: RootState) => state.payslip);
 
   // Get current auth user
@@ -52,6 +59,7 @@ export default function EmployeePayslipsPage() {
 
   // Dialog states
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
+  const [openYearlyDialog, setOpenYearlyDialog] = useState(false);
   const [selectedPayslip, setSelectedPayslip] = useState<PaySlipTableResponse | null>(null);
 
   // Filter states
@@ -88,33 +96,39 @@ export default function EmployeePayslipsPage() {
 
   // Reload payslips when filters or pagination changes
   useEffect(() => {
-    // Only fetch if user is authenticated and has employee data
-    if (!isAuth || !currentUser?.employee?.id) {
+    // Only fetch if user is authenticated
+    if (!isAuth) {
       return;
     }
 
     dispatch(
       fetchMyPayslips({
-        employeeId: currentUser.employee.id,
         month: filterMonth,
         year: filterYear,
         page: page + 1,
         pageSize: rowsPerPage,
       })
     );
-  }, [dispatch, filterMonth, filterYear, page, rowsPerPage, refreshCounter, isAuth, currentUser?.employee?.id]);
+  }, [dispatch, filterMonth, filterYear, page, rowsPerPage, refreshCounter, isAuth]);
 
   // Handle errors
   useEffect(() => {
-    if (error) {
+    if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || 'Đã xảy ra lỗi',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());
     }
-  }, [error, dispatch]);
+  }, [error, operationError, dispatch]);
+
+  // Handle yearly payslips success
+  useEffect(() => {
+    if (yearlyPayslips && !operationLoading) {
+      setOpenYearlyDialog(true);
+    }
+  }, [yearlyPayslips, operationLoading]);
 
   // Define table columns
   const columns: Column<PaySlipTableResponse>[] = [
@@ -188,6 +202,15 @@ export default function EmployeePayslipsPage() {
     setOpenDetailDialog(true);
   };
 
+  const handleViewYearlyPayslips = () => {
+    dispatch(fetchYearlyPayslips(filterYear));
+  };
+
+  const handleCloseYearlyDialog = () => {
+    setOpenYearlyDialog(false);
+    dispatch(clearYearlyPayslips());
+  };
+
   const months = Array.from({ length: 12 }, (_, i) => ({
     value: i + 1,
     label: `Tháng ${(i + 1).toString().padStart(2, '0')}`,
@@ -206,6 +229,12 @@ export default function EmployeePayslipsPage() {
         title="Phiếu lương của tôi"
         subtitle="Xem lịch sử phiếu lương và chi tiết thu nhập"
         actions={[
+          {
+            label: 'Xem bảng lương năm',
+            onClick: handleViewYearlyPayslips,
+            icon: <CalendarTodayIcon />,
+            variant: 'contained',
+          },
           {
             label: 'Làm mới',
             onClick: () => setRefreshCounter((prev) => prev + 1),
@@ -343,6 +372,18 @@ export default function EmployeePayslipsPage() {
         onClose={() => setOpenDetailDialog(false)}
         payslipId={selectedPayslip?.id || undefined}
         showMarkPaidButton={false}
+      />
+
+      {/* Yearly Payslips Dialog */}
+      <YearlyPayslipsDialog
+        open={openYearlyDialog}
+        onClose={handleCloseYearlyDialog}
+        year={filterYear}
+        details={yearlyPayslips?.details || []}
+        totalSalary={yearlyPayslips?.totalSalary || 0}
+        totalBaseSalary={yearlyPayslips?.totalBaseSalary || 0}
+        employeeName={currentUser?.employee?.fullName}
+        employeeCode={currentUser?.employee?.employeeCode}
       />
 
       {/* Snackbar */}

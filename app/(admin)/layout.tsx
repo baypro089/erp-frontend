@@ -54,6 +54,9 @@ export default function MainLayout({
           showMenuButton={false}
           user={user}
           notificationCount={5}
+          totalUsers={128}
+          activeUsers={42}
+          systemStatus="healthy"
         />
 
         {/* Sidebar */}

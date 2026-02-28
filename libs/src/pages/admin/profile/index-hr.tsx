@@ -16,13 +16,19 @@ import {
 import { PageHeader, LoadingOverlay } from '@libs/src/components/common';
 import { ProfileAccountTab, ProfileEmployeeTab } from '@libs/src/components/profile';
 import { fetchUserById } from '@libs/src/features/user/user.slice';
-import { updateEmployee } from '@libs/src/features/employee/employee.slice';
+import { 
+    updateEmployee,
+    updateEmployeePhoto,
+    updateEmployeeCV,
+} from '@libs/src/features/employee/employee.slice';
 import { fetchDepartments } from '@libs/src/features/department/department.slice';
 import { fetchPositions } from '@libs/src/features/position/position.slice';
 import { checkAuth } from '@libs/src/features/auth/auth.slice';
 import { Status } from '@libs/shared/enums/employee-status.enum';
 import { Level } from '@libs/shared/enums/level.enum';
 import { Gender } from '@libs/shared/enums/gender.enum';
+import type { AttachmentResponse } from '@libs/shared/types/attachment.type';
+import employeeService from '@libs/src/features/employee/employee.service';
 
 interface EmployeeFormData {
     fullName: string;
@@ -72,6 +78,8 @@ export default function HRProfilePage() {
         message: '',
         severity: 'success' as 'success' | 'error',
     });
+    const [cvAttachment, setCvAttachment] = useState<AttachmentResponse | null>(null);
+    const [photoAttachment, setPhotoAttachment] = useState<AttachmentResponse | null>(null);
 
     useEffect(() => {
         // Get user from auth (JWT token)
@@ -90,6 +98,26 @@ export default function HRProfilePage() {
         dispatch(fetchDepartments({}));
         dispatch(fetchPositions({}));
     }, [dispatch]);
+
+    // Load photo and CV when employee data is available
+    useEffect(() => {
+        const loadAttachments = async () => {
+            if (currentUser?.employee?.id) {
+                try {
+                    const [photo, cv] = await Promise.all([
+                        employeeService.getEmployeePhoto(currentUser.employee.id),
+                        employeeService.getEmployeeCV(currentUser.employee.id)
+                    ]);
+                    setPhotoAttachment(photo);
+                    setCvAttachment(cv);
+                } catch (error) {
+                    console.error('Failed to load attachments:', error);
+                }
+            }
+        };
+
+        loadAttachments();
+    }, [currentUser?.employee?.id]);
 
     useEffect(() => {
         if (currentUser?.employee) {
@@ -198,13 +226,62 @@ export default function HRProfilePage() {
         }
     };
 
+    const handlePhotoUpload = async (file: File) => {
+        if (!currentUser?.employee?.id) return;
+
+        try {
+            await dispatch(updateEmployeePhoto({ id: currentUser.employee.id, photo: file })).unwrap();
+            setSnackbar({
+                open: true,
+                message: 'Ảnh đại diện đã được cập nhật thành công',
+                severity: 'success',
+            });
+            // Reload photo attachment to get updated URL
+            const photo = await employeeService.getEmployeePhoto(currentUser.employee.id);
+            setPhotoAttachment(photo);
+            // Also reload user data
+            const result = await dispatch(checkAuth()).unwrap();
+            if (result?.id) {
+                dispatch(fetchUserById(result.id));
+            }
+        } catch (err: any) {
+            setSnackbar({
+                open: true,
+                message: err || 'Không thể cập nhật ảnh đại diện',
+                severity: 'error',
+            });
+        }
+    };
+
+    const handleCVUpload = async (file: File) => {
+        if (!currentUser?.employee?.id) return;
+
+        try {
+            await dispatch(updateEmployeeCV({ id: currentUser.employee.id, cv: file })).unwrap();
+            setSnackbar({
+                open: true,
+                message: 'CV đã được cập nhật thành công',
+                severity: 'success',
+            });
+            // Reload CV attachment
+            const cv = await employeeService.getEmployeeCV(currentUser.employee.id);
+            setCvAttachment(cv);
+        } catch (err: any) {
+            setSnackbar({
+                open: true,
+                message: err || 'Không thể cập nhật CV',
+                severity: 'error',
+            });
+        }
+    };
+
     return (
         <Box>
             <PageHeader
                 title="Hồ sơ của tôi"
                 subtitle="Xem và quản lý thông tin cá nhân"
                 breadcrumbs={[
-                    { label: 'HR', href: '/' },
+                    { label: 'HR', href: '/hr' },
                     { label: 'Hồ sơ', icon: <PersonIcon fontSize="small" /> },
                 ]}
                 actions={
@@ -268,6 +345,10 @@ export default function HRProfilePage() {
                         onFormChange={handleFormChange}
                         departments={departments}
                         positions={positions}
+                        onPhotoUpload={handlePhotoUpload}
+                        onCVUpload={handleCVUpload}
+                        cvAttachment={cvAttachment}
+                        photoAttachment={photoAttachment}
                     />
                 ) : (
                     <Alert severity="info">

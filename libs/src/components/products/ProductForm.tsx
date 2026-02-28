@@ -24,12 +24,14 @@ import {
   IconButton,
   Chip,
   Grid,
+  CardMedia,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
   CloudUpload as CloudUploadIcon,
   ArrowBack as ArrowBackIcon,
+  Image as ImageIcon,
 } from '@mui/icons-material';
 import { useRouter } from 'next/navigation';
 import type {
@@ -39,10 +41,11 @@ import type {
 } from '@libs/shared/types/product.type';
 import { fetchBrands } from '@libs/src/features/brand/brand.slice';
 import { fetchCategories } from '@libs/src/features/category/category.slice';
+import productService from '@libs/src/features/product/product.service';
 
 interface ProductFormProps {
   selectedProduct?: ProductResponse | null;
-  onSubmit: (data: CreateProductDto | UpdateProductDto) => Promise<void>;
+  onSubmit: (data: CreateProductDto | UpdateProductDto, thumbnail?: File) => Promise<void>;
   loading?: boolean;
   readOnly?: boolean;
 }
@@ -106,6 +109,10 @@ export default function ProductForm({
   // Errors
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
+  // Thumbnail upload
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
+
   // Load brands and categories
   useEffect(() => {
     dispatch(fetchBrands({}));
@@ -126,18 +133,25 @@ export default function ProductForm({
         retailPrice: selectedProduct.retailPrice,
         warrantyMonths: selectedProduct.warrantyMonths,
         hasSerialNumber: selectedProduct.hasSerialNumber,
-        specifications: selectedProduct.specifications || {},
+        specifications: (() => { try { const r = selectedProduct.specifications; return typeof r === 'string' ? JSON.parse(r) : (r || {}); } catch { return {}; } })(),
         thumbnailUrl: selectedProduct.thumbnailUrl || '',
         isActive: selectedProduct.isActive,
       });
 
+      // Parse specifications (may come from API as JSON string)
+      let parsedSpecs: Record<string, any> = {};
+      try {
+        const raw = selectedProduct.specifications;
+        parsedSpecs = typeof raw === 'string' ? JSON.parse(raw) : (raw || {});
+      } catch {
+        parsedSpecs = {};
+      }
+
       // Convert specifications object to array
-      const specsArray = Object.entries(selectedProduct.specifications || {}).map(
-        ([key, value]) => ({
-          key,
-          value: String(value),
-        })
-      );
+      const specsArray = Object.entries(parsedSpecs).map(([key, value]) => ({
+        key,
+        value: String(value),
+      }));
       setSpecs(specsArray.length > 0 ? specsArray : [{ key: '', value: '' }]);
     } else {
       // Reset form when no product selected
@@ -157,6 +171,27 @@ export default function ProductForm({
       setSpecs([{ key: '', value: '' }]);
       setErrors({});
     }
+  }, [selectedProduct]);
+
+  // Load thumbnail when editing
+  useEffect(() => {
+    const loadThumbnail = async () => {
+      if (selectedProduct && selectedProduct.id) {
+        try {
+          const thumbnail = await productService.getProductThumbnail(selectedProduct.id);
+          if (thumbnail && thumbnail.publicUrl) {
+            setThumbnailPreview(thumbnail.publicUrl);
+          }
+        } catch (error) {
+          console.error('Failed to load thumbnail:', error);
+        }
+      } else {
+        setThumbnailPreview('');
+        setThumbnailFile(null);
+      }
+    };
+    
+    loadThumbnail();
   }, [selectedProduct]);
 
   const validateForm = (): boolean => {
@@ -195,11 +230,31 @@ export default function ProductForm({
       specifications: specificationsObj,
     };
 
-    await onSubmit(submitData);
+    await onSubmit(submitData, thumbnailFile || undefined);
   };
 
   const handleCancel = () => {
     router.push('/admin/products');
+  };
+
+  // Thumbnail handlers
+  const handleThumbnailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setThumbnailFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setThumbnailPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveThumbnail = () => {
+    setThumbnailFile(null);
+    setThumbnailPreview('');
   };
 
   // Spec handlers
@@ -228,16 +283,6 @@ export default function ProductForm({
 
   return (
     <Box>
-      {/* Header */}
-      <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-        <IconButton onClick={handleCancel} disabled={loading}>
-          <ArrowBackIcon />
-        </IconButton>
-        <Typography variant="h5" fontWeight={600}>
-          {isEdit ? 'Edit Product' : 'Create New Product'}
-        </Typography>
-      </Box>
-
       <Box sx={{ mx: 'auto' }}>
         {/* Section 1: Basic Information */}
         <Card sx={{ mb: 3 }}>
@@ -479,9 +524,6 @@ export default function ProductForm({
                     format={(val) => `${val} months`}
                   />
                 </Grid>
-                <Grid size={{ xs: 12, sm: 6 }}>
-                  <DisplayField label="Thumbnail URL" value={formData.thumbnailUrl} />
-                </Grid>
                 {isEdit && (
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <DisplayField
@@ -495,6 +537,23 @@ export default function ProductForm({
                         />
                       )}
                     />
+                  </Grid>
+                )}
+                {/* Thumbnail Display */}
+                {thumbnailPreview && (
+                  <Grid size={{ xs: 12 }}>
+                    <Typography variant="caption" color="text.secondary" display="block" gutterBottom>
+                      Product Thumbnail
+                    </Typography>
+                    <Card sx={{ maxWidth: 300, mt: 1 }}>
+                      <CardMedia
+                        component="img"
+                        height="200"
+                        image={thumbnailPreview}
+                        alt="Product thumbnail"
+                        sx={{ objectFit: 'contain', bgcolor: 'grey.100' }}
+                      />
+                    </Card>
                   </Grid>
                 )}
               </Grid>
@@ -527,25 +586,83 @@ export default function ProductForm({
                   helperText="Warranty period in months"
                 />
 
+                {/* Thumbnail Upload Section */}
                 <Box>
-                  <Typography variant="body2" gutterBottom>
-                    Thumbnail Image
+                  <Typography variant="body2" gutterBottom fontWeight={500}>
+                    Product Thumbnail
                   </Typography>
-                  <TextField
-                    value={formData.thumbnailUrl}
-                    onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                    fullWidth
-                    disabled={loading}
-                    placeholder="Image URL or upload (backend not yet supported)"
-                    helperText="Upload functionality will be available when backend supports it"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <CloudUploadIcon />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
+                  
+                  {thumbnailPreview ? (
+                    <Box>
+                      <Card sx={{ maxWidth: 300, mb: 2 }}>
+                        <CardMedia
+                          component="img"
+                          height="200"
+                          image={thumbnailPreview}
+                          alt="Product thumbnail preview"
+                          sx={{ objectFit: 'contain', bgcolor: 'grey.100' }}
+                        />
+                      </Card>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                          component="label"
+                          variant="outlined"
+                          startIcon={<CloudUploadIcon />}
+                          disabled={loading}
+                          size="small"
+                        >
+                          Change Image
+                          <input
+                            type="file"
+                            hidden
+                            accept="image/*"
+                            onChange={handleThumbnailChange}
+                          />
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="error"
+                          startIcon={<DeleteIcon />}
+                          onClick={handleRemoveThumbnail}
+                          disabled={loading}
+                          size="small"
+                        >
+                          Remove
+                        </Button>
+                      </Box>
+                    </Box>
+                  ) : (
+                    <Button
+                      component="label"
+                      variant="outlined"
+                      startIcon={<CloudUploadIcon />}
+                      disabled={loading}
+                      fullWidth
+                      sx={{ 
+                        py: 3, 
+                        borderStyle: 'dashed',
+                        '&:hover': {
+                          borderStyle: 'dashed',
+                        }
+                      }}
+                    >
+                      <Box sx={{ textAlign: 'center' }}>
+                        <ImageIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+                        <Typography variant="body2">
+                          Click to upload thumbnail image
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Supports: JPG, PNG, GIF (Max 5MB)
+                        </Typography>
+                      </Box>
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        onChange={handleThumbnailChange}
+                      />
+                    </Button>
+                  )}
                 </Box>
 
                 {isEdit && (

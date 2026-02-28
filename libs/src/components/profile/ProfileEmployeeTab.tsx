@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   Box,
   Card,
@@ -12,6 +13,9 @@ import {
   Avatar,
   MenuItem,
   Autocomplete,
+  Button,
+  Alert,
+  IconButton,
 } from '@mui/material';
 import {
   Person,
@@ -22,10 +26,17 @@ import {
   CalendarToday,
   Work,
   Business,
+  CloudUpload,
+  CameraAlt,
+  InsertDriveFile,
+  PictureAsPdf,
+  Description,
+  Download,
 } from '@mui/icons-material';
 import type { EmployeeResponse } from '@libs/shared/types/employees.type';
 import type { DepartmentResponse } from '@libs/shared/types/departments.type';
 import type { PositionResponse } from '@libs/shared/types/positions.type';
+import type { AttachmentResponse } from '@libs/shared/types/attachment.type';
 import { StatusChip } from '@libs/src/components/common';
 import { Status } from '@libs/shared/enums/employee-status.enum';
 import { Level } from '@libs/shared/enums/level.enum';
@@ -54,6 +65,10 @@ interface ProfileEmployeeTabProps {
   onFormChange?: (field: string, value: any) => void;
   departments?: DepartmentResponse[];
   positions?: PositionResponse[];
+  onPhotoUpload?: (file: File) => void;
+  onCVUpload?: (file: File) => void;
+  cvAttachment?: AttachmentResponse | null;
+  photoAttachment?: AttachmentResponse | null;
 }
 
 export default function ProfileEmployeeTab({
@@ -63,12 +78,21 @@ export default function ProfileEmployeeTab({
   onFormChange,
   departments = [],
   positions = [],
+  onPhotoUpload,
+  onCVUpload,
+  cvAttachment,
+  photoAttachment,
 }: ProfileEmployeeTabProps) {
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isUploadingCV, setIsUploadingCV] = useState(false);
+
   const statusMap: Record<Status, 'active' | 'inactive' | 'pending' | 'rejected'> = {
     [Status.ACTIVE]: 'active',
-    [Status.INACTIVE]: 'inactive',
+    [Status.RESIGNED]: 'inactive',
     [Status.DRAFT]: 'pending',
-    [Status.TERMINATED]: 'rejected',
+    [Status.MATERNITY_LEAVE]: 'rejected',
+    [Status.PROBATION]: 'pending',
   };
 
   const getLevelColor = (level?: Level) => {
@@ -93,6 +117,74 @@ export default function ProfileEmployeeTab({
     }
   };
 
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  };
+
+  const getFileIcon = (mimeType?: string) => {
+    if (mimeType?.includes('pdf')) return <PictureAsPdf />;
+    if (mimeType?.includes('word') || mimeType?.includes('document')) return <Description />;
+    return <InsertDriveFile />;
+  };
+
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onPhotoUpload) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+
+      // Upload
+      setIsUploadingPhoto(true);
+      try {
+        await onPhotoUpload(file);
+      } finally {
+        setIsUploadingPhoto(false);
+        setPhotoPreview(null);
+      }
+    }
+  };
+
+  const handleCVChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && onCVUpload) {
+      // Validate file type
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Please select a PDF or Word document');
+        return;
+      }
+
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB');
+        return;
+      }
+
+      setIsUploadingCV(true);
+      try {
+        await onCVUpload(file);
+      } finally {
+        setIsUploadingCV(false);
+      }
+    }
+  };
+
   return (
     <Box>
       <Grid container spacing={3}>
@@ -101,16 +193,45 @@ export default function ProfileEmployeeTab({
           <Card>
             <CardContent>
               <Box display="flex" flexDirection="column" alignItems="center" gap={2}>
-                <Avatar
-                  sx={{
-                    width: 120,
-                    height: 120,
-                    bgcolor: 'primary.main',
-                    fontSize: '3rem',
-                  }}
-                >
-                  {employee.fullName?.charAt(0) || 'E'}
-                </Avatar>
+                <Box sx={{ position: 'relative' }}>
+                  <Avatar
+                    src={photoPreview || photoAttachment?.publicUrl || employee.photoUrl || undefined}
+                    sx={{
+                      width: 120,
+                      height: 120,
+                      bgcolor: 'primary.main',
+                      fontSize: '3rem',
+                    }}
+                  >
+                    {employee.fullName?.charAt(0) || 'E'}
+                  </Avatar>
+                  {isEditing && onPhotoUpload && (
+                    <IconButton
+                      component="label"
+                      sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        right: 0,
+                        bgcolor: 'primary.main',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: 'primary.dark',
+                        },
+                        width: 36,
+                        height: 36,
+                      }}
+                      disabled={isUploadingPhoto}
+                    >
+                      <CameraAlt fontSize="small" />
+                      <input
+                        type="file"
+                        hidden
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                      />
+                    </IconButton>
+                  )}
+                </Box>
                 <Typography variant="h5" align="center">
                   {employee.fullName}
                 </Typography>
@@ -126,6 +247,23 @@ export default function ProfileEmployeeTab({
                     color={getLevelColor(employee.level) as any}
                     size="small"
                   />
+                )}
+                {isEditing && onPhotoUpload && (
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<CloudUpload />}
+                    disabled={isUploadingPhoto}
+                    fullWidth
+                  >
+                    {isUploadingPhoto ? 'Uploading...' : 'Change Photo'}
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                    />
+                  </Button>
                 )}
               </Box>
             </CardContent>
@@ -418,6 +556,102 @@ export default function ProfileEmployeeTab({
                       />
                     </Grid>
                   </Grid>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            {/* Documents */}
+            <Grid size={{ xs: 12 }}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" color="primary" gutterBottom>
+                    Documents
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  
+                  {/* CV Section */}
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Curriculum Vitae (CV)
+                    </Typography>
+                    {cvAttachment ? (
+                      <Alert
+                        severity="success"
+                        sx={{ mb: 2 }}
+                        action={
+                          <Box sx={{ display: 'flex', gap: 1 }}>
+                            <IconButton
+                              component="a"
+                              size="small"
+                              color="inherit"
+                              href={cvAttachment.publicUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Download />
+                            </IconButton>
+                            {isEditing && onCVUpload && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                component="label"
+                                disabled={isUploadingCV}
+                              >
+                                {isUploadingCV ? 'Uploading...' : 'Replace'}
+                                <input
+                                  type="file"
+                                  hidden
+                                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                  onChange={handleCVChange}
+                                />
+                              </Button>
+                            )}
+                          </Box>
+                        }
+                        icon={getFileIcon(cvAttachment.mimeType)}
+                      >
+                        <Box>
+                          <Typography variant="body2" fontWeight="medium">
+                            {cvAttachment.originalName}
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                            <Chip
+                              label={formatFileSize(cvAttachment.size)}
+                              size="small"
+                              variant="outlined"
+                            />
+                            <Chip
+                              label={new Date(cvAttachment.createdAt).toLocaleDateString()}
+                              size="small"
+                              variant="outlined"
+                            />
+                          </Box>
+                        </Box>
+                      </Alert>
+                    ) : (
+                      <Alert severity="info" sx={{ mb: 2 }}>
+                        No CV uploaded yet
+                      </Alert>
+                    )}
+                    
+                    {isEditing && onCVUpload && !cvAttachment && (
+                      <Button
+                        variant="contained"
+                        component="label"
+                        startIcon={<CloudUpload />}
+                        disabled={isUploadingCV}
+                        fullWidth
+                      >
+                        {isUploadingCV ? 'Uploading...' : 'Upload CV'}
+                        <input
+                          type="file"
+                          hidden
+                          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                          onChange={handleCVChange}
+                        />
+                      </Button>
+                    )}
+                  </Box>
                 </CardContent>
               </Card>
             </Grid>

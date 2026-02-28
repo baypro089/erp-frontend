@@ -324,7 +324,7 @@ export default function LeaveApprovalsPage() {
   // Redirect if not HR
   useEffect(() => {
     if (authChecked && isAuth && currentRole && !isHR) {
-      window.location.href = '/hr/leaves';
+      window.location.href = '/portal-selection';
     }
   }, [authChecked, isAuth, isHR, currentRole]);
 

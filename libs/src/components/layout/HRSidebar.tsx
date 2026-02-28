@@ -34,6 +34,8 @@ import {
     CheckCircle as CheckCircleIcon,
     ExitToApp as ExitToAppIcon,
     AssignmentTurnedIn as AssignmentTurnedInIcon,
+    AccountTree as AccountTreeIcon,
+    BusinessCenter as BusinessCenterIcon,
 } from '@mui/icons-material';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -70,24 +72,12 @@ const menuItems: MenuItem[] = [
         path: '/hr/employees',
     },
     {
-        id: 'my-leaves',
-        label: 'My Leaves',
-        icon: <EventNoteIcon />,
-        path: '/hr/my-leaves',
-    },
-    {
         id: 'leave-approvals',
         label: 'Leave Approvals',
         icon: <CheckCircleIcon />,
         path: '/hr/leave-approvals',
         badge: 5,
         badgeColor: 'warning',
-    },
-    {
-        id: 'my-resignation',
-        label: 'My Resignation',
-        icon: <ExitToAppIcon />,
-        path: '/hr/my-resignation',
     },
     {
         id: 'resignation-management',
@@ -104,10 +94,16 @@ const menuItems: MenuItem[] = [
         path: '/hr/payroll',
     },
     {
-        id:'my-payslips',
-        label: 'My Payslips',
-        icon: <AttachMoneyIcon />,
-        path: '/hr/my-payslips',
+        id: 'departments',
+        label: 'Departments',
+        icon: <AccountTreeIcon />,
+        path: '/hr/departments',
+    },
+    {
+        id: 'positions',
+        label: 'Positions',
+        icon: <BusinessCenterIcon />,
+        path: '/hr/positions',
     },
     {
         id: 'reports',
@@ -151,7 +147,27 @@ export default function HRSidebar({
 
     const isActive = (path?: string) => {
         if (!path) return false;
-        return pathname === path || pathname.startsWith(path + '/');
+
+        // Exact match
+        if (pathname === path) return true;
+
+        // Check if current pathname is a child page (detail/edit/create)
+        if (pathname.startsWith(path + '/')) {
+            const remaining = pathname.slice(path.length + 1);
+            const segments = remaining.split('/');
+            const firstSegment = segments[0];
+
+            // Only match if next segment is 'create', 'edit', 'detail', or looks like an ID
+            // This prevents '/hr/employees' from matching when at '/hr/employees/leaves'
+            const isDynamicSegment =
+                ['create', 'edit', 'detail'].includes(firstSegment) ||
+                /^[a-f0-9-]{36}$/.test(firstSegment) || // UUID
+                /^\d+$/.test(firstSegment); // Numeric ID
+
+            return isDynamicSegment;
+        }
+
+        return false;
     };
 
     const renderMenuItem = (item: MenuItem, level = 0) => {
@@ -175,7 +191,7 @@ export default function HRSidebar({
                         mb: 0.5,
                         mx: 1,
                         borderRadius: 2,
-                        backgroundColor: active
+                        background: active
                             ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
                             : 'transparent',
                         color: active ? 'white' : 'inherit',
@@ -183,7 +199,7 @@ export default function HRSidebar({
                             ? `4px solid #00BCD4`
                             : '4px solid transparent',
                         '&:hover': {
-                            backgroundColor: active
+                            background: active
                                 ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
                                 : alpha(theme.palette.primary.main, 0.08),
                             transform: 'translateX(4px)',

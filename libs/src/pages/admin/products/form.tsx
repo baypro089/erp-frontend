@@ -59,11 +59,11 @@ export default function ProductFormPage({ productId }: ProductFormPageProps) {
     }
   }, [error, operationError, dispatch]);
 
-  const handleSubmit = async (data: CreateProductDto | UpdateProductDto) => {
+  const handleSubmit = async (data: CreateProductDto | UpdateProductDto, thumbnail?: File) => {
     try {
       if (isEdit && productId) {
         // Update existing product
-        await dispatch(updateProduct({ id: productId, data: data as UpdateProductDto })).unwrap();
+        await dispatch(updateProduct({ id: productId, data: data as UpdateProductDto, thumbnail })).unwrap();
         setSnackbar({
           open: true,
           message: 'Product updated successfully',
@@ -71,7 +71,7 @@ export default function ProductFormPage({ productId }: ProductFormPageProps) {
         });
       } else {
         // Create new product
-        await dispatch(createProduct(data as CreateProductDto)).unwrap();
+        await dispatch(createProduct({ data: data as CreateProductDto, thumbnail })).unwrap();
         setSnackbar({
           open: true,
           message: 'Product created successfully',

@@ -26,7 +26,7 @@ export const PORTAL_INFO: Record<string, PortalInfo> = {
   [PORTAL_PERMISSIONS.ADMIN]: {
     permission: PORTAL_PERMISSIONS.ADMIN,
     name: 'Admin Portal',
-    path: '/admin/profile',
+    path: '/admin/dashboard',
     description: 'Quản trị hệ thống',
     icon: 'AdminPanelSettings',
     available: true,
@@ -34,7 +34,7 @@ export const PORTAL_INFO: Record<string, PortalInfo> = {
   [PORTAL_PERMISSIONS.HR]: {
     permission: PORTAL_PERMISSIONS.HR,
     name: 'HR Portal',
-    path: '/hr/profile',
+    path: '/hr',
     description: 'Quản lý nhân sự',
     icon: 'People',
     available: true,
@@ -46,13 +46,5 @@ export const PORTAL_INFO: Record<string, PortalInfo> = {
     description: 'Quản lý bán hàng',
     icon: 'ShoppingCart',
     available: true, // Coming soon
-  },
-  [PORTAL_PERMISSIONS.WAREHOUSE]: {
-    permission: PORTAL_PERMISSIONS.WAREHOUSE,
-    name: 'Warehouse Portal',
-    path: '/warehouse/dashboard',
-    description: 'Quản lý kho',
-    icon: 'Warehouse',
-    available: false, // Coming soon
   },
 };

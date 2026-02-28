@@ -359,7 +359,7 @@ export default function CustomersPage() {
         title="Quản lý Khách Hàng"
         subtitle="Quản lý thông tin khách hàng và lịch sử mua hàng"
         breadcrumbs={[
-          { label: 'Commercial', href: '/commercial' },
+          { label: 'Commercial', href: '/commercial/dashboards' },
           { label: 'Khách hàng', icon: <CustomerIcon fontSize="small" /> },
         ]}
         actions={[

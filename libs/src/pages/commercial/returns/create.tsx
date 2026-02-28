@@ -1,0 +1,912 @@
+'use client';
+
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useRouter, useSearchParams } from 'next/navigation';
+import type { AppDispatch, RootState } from '@libs/src/store';
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  CardHeader,
+  Divider,
+  Checkbox,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  MenuItem,
+  Select,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+  Alert,
+  Chip,
+  IconButton,
+  Collapse,
+  Button,
+  Paper,
+  Stack,
+  InputAdornment,
+  CircularProgress,
+  Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Tooltip,
+} from '@mui/material';
+import {
+  InfoOutlined as InfoIcon,
+  CheckCircle as CheckIcon,
+  Cancel as CancelIcon,
+  Add as AddIcon,
+  Remove as RemoveIcon,
+  ExpandMore as ExpandIcon,
+  ExpandLess as CollapseIcon,
+  QrCodeScanner as ScanIcon,
+  Warehouse as WarehouseIcon,
+  Warning as WarningIcon,
+  Print as PrintIcon,
+} from '@mui/icons-material';
+import { PageHeader, LoadingOverlay } from '@libs/src/components/common';
+import {
+  fetchOrderForReturn,
+  createReturnRequest,
+  clearError,
+} from '@libs/src/features/return-request/return-request.slice';
+import { fetchWarehouses } from '@libs/src/features/warehouse/warehouse.slice';
+import { OrderStatus } from '@libs/shared/enums/order-status.enum';
+import { WarehouseType } from '@libs/shared/enums/warehouse-type.enum';
+import type { OrderDetailResponse } from '@libs/shared/types/order-detail.type';
+import type { CreateReturnRequestDto } from '@libs/shared/types/return-request.type';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface ReturnItem {
+  orderItemId: string;
+  productId: string;
+  productName: string;
+  hasSerialNumber: boolean;
+  purchasedQty: number;
+  assignedSerials: string[];
+  unitPrice: number;
+  // State per row
+  selected: boolean;
+  serialInput: string;
+  serialStatus: 'idle' | 'valid' | 'invalid';
+  quantity: number;
+}
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  [OrderStatus.PENDING]: 'Chờ xử lý',
+  [OrderStatus.PROCESSING]: 'Đang xử lý',
+  [OrderStatus.SHIPPED]: 'Đang giao',
+  [OrderStatus.DELIVERED]: 'Đã giao',
+  [OrderStatus.CANCELLED]: 'Đã hủy',
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
+export default function ReturnCreatePage() {
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get('orderId');
+
+  const { selectedOrder, operationLoading, operationError, loading } = useSelector(
+    (state: RootState) => state.returnRequest
+  );
+  const { warehouses } = useSelector((state: RootState) => state.warehouse);
+
+  // ── Form state ──────────────────────────────────────────────────────────────
+  const [items, setItems] = useState<ReturnItem[]>([]);
+  const [warehouseId, setWarehouseId] = useState('');
+  const [reason, setReason] = useState('');
+  const [refundAmount, setRefundAmount] = useState<number>(0);
+  const [refundEdited, setRefundEdited] = useState(false);
+
+  // ── UI state ────────────────────────────────────────────────────────────────
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error',
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // ── Init ────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (orderId) dispatch(fetchOrderForReturn(orderId));
+    dispatch(fetchWarehouses());
+  }, [orderId, dispatch]);
+
+  // Set default warehouse to DAMAGED type
+  useEffect(() => {
+    if (warehouses.length > 0 && !warehouseId) {
+      const damaged = warehouses.find((w) => w.type === WarehouseType.DAMAGED && w.isActive);
+      if (damaged) setWarehouseId(damaged.id);
+    }
+  }, [warehouses, warehouseId]);
+
+  // Build items from order details
+  useEffect(() => {
+    if (!selectedOrder) return;
+    const built: ReturnItem[] = (selectedOrder.items ?? []).map((detail: OrderDetailResponse) => ({
+      orderItemId: detail.id,
+      productId: detail.product.id,
+      productName: detail.product.name,
+      hasSerialNumber: detail.product.hasSerialNumber,
+      purchasedQty: detail.quantity,
+      assignedSerials: detail.assignedSerials ?? [],
+      unitPrice: Number(detail.unitPrice) || 0,
+      selected: false,
+      serialInput: '',
+      serialStatus: 'idle',
+      quantity: 1,
+    }));
+    setItems(built);
+  }, [selectedOrder]);
+
+  // ── Auto-calculate refund ────────────────────────────────────────────────────
+  const autoRefund = useMemo(() => {
+    return items
+      .filter((item) => item.selected)
+      .reduce((sum, item) => {
+        const unitPrice = Number(item.unitPrice) || 0;
+        const quantity = Number(item.quantity) || 0;
+        
+        if (item.hasSerialNumber && item.serialStatus === 'valid') {
+          return sum + unitPrice;
+        }
+        if (!item.hasSerialNumber) {
+          return sum + unitPrice * quantity;
+        }
+        return sum;
+      }, 0);
+  }, [items]);
+
+  useEffect(() => {
+    if (!refundEdited) setRefundAmount(autoRefund);
+  }, [autoRefund, refundEdited]);
+
+  // ── Error handling ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (operationError) {
+      setSnackbar({ open: true, message: operationError, severity: 'error' });
+      dispatch(clearError());
+    }
+  }, [operationError, dispatch]);
+
+  // ─── Row handlers ──────────────────────────────────────────────────────────
+
+  const toggleSelect = useCallback((idx: number) => {
+    setItems((prev) =>
+      prev.map((item, i) =>
+        i === idx ? { ...item, selected: !item.selected } : item
+      )
+    );
+  }, []);
+
+  const handleSerialChange = useCallback((idx: number, value: string) => {
+    setItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== idx) return item;
+        const trimmed = value.trim().toUpperCase();
+        const isValid = item.assignedSerials
+          .map((s) => s.toUpperCase())
+          .includes(trimmed);
+        return {
+          ...item,
+          serialInput: value,
+          serialStatus: trimmed === '' ? 'idle' : isValid ? 'valid' : 'invalid',
+        };
+      })
+    );
+  }, []);
+
+  const handleQuantityChange = useCallback((idx: number, delta: number) => {
+    setItems((prev) =>
+      prev.map((item, i) => {
+        if (i !== idx) return item;
+        const next = Math.min(Math.max(1, item.quantity + delta), item.purchasedQty);
+        return { ...item, quantity: next };
+      })
+    );
+  }, []);
+
+  // ─── Validation ────────────────────────────────────────────────────────────
+
+  const selectedItems = items.filter((item) => item.selected);
+
+  const isFormValid = useMemo(() => {
+    if (selectedItems.length === 0) return false;
+    if (!warehouseId) return false;
+    if (!reason.trim()) return false;
+
+    // All selected serial items must be valid
+    const serialItemsOk = selectedItems
+      .filter((i) => i.hasSerialNumber)
+      .every((i) => i.serialStatus === 'valid');
+    if (!serialItemsOk) return false;
+
+    return true;
+  }, [selectedItems, warehouseId, reason]);
+
+  // ─── Submit ────────────────────────────────────────────────────────────────
+
+  const handleSubmit = async () => {
+    const errors: Record<string, string> = {};
+    if (!warehouseId) errors.warehouse = 'Vui lòng chọn kho tiếp nhận';
+    if (!reason.trim()) errors.reason = 'Vui lòng nhập lý do trả hàng';
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      setConfirmOpen(false);
+      return;
+    }
+
+    const dto: CreateReturnRequestDto = {
+      orderId: selectedOrder!.id,
+      warehouseId,
+      reason,
+      items: selectedItems.map((item) => ({
+        productId: item.productId,
+        quantity: item.hasSerialNumber ? 1 : item.quantity,
+        refundPrice: Number(item.hasSerialNumber ? item.unitPrice : item.unitPrice * item.quantity),
+        returnedSerials: item.hasSerialNumber ? [item.serialInput.trim().toUpperCase()] : undefined,
+      })),
+    };
+
+    const result = await dispatch(createReturnRequest(dto));
+    if (createReturnRequest.fulfilled.match(result)) {
+      setConfirmOpen(false);
+      setSnackbar({
+        open: true,
+        message: 'Tạo phiếu trả hàng thành công!',
+        severity: 'success',
+      });
+      setTimeout(() => {
+        router.push(`/commercial/returns/${result.payload.id}`);
+      }, 1200);
+    }
+  };
+
+  const selectedWarehouse = warehouses.find((w) => w.id === warehouseId);
+
+  if (loading && !selectedOrder) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!selectedOrder && !loading) {
+    return (
+      <Box p={4}>
+        <Alert severity="error">
+          Không tìm thấy đơn hàng. Vui lòng{' '}
+          <Button size="small" onClick={() => router.push('/commercial/returns/initiate')}>
+            quay lại tra cứu
+          </Button>
+        </Alert>
+      </Box>
+    );
+  }
+
+  // ─── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <Box pb={14}>
+      <LoadingOverlay open={operationLoading} />
+
+      <PageHeader
+        title="Xử lý Trả Hàng"
+        subtitle={`Đơn hàng: ${selectedOrder?.code}`}
+        breadcrumbs={[
+          { label: 'Thương mại', href: '/commercial/dashboards' },
+          { label: 'Trả hàng', href: '/commercial/returns' },
+          { label: 'Tạo phiếu' },
+        ]}
+      />
+
+      <Stack spacing={3}>
+        {/* ════════════════════════════════════════════════════════════════
+            CARD 1 — Thông tin đơn hàng gốc (read-only)
+        ════════════════════════════════════════════════════════════════ */}
+        <Card variant="outlined">
+          <CardHeader
+            avatar={<InfoIcon color="primary" />}
+            title={
+              <Typography fontWeight={700} variant="h6">
+                Thông tin Đơn hàng gốc
+              </Typography>
+            }
+            sx={{ pb: 0 }}
+          />
+          <Divider />
+          <CardContent>
+            <Box
+              display="grid"
+              gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' }}
+              gap={2}
+            >
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Mã đơn hàng
+                </Typography>
+                <Typography variant="body1" fontWeight={700} color="primary">
+                  {selectedOrder?.code}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Ngày mua
+                </Typography>
+                <Typography variant="body1">
+                  {selectedOrder?.createdAt
+                    ? new Date(selectedOrder.createdAt).toLocaleDateString('vi-VN')
+                    : '—'}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Khách hàng
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {selectedOrder?.customer?.fullName ?? '—'}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Số điện thoại
+                </Typography>
+                <Typography variant="body1">
+                  {selectedOrder?.customer?.phoneNumber ?? '—'}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Trạng thái đơn
+                </Typography>
+                <Chip
+                  label={
+                    ORDER_STATUS_LABELS[selectedOrder?.status ?? ''] ?? selectedOrder?.status
+                  }
+                  color={selectedOrder?.status === OrderStatus.DELIVERED ? 'success' : 'default'}
+                  size="small"
+                  sx={{ mt: 0.5 }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary">
+                  Tổng tiền đơn
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {new Intl.NumberFormat('vi-VN', {
+                    style: 'currency',
+                    currency: 'VND',
+                  }).format(selectedOrder?.totalAmount ?? 0)}
+                </Typography>
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+
+        {/* ════════════════════════════════════════════════════════════════
+            CARD 2 — Danh sách hàng hóa & Dynamic Form
+        ════════════════════════════════════════════════════════════════ */}
+        <Card variant="outlined">
+          <CardHeader
+            avatar={<ScanIcon color="warning" />}
+            title={
+              <Typography fontWeight={700} variant="h6">
+                Danh sách Hàng hóa
+              </Typography>
+            }
+            subheader="Tích chọn sản phẩm cần trả và điền thông tin bên dưới"
+            sx={{ pb: 0 }}
+          />
+          <Divider />
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow sx={{ bgcolor: 'grey.50' }}>
+                  <TableCell padding="checkbox" />
+                  <TableCell>Sản phẩm</TableCell>
+                  <TableCell align="center">Loại</TableCell>
+                  <TableCell align="right">Đã mua</TableCell>
+                  <TableCell align="right">Đơn giá</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {items.map((item, idx) => (
+                  <ItemRow
+                    key={item.orderItemId}
+                    item={item}
+                    onToggle={() => toggleSelect(idx)}
+                    onSerialChange={(val) => handleSerialChange(idx, val)}
+                    onQuantityChange={(delta) => handleQuantityChange(idx, delta)}
+                  />
+                ))}
+                {items.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                      <Typography color="text.secondary">Không có sản phẩm</Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {selectedItems.length > 0 && (
+            <Box px={2} py={1} bgcolor="primary.50">
+              <Typography variant="caption" color="primary" fontWeight={600}>
+                Đã chọn {selectedItems.length} sản phẩm để trả
+              </Typography>
+            </Box>
+          )}
+        </Card>
+
+        {/* ════════════════════════════════════════════════════════════════
+            CARD 3 — Cấu hình Nhập Kho & Hoàn tiền
+        ════════════════════════════════════════════════════════════════ */}
+        <Card variant="outlined">
+          <CardHeader
+            avatar={<WarehouseIcon color="error" />}
+            title={
+              <Typography fontWeight={700} variant="h6">
+                Cấu hình Nhập Kho & Hoàn tiền
+              </Typography>
+            }
+            sx={{ pb: 0 }}
+          />
+          <Divider />
+          <CardContent>
+            <Stack spacing={3}>
+              {/* Kho tiếp nhận */}
+              <FormControl fullWidth error={!!formErrors.warehouse} required>
+                <InputLabel>Kho tiếp nhận *</InputLabel>
+                <Select
+                  value={warehouseId}
+                  label="Kho tiếp nhận *"
+                  onChange={(e) => {
+                    setWarehouseId(e.target.value);
+                    setFormErrors((prev) => ({ ...prev, warehouse: '' }));
+                  }}
+                >
+                  {warehouses
+                    .filter((w) => w.isActive)
+                    .map((w) => (
+                      <MenuItem key={w.id} value={w.id}>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          {w.name}
+                          {w.type === WarehouseType.DAMAGED && (
+                            <Chip
+                              label="Kho lỗi"
+                              size="small"
+                              color="warning"
+                            />
+                          )}
+                        </Box>
+                      </MenuItem>
+                    ))}
+                </Select>
+                {formErrors.warehouse ? (
+                  <FormHelperText>{formErrors.warehouse}</FormHelperText>
+                ) : (
+                  <FormHelperText>
+                    Mặc định chọn Kho Hàng Lỗi để tránh nhập nhầm về kho bán mới
+                  </FormHelperText>
+                )}
+              </FormControl>
+
+              {/* Lý do */}
+              <TextField
+                label="Lý do trả hàng *"
+                multiline
+                rows={3}
+                fullWidth
+                required
+                value={reason}
+                onChange={(e) => {
+                  setReason(e.target.value);
+                  setFormErrors((prev) => ({ ...prev, reason: '' }));
+                }}
+                error={!!formErrors.reason}
+                helperText={formErrors.reason || 'VD: Lỗi NSX, quạt không quay, màn hình bị sọc...'}
+                placeholder="Nhập lý do trả hàng chi tiết..."
+              />
+
+              {/* Xử lý tài chính */}
+              <Box>
+                <Typography variant="subtitle2" gutterBottom fontWeight={700}>
+                  Xử lý tài chính
+                </Typography>
+                <Box
+                  display="grid"
+                  gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }}
+                  gap={2}
+                >
+                  <Box
+                    sx={{
+                      p: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      bgcolor: 'grey.50',
+                    }}
+                  >
+                    <Typography variant="caption" color="text.secondary">
+                      Tổng tiền hàng trả (tự động)
+                    </Typography>
+                    <Typography variant="h6" fontWeight={700} color="success.main">
+                      {new Intl.NumberFormat('vi-VN', {
+                        style: 'currency',
+                        currency: 'VND',
+                      }).format(autoRefund)}
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled">
+                      Dựa trên đơn giá × số lượng được chọn
+                    </Typography>
+                  </Box>
+
+                  <TextField
+                    label="Tiền hoàn trả khách (có thể điều chỉnh)"
+                    type="number"
+                    fullWidth
+                    value={refundAmount}
+                    onChange={(e) => {
+                      setRefundAmount(Number(e.target.value));
+                      setRefundEdited(true);
+                    }}
+                    InputProps={{
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Typography variant="caption">VNĐ</Typography>
+                        </InputAdornment>
+                      ),
+                    }}
+                    helperText="Có thể giảm nếu hàng hao mòn, trầy xước — thông thường trừ ~10%"
+                  />
+                </Box>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      </Stack>
+
+      {/* ════════════════════════════════════════════════════════════════
+          STICKY FOOTER
+      ════════════════════════════════════════════════════════════════ */}
+      <Paper
+        elevation={8}
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 1200,
+          px: 3,
+          py: 2,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2,
+          borderTop: '2px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Box>
+          <Typography variant="body2" color="text.secondary">
+            {selectedItems.length} sản phẩm được chọn &bull; Hoàn tiền:&nbsp;
+            <Typography component="span" fontWeight={700} color="error.main" variant="body2">
+              {new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+              }).format(refundAmount)}
+            </Typography>
+          </Typography>
+        </Box>
+        <Box display="flex" gap={2}>
+          <Button
+            variant="outlined"
+            onClick={() => router.push('/commercial/returns')}
+          >
+            Hủy
+          </Button>
+          <Tooltip
+            title={
+              !isFormValid
+                ? 'Vui lòng chọn sản phẩm, nhập serial hợp lệ, chọn kho và điền lý do'
+                : ''
+            }
+          >
+            <span>
+              <Button
+                variant="contained"
+                color="error"
+                size="large"
+                disabled={!isFormValid || operationLoading}
+                onClick={() => setConfirmOpen(true)}
+                sx={{ fontWeight: 700, px: 4 }}
+              >
+                {operationLoading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  'XÁC NHẬN NHẬP KHO LỖI & TẠO PHIẾU'
+                )}
+              </Button>
+            </span>
+          </Tooltip>
+        </Box>
+      </Paper>
+
+      {/* ════════════════════════════════════════════════════════════════
+          CONFIRMATION DIALOG
+      ════════════════════════════════════════════════════════════════ */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <WarningIcon color="warning" />
+          Xác nhận tạo phiếu trả hàng
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            Hệ thống sẽ tiến hành nhập kho các sản phẩm này vào{' '}
+            <strong>[{selectedWarehouse?.name ?? 'Kho đã chọn'}]</strong> và hoàn lại{' '}
+            <strong>
+              {new Intl.NumberFormat('vi-VN', {
+                style: 'currency',
+                currency: 'VND',
+              }).format(refundAmount)}
+            </strong>{' '}
+            cho khách hàng. Thao tác này sẽ ghi nhận vào Thẻ kho. Bạn có chắc chắn?
+          </Alert>
+
+          <Stack spacing={1}>
+            <Box display="flex" justifyContent="space-between">
+              <Typography variant="body2" color="text.secondary">Đơn hàng:</Typography>
+              <Typography variant="body2" fontWeight={600}>{selectedOrder?.code}</Typography>
+            </Box>
+            <Box display="flex" justifyContent="space-between">
+              <Typography variant="body2" color="text.secondary">Khách hàng:</Typography>
+              <Typography variant="body2">{selectedOrder?.customer?.fullName}</Typography>
+            </Box>
+            <Box display="flex" justifyContent="space-between">
+              <Typography variant="body2" color="text.secondary">Kho tiếp nhận:</Typography>
+              <Typography variant="body2">{selectedWarehouse?.name}</Typography>
+            </Box>
+            <Box display="flex" justifyContent="space-between">
+              <Typography variant="body2" color="text.secondary">Sản phẩm trả:</Typography>
+              <Typography variant="body2">{selectedItems.length} mặt hàng</Typography>
+            </Box>
+            <Divider />
+            <Box display="flex" justifyContent="space-between">
+              <Typography variant="body2" fontWeight={700}>Tiền hoàn trả:</Typography>
+              <Typography variant="body2" fontWeight={700} color="error.main">
+                {new Intl.NumberFormat('vi-VN', {
+                  style: 'currency',
+                  currency: 'VND',
+                }).format(refundAmount)}
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button variant="outlined" onClick={() => setConfirmOpen(false)}>
+            Hủy bỏ
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleSubmit}
+            disabled={operationLoading}
+            startIcon={operationLoading ? <CircularProgress size={16} color="inherit" /> : undefined}
+          >
+            Xác nhận tạo phiếu
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Toast */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          sx={{ fontWeight: 600 }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+}
+
+// ─── Sub-component: ItemRow ────────────────────────────────────────────────────
+
+interface ItemRowProps {
+  item: ReturnItem;
+  onToggle: () => void;
+  onSerialChange: (val: string) => void;
+  onQuantityChange: (delta: number) => void;
+}
+
+function ItemRow({ item, onToggle, onSerialChange, onQuantityChange }: ItemRowProps) {
+  const serialBorderColor =
+    item.serialStatus === 'valid'
+      ? 'success.main'
+      : item.serialStatus === 'invalid'
+      ? 'error.main'
+      : 'divider';
+
+  return (
+    <>
+      {/* Main row */}
+      <TableRow
+        hover
+        sx={{ cursor: 'pointer', bgcolor: item.selected ? 'action.selected' : 'inherit' }}
+        onClick={onToggle}
+      >
+        <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
+          <Checkbox checked={item.selected} onChange={onToggle} color="primary" />
+        </TableCell>
+        <TableCell>
+          <Typography variant="body2" fontWeight={item.selected ? 700 : 400}>
+            {item.productName}
+          </Typography>
+        </TableCell>
+        <TableCell align="center">
+          {item.hasSerialNumber ? (
+            <Chip label="Có Serial" size="small" color="info" />
+          ) : (
+            <Chip label="Số lượng" size="small" color="default" />
+          )}
+        </TableCell>
+        <TableCell align="right">
+          <Typography variant="body2">{item.purchasedQty}</Typography>
+        </TableCell>
+        <TableCell align="right">
+          <Typography variant="body2">
+            {new Intl.NumberFormat('vi-VN', {
+              style: 'currency',
+              currency: 'VND',
+            }).format(item.unitPrice)}
+          </Typography>
+        </TableCell>
+      </TableRow>
+
+      {/* Expanded form row */}
+      <TableRow>
+        <TableCell
+          colSpan={5}
+          sx={{ py: 0, border: item.selected ? undefined : 'none' }}
+        >
+          <Collapse in={item.selected} timeout="auto" unmountOnExit>
+            <Box
+              sx={{
+                px: 4,
+                py: 2,
+                borderLeft: '3px solid',
+                borderColor: 'primary.main',
+                bgcolor: 'grey.50',
+                mb: 1,
+                borderRadius: '0 8px 8px 0',
+              }}
+            >
+              {item.hasSerialNumber ? (
+                /* ── Case A: Serial product ───────────────────────── */
+                <Box>
+                  <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+                    Đơn này đã xuất các Serial:{' '}
+                    {item.assignedSerials.length > 0 ? (
+                      item.assignedSerials.map((s) => (
+                        <Chip key={s} label={s} size="small" sx={{ mr: 0.5 }} />
+                      ))
+                    ) : (
+                      <em>(chưa có serial được gán)</em>
+                    )}
+                  </Typography>
+                  <TextField
+                    size="small"
+                    label="Nhập hoặc quét mã Serial"
+                    placeholder="VD: SN-999"
+                    value={item.serialInput}
+                    onChange={(e) => onSerialChange(e.target.value)}
+                    onClick={(e) => e.stopPropagation()}
+                    sx={{
+                      maxWidth: 360,
+                      '& .MuiOutlinedInput-root': {
+                        '& fieldset': {
+                          borderColor: serialBorderColor,
+                          borderWidth:
+                            item.serialStatus !== 'idle' ? 2 : 1,
+                        },
+                      },
+                    }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <ScanIcon fontSize="small" />
+                        </InputAdornment>
+                      ),
+                      endAdornment:
+                        item.serialStatus === 'valid' ? (
+                          <InputAdornment position="end">
+                            <CheckIcon color="success" />
+                          </InputAdornment>
+                        ) : item.serialStatus === 'invalid' ? (
+                          <InputAdornment position="end">
+                            <CancelIcon color="error" />
+                          </InputAdornment>
+                        ) : null,
+                    }}
+                  />
+                  {item.serialStatus === 'invalid' && (
+                    <Alert severity="error" sx={{ mt: 1, maxWidth: 360, py: 0 }}>
+                      Mã Serial không thuộc đơn hàng này!
+                    </Alert>
+                  )}
+                  {item.serialStatus === 'valid' && (
+                    <Alert severity="success" sx={{ mt: 1, maxWidth: 360, py: 0 }}>
+                      Serial hợp lệ — đã xác nhận
+                    </Alert>
+                  )}
+                </Box>
+              ) : (
+                /* ── Case B: Non-serial product ──────────────────── */
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Typography variant="body2" color="text.secondary">
+                    Số lượng trả:
+                  </Typography>
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onQuantityChange(-1);
+                      }}
+                      disabled={item.quantity <= 1}
+                    >
+                      <RemoveIcon fontSize="small" />
+                    </IconButton>
+                    <Typography
+                      variant="body1"
+                      fontWeight={700}
+                      minWidth={32}
+                      textAlign="center"
+                    >
+                      {item.quantity}
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onQuantityChange(1);
+                      }}
+                      disabled={item.quantity >= item.purchasedQty}
+                    >
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    / Tối đa: <strong>{item.purchasedQty}</strong>
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+          </Collapse>
+        </TableCell>
+      </TableRow>
+    </>
+  );
+}

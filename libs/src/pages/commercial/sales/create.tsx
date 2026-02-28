@@ -349,7 +349,7 @@ export default function CreateOrderPage() {
                             <CardMedia
                               component="img"
                               height="140"
-                              image="/placeholder-product.png"
+                              image={product.thumbnailUrl || '/placeholder-product.png'}
                               alt={product.name}
                               sx={{ objectFit: 'cover' }}
                             />
@@ -478,7 +478,7 @@ export default function CreateOrderPage() {
                     <Paper key={item.product.id} variant="outlined" sx={{ p: 2, mb: 2 }}>
                       <Box sx={{ display: 'flex', gap: 2 }}>
                         <Avatar
-                          src="/placeholder-product.png"
+                          src={item.product.thumbnailUrl || '/placeholder-product.png'}
                           variant="rounded"
                           sx={{ width: 60, height: 60 }}
                         />

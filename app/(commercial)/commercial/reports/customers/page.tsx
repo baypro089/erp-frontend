@@ -11,7 +11,7 @@ export default function CustomerReportPage() {
         title="Báo cáo Khách hàng"
         subtitle="Phân tích hành vi và xu hướng khách hàng"
         breadcrumbs={[
-          { label: 'Báo cáo', href: '/commercial/reports' },
+          { label: 'Báo cáo', href: '/commercial/dashboards' },
           { label: 'Khách hàng', icon: <People fontSize="small" /> },
         ]}
       />

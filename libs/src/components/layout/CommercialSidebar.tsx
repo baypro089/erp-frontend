@@ -38,6 +38,7 @@ import {
   PointOfSale,
   LocalOffer,
   Inventory2,
+  AssignmentReturn as AssignmentReturnIcon,
 } from '@mui/icons-material';
 import { usePathname, useRouter } from 'next/navigation';
 
@@ -64,15 +65,7 @@ const menuItems: MenuItem[] = [
     id: 'dashboard',
     label: 'Dashboard',
     icon: <DashboardIcon />,
-    path: '/commercial',
-  },
-  {
-    id: 'pos',
-    label: 'POS - Bán hàng',
-    icon: <PointOfSale />,
-    path: '/commercial/pos',
-    badge: 0,
-    badgeColor: 'success',
+    path: '/commercial/dashboards',
   },
   {
     id: 'orders',
@@ -83,29 +76,17 @@ const menuItems: MenuItem[] = [
     badgeColor: 'warning',
   },
   {
+    id: 'returns',
+    label: 'Trả hàng / Bảo hành',
+    icon: <AssignmentReturnIcon />,
+    path: '/commercial/returns',
+    badgeColor: 'error',
+  },
+  {
     id: 'warehouses',
     label: 'Kho hàng',
     icon: <WarehouseIcon />,
-    children: [
-      {
-        id: 'warehouse-list',
-        label: 'Danh sách kho',
-        icon: <Storefront />,
-        path: '/commercial/warehouses',
-      },
-      {
-        id: 'stock-transfer',
-        label: 'Chuyển kho',
-        icon: <LocalShippingIcon />,
-        path: '/commercial/warehouses/transfer',
-      },
-      {
-        id: 'stock-adjustment',
-        label: 'Kiểm kê',
-        icon: <Inventory2 />,
-        path: '/commercial/warehouses/adjustment',
-      },
-    ],
+    path: '/commercial/warehouses',
   },
   {
     id: 'inventory',
@@ -125,6 +106,12 @@ const menuItems: MenuItem[] = [
         path: '/commercial/inventory/imports',
       },
       {
+        id: 'inventory-exports',
+        label: 'Xuất kho',
+        icon: <LocalShippingIcon />,
+        path: '/commercial/warehouse/fulfillment',
+      },
+      {
         id: 'inventory-products',
         label: 'Sản phẩm',
         icon: <CategoryIcon />,
@@ -137,26 +124,6 @@ const menuItems: MenuItem[] = [
         path: '/commercial/inventory/tracking',
       },
     ],
-  },
-  {
-    id: 'shipping',
-    label: 'Vận chuyển',
-    icon: <LocalShippingIcon />,
-    path: '/commercial/shipping',
-    badge: 8,
-    badgeColor: 'info',
-  },
-  {
-    id: 'invoices',
-    label: 'Hóa đơn',
-    icon: <ReceiptIcon />,
-    path: '/commercial/invoices',
-  },
-  {
-    id: 'promotions',
-    label: 'Khuyến mãi',
-    icon: <LocalOffer />,
-    path: '/commercial/promotions',
   },
   {
     id: 'customers',
@@ -195,18 +162,6 @@ const menuItems: MenuItem[] = [
       },
     ],
   },
-  {
-    id: 'profile',
-    label: 'Hồ sơ cá nhân',
-    icon: <AccountCircle />,
-    path: '/commercial/profile',
-  },
-  {
-    id: 'settings',
-    label: 'Cài đặt',
-    icon: <SettingsIcon />,
-    path: '/commercial/settings',
-  },
 ];
 
 export default function CommercialSidebar({
@@ -239,7 +194,27 @@ export default function CommercialSidebar({
 
   const isActive = (path?: string) => {
     if (!path) return false;
-    return pathname === path || pathname.startsWith(path + '/');
+    
+    // Exact match
+    if (pathname === path) return true;
+    
+    // Check if current pathname is a child page (detail/edit/create)
+    if (pathname.startsWith(path + '/')) {
+      const remaining = pathname.slice(path.length + 1);
+      const segments = remaining.split('/');
+      const firstSegment = segments[0];
+      
+      // Only match if next segment is 'create', 'edit', 'detail', or looks like an ID
+      // This prevents '/commercial/inventory' from matching when at '/commercial/inventory/imports'
+      const isDynamicSegment = 
+        ['create', 'edit', 'detail'].includes(firstSegment) ||
+        /^[a-f0-9-]{36}$/.test(firstSegment) || // UUID
+        /^\d+$/.test(firstSegment); // Numeric ID
+      
+      return isDynamicSegment;
+    }
+    
+    return false;
   };
 
   const renderMenuItem = (item: MenuItem, level = 0) => {
@@ -263,13 +238,13 @@ export default function CommercialSidebar({
             mb: 0.5,
             mx: 1,
             borderRadius: 2,
-            backgroundColor: active
+            background: active
               ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
               : 'transparent',
             color: active ? 'white' : 'inherit',
             borderLeft: active ? `4px solid ${theme.palette.warning.main}` : '4px solid transparent',
             '&:hover': {
-              backgroundColor: active
+              background: active
                 ? `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`
                 : alpha(theme.palette.primary.main, 0.08),
               transform: 'translateX(4px)',

@@ -29,6 +29,8 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.0",
     "react-redux": "^9.2.0",
+    "recharts": "^3.7.0",
+    "xlsx": "^0.18.5",
     "yup": "^1.7.1"
   },
   "devDependencies": {

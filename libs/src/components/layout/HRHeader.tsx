@@ -30,6 +30,7 @@ import {
   Brightness7,
   EventNote as EventNoteIcon,
   People as PeopleIcon,
+  SwapHoriz,
 } from '@mui/icons-material';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -92,12 +93,17 @@ export default function HRHeader({
 
   const handleProfile = () => {
     handleCloseUserMenu();
-    router.push('/hr/profile');
+    router.push('/personal-page/profile');
   };
 
   const handleSettings = () => {
     handleCloseUserMenu();
     router.push('/hr/settings');
+  };
+
+  const handleSwitchSite = () => {
+    handleCloseUserMenu();
+    router.push('/portal-selection');
   };
 
   return (
@@ -387,6 +393,12 @@ export default function HRHeader({
               <Settings fontSize="small" />
             </ListItemIcon>
             <ListItemText>Cài đặt</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={handleSwitchSite}>
+            <ListItemIcon>
+              <SwapHoriz fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Chuyển đổi site</ListItemText>
           </MenuItem>
           <Divider />
           <MenuItem onClick={handleLogout}>

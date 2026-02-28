@@ -11,7 +11,7 @@ export default function SalesReportPage() {
         title="Báo cáo Doanh thu"
         subtitle="Phân tích doanh thu và bán hàng"
         breadcrumbs={[
-          { label: 'Báo cáo', href: '/commercial/reports' },
+          { label: 'Báo cáo', href: '/commercial/dashboards' },
           { label: 'Doanh thu', icon: <TrendingUp fontSize="small" /> },
         ]}
       />

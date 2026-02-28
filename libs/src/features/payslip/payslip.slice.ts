@@ -10,6 +10,7 @@ import type {
 interface PayslipState {
   payslips: PaySlipTableResponse[];
   currentPayslip: PayslipResponse | null;
+  yearlyPayslips: { details: PayslipResponse[], totalSalary: number, totalBaseSalary: number } | null;
   totalCount: number;
   totalPages: number;
   currentPage: number;
@@ -23,6 +24,7 @@ interface PayslipState {
 const initialState: PayslipState = {
   payslips: [],
   currentPayslip: null,
+  yearlyPayslips: null,
   totalCount: 0,
   totalPages: 0,
   currentPage: 1,
@@ -75,7 +77,6 @@ export const fetchMyPayslips = createAsyncThunk(
   'payslip/fetchMyPayslips',
   async (
     params: {
-      employeeId: string;
       month?: number;
       year?: number;
       page?: number;
@@ -85,7 +86,6 @@ export const fetchMyPayslips = createAsyncThunk(
   ) => {
     try {
       const response = await payslipService.getMyPayslips(
-        params.employeeId,
         params.month,
         params.year,
         params.page,
@@ -94,6 +94,18 @@ export const fetchMyPayslips = createAsyncThunk(
       return response;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch my payslips');
+    }
+  }
+);
+
+export const fetchYearlyPayslips = createAsyncThunk(
+  'payslip/fetchYearlyPayslips',
+  async (year: number, { rejectWithValue }) => {
+    try {
+      const response = await payslipService.getYearlyPayslips(year);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch yearly payslips');
     }
   }
 );
@@ -136,6 +148,9 @@ const payslipSlice = createSlice({
     },
     clearGenerationResult: (state) => {
       state.generationResult = null;
+    },
+    clearYearlyPayslips: (state) => {
+      state.yearlyPayslips = null;
     },
   },
   extraReducers: (builder) => {
@@ -228,8 +243,23 @@ const payslipSlice = createSlice({
         state.loading = false;
         state.error = action.payload as string;
       });
+
+    // Fetch yearly payslips
+    builder
+      .addCase(fetchYearlyPayslips.pending, (state) => {
+        state.operationLoading = true;
+        state.operationError = null;
+      })
+      .addCase(fetchYearlyPayslips.fulfilled, (state, action) => {
+        state.operationLoading = false;
+        state.yearlyPayslips = action.payload;
+      })
+      .addCase(fetchYearlyPayslips.rejected, (state, action) => {
+        state.operationLoading = false;
+        state.operationError = action.payload as string;
+      });
   },
 });
 
-export const { clearError, clearCurrentPayslip, clearGenerationResult } = payslipSlice.actions;
+export const { clearError, clearCurrentPayslip, clearGenerationResult, clearYearlyPayslips } = payslipSlice.actions;
 export default payslipSlice.reducer;

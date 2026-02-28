@@ -31,10 +31,18 @@ import {
   IdentificationCard,
   WorkInformationCard,
   SystemInformationCard,
+  DocumentsCard,
   JobHistoryTimeline,
   JobHistoryFormDrawer,
 } from '@libs/src/components/employees';
-import { fetchEmployeeById, updateEmployee } from '@libs/src/features/employee/employee.slice';
+import { 
+  fetchEmployeeById, 
+  updateEmployee, 
+  updateEmployeePhoto, 
+  updateEmployeeCV 
+} from '@libs/src/features/employee/employee.slice';
+import employeeService from '@libs/src/features/employee/employee.service';
+import type { AttachmentResponse } from '@libs/shared/types/attachment.type';
 import { fetchDepartments } from '@libs/src/features/department/department.slice';
 import { fetchPositions } from '@libs/src/features/position/position.slice';
 import { 
@@ -95,6 +103,9 @@ export default function EmployeeDetailPage() {
     level: '',
     status: Status.DRAFT,
   });
+  const [cvAttachment, setCvAttachment] = useState<AttachmentResponse | null>(null);
+  const [photoAttachment, setPhotoAttachment] = useState<AttachmentResponse | null>(null);
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
@@ -107,10 +118,27 @@ export default function EmployeeDetailPage() {
     if (employeeId) {
       dispatch(fetchEmployeeById(employeeId));
       dispatch(fetchJobHistoriesByEmployeeId(employeeId));
+      // Load photo and CV attachments
+      loadAttachments();
     }
     dispatch(fetchDepartments({}));
     dispatch(fetchPositions({}));
   }, [dispatch, employeeId]);
+
+  const loadAttachments = async () => {
+    if (employeeId) {
+      try {
+        const [photo, cv] = await Promise.all([
+          employeeService.getEmployeePhoto(employeeId),
+          employeeService.getEmployeeCV(employeeId)
+        ]);
+        setPhotoAttachment(photo);
+        setCvAttachment(cv);
+      } catch (error) {
+        console.error('Failed to load attachments:', error);
+      }
+    }
+  };
 
   useEffect(() => {
     if (currentEmployee) {
@@ -265,13 +293,57 @@ export default function EmployeeDetailPage() {
     }
   };
 
+  const handlePhotoUpload = async (file: File) => {
+    try {
+      await dispatch(updateEmployeePhoto({ id: employeeId, photo: file })).unwrap();
+      setSnackbar({
+        open: true,
+        message: 'Photo updated successfully',
+        severity: 'success',
+      });
+      // Reload photo attachment
+      const photo = await employeeService.getEmployeePhoto(employeeId);
+      setPhotoAttachment(photo);
+      // Also reload employee data
+      dispatch(fetchEmployeeById(employeeId));
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: err || 'Failed to update photo',
+        severity: 'error',
+      });
+      throw err;
+    }
+  };
+
+  const handleCVUpload = async (file: File) => {
+    try {
+      await dispatch(updateEmployeeCV({ id: employeeId, cv: file })).unwrap();
+      setSnackbar({
+        open: true,
+        message: 'CV updated successfully',
+        severity: 'success',
+      });
+      // Reload CV attachment
+      const cv = await employeeService.getEmployeeCV(employeeId);
+      setCvAttachment(cv);
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: err || 'Failed to update CV',
+        severity: 'error',
+      });
+      throw err;
+    }
+  };
+
   return (
     <Box>
       <PageHeader
         title="Employee Details"
         subtitle="View and manage employee information"
         breadcrumbs={[
-          { label: 'Employees', href: '/employees' },
+          { label: 'Employees', href: '/hr/employees' },
           { label: currentEmployee?.fullName || 'Loading...' },
         ]}
         actions={
@@ -329,8 +401,10 @@ export default function EmployeeDetailPage() {
                   isEditing={isEditing}
                   formData={formData}
                   onFormChange={handleFormChange}
+                  onPhotoUpload={handlePhotoUpload}
                   statusMap={statusMap}
                   getLevelColor={getLevelColor}
+                  photoAttachment={photoAttachment}
                 />
               </Grid>
 
@@ -383,6 +457,16 @@ export default function EmployeeDetailPage() {
                   {/* System Information */}
                   <Grid size={{ xs: 12 }}>
                     <SystemInformationCard employee={currentEmployee} />
+                  </Grid>
+
+                  {/* Documents & CV */}
+                  <Grid size={{ xs: 12 }}>
+                    <DocumentsCard
+                      employee={currentEmployee}
+                      isEditing={isEditing}
+                      onCVUpload={handleCVUpload}
+                      cvAttachment={cvAttachment}
+                    />
                   </Grid>
                 </Grid>
               </Grid>
