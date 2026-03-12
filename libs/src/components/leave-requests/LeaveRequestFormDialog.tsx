@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Dialog,
   DialogTitle,
@@ -17,6 +18,8 @@ import {
 } from '@mui/material';
 import type { LeaveRequestCreateDto } from '@libs/shared/types/leave-requests.type';
 import { LeaveRequestType } from '@libs/shared/enums/leave-request-status.enum';
+import { calculateWorkingDays, resetWorkingDays } from '@libs/src/features/leave-request/leave-request.slice';
+import type { AppDispatch, RootState } from '@libs/src/store';
 
 interface LeaveRequestFormDialogProps {
   open: boolean;
@@ -24,6 +27,7 @@ interface LeaveRequestFormDialogProps {
   onSubmit: (data: LeaveRequestCreateDto) => Promise<void>;
   loading?: boolean;
   employeeId?: string;
+  leaveBalance?: number;
 }
 
 export default function LeaveRequestFormDialog({
@@ -32,7 +36,11 @@ export default function LeaveRequestFormDialog({
   onSubmit,
   loading = false,
   employeeId,
+  leaveBalance = 0,
 }: LeaveRequestFormDialogProps) {
+  const dispatch = useDispatch<AppDispatch>();
+  const { workingDays, calculatingDays } = useSelector((state: RootState) => state.leaveRequest);
+
   const [formData, setFormData] = useState<{
     startDate: string;
     endDate: string;
@@ -51,31 +59,30 @@ export default function LeaveRequestFormDialog({
     reason?: string;
   }>({});
 
-  // Calculate working days (excluding weekends)
-  const calculateWorkingDays = (start: string, end: string): number => {
-    if (!start || !end) return 0;
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    if (startDate > endDate) return 0;
-
-    let count = 0;
-    const current = new Date(startDate);
-
-    while (current <= endDate) {
-      const dayOfWeek = current.getDay();
-      // 0 = Sunday, 6 = Saturday
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-        count++;
+  // Calculate working days using Redux action
+  useEffect(() => {
+    const fetchWorkingDays = async () => {
+      if (!formData.startDate || !formData.endDate) {
+        dispatch(resetWorkingDays());
+        return;
       }
-      current.setDate(current.getDate() + 1);
-    }
 
-    return count;
-  };
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
+      
+      if (startDate > endDate) {
+        dispatch(resetWorkingDays());
+        return;
+      }
 
-  const workingDays = formData.startDate && formData.endDate
-    ? calculateWorkingDays(formData.startDate, formData.endDate)
-    : 0;
+      dispatch(calculateWorkingDays({
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+      }));
+    };
+
+    fetchWorkingDays();
+  }, [formData.startDate, formData.endDate, dispatch]);
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -87,8 +94,9 @@ export default function LeaveRequestFormDialog({
         reason: '',
       });
       setErrors({});
+      dispatch(resetWorkingDays());
     }
-  }, [open]);
+  }, [open, dispatch]);
 
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
@@ -129,6 +137,7 @@ export default function LeaveRequestFormDialog({
       endDate: new Date(formData.endDate),
       type: formData.type,
       reason: formData.reason,
+      autoSplitIfInsufficient: formData.type === LeaveRequestType.ANNUAL && workingDays > leaveBalance,
     };
 
     await onSubmit(dto);
@@ -214,20 +223,31 @@ export default function LeaveRequestFormDialog({
           />
 
           {/* Duration Display */}
-          {workingDays > 0 && (
-            <Alert severity="info" icon={false}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <Typography variant="body2">
-                  Tổng cộng:
+          {(workingDays > 0 || calculatingDays) && (
+            <Box>
+              <Alert severity="info" icon={false}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="body2">
+                    Tổng cộng:
+                  </Typography>
+                  {calculatingDays ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <Chip
+                      label={`${workingDays} ngày công`}
+                      color="primary"
+                      size="small"
+                      sx={{ fontWeight: 600 }}
+                    />
+                  )}
+                </Box>
+              </Alert>
+              {!calculatingDays && formData.type === LeaveRequestType.ANNUAL && workingDays > leaveBalance && (
+                <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: 'block', fontWeight: 500 }}>
+                  * Số ngày nghỉ vượt quá quỹ phép ({leaveBalance} ngày). Hệ thống sẽ tự động tách đơn.
                 </Typography>
-                <Chip
-                  label={`${workingDays} ngày công`}
-                  color="primary"
-                  size="small"
-                  sx={{ fontWeight: 600 }}
-                />
-              </Box>
-            </Alert>
+              )}
+            </Box>
           )}
 
           {/* Reason */}

@@ -9,7 +9,7 @@ interface LoadingOverlayProps {
 
 export default function LoadingOverlay({
   open,
-  message = 'Loading...',
+  message = 'Đang tải...',
 }: LoadingOverlayProps) {
   return (
     <Backdrop

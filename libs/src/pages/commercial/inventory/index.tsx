@@ -35,6 +35,7 @@ import {
   FilterBar,
   LoadingOverlay,
   Column,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import StockAdjustmentDialog from '@libs/src/components/inventory/StockAdjustmentDialog';
 import StockHistoryDialog from '@libs/src/components/inventory/StockHistoryDialog';
@@ -45,10 +46,26 @@ import {
 } from '@libs/src/features/product-stock/product-stock.slice';
 import { fetchWarehouses } from '@libs/src/features/warehouse/warehouse.slice';
 import type { ProductStockResponse, StockAdjustmentDTO } from '@libs/shared/types/product-stock.type';
+import { CacheService } from '@libs/src/services/cache.service';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function InventoryPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.PRODUCT_STOCK.VIEW}
+      fallbackPath="/commercial"
+    >
+      <InventoryPageContent />
+    </PermissionGuard>
+  );
+}
+
+function InventoryPageContent() {
   const dispatch = useDispatch<AppDispatch>();
-  const { stocks, loading, error, operationLoading, operationError } = useSelector(
+  const { guardAction, permissionDialogProps } = usePermissionGuard();
+  const { stocks, totalCount, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.productStock
   );
   const { warehouses } = useSelector((state: RootState) => state.warehouse);
@@ -241,7 +258,7 @@ export default function InventoryPage() {
     setOpenHistory(true);
   };
 
-  const handleOpenAdjustment = () => {
+  const handleOpenAdjustmentImpl = () => {
     if (!selectedWarehouseId) {
       setSnackbar({
         open: true,
@@ -252,6 +269,8 @@ export default function InventoryPage() {
     }
     setOpenAdjustment(true);
   };
+
+  const handleOpenAdjustment = guardAction(PERMISSIONS.PRODUCT_STOCK.UPDATE, handleOpenAdjustmentImpl);
 
   const handleAdjustmentSubmit = async (dto: StockAdjustmentDTO) => {
     try {
@@ -279,8 +298,9 @@ export default function InventoryPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     if (selectedWarehouseId) {
+      await CacheService.refreshCache();
       dispatch(
         fetchStocksByWarehouse({
           warehouseId: selectedWarehouseId,
@@ -437,7 +457,7 @@ export default function InventoryPage() {
           loading={loading}
           page={page}
           rowsPerPage={rowsPerPage}
-          totalRows={stocks.length}
+          totalRows={totalCount}
           onPageChange={setPage}
           onRowsPerPageChange={(value) => {
             setRowsPerPage(value);
@@ -496,6 +516,7 @@ export default function InventoryPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

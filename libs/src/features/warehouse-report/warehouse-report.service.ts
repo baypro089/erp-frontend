@@ -28,7 +28,7 @@ class WarehouseReportService {
     if (filter?.month) params.month = filter.month;
     if (filter?.year) params.year = filter.year;
 
-    const response = await api.get(`${this.BASE_URL}/products/export`, {
+    const response = await api.get(`${this.BASE_URL}/export-excel`, {
       params,
       responseType: 'blob',
     });

@@ -56,7 +56,7 @@ interface AdminHeaderProps {
 
 export default function AdminHeader({
   onMenuClick,
-  title = 'Admin Dashboard',
+  title = 'Bảng điều khiển',
   showMenuButton = true,
   user,
   notificationCount = 0,
@@ -211,7 +211,7 @@ export default function AdminHeader({
                 fontSize: '0.7rem',
               }}
             >
-              System Control Panel
+              Bảng điều khiển hệ thống
             </Typography>
           </Box>
         </Box>
@@ -448,13 +448,13 @@ export default function AdminHeader({
             <ListItemIcon>
               <AccountCircle fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Profile</ListItemText>
+            <ListItemText>Hồ sơ cá nhân</ListItemText>
           </MenuItem>
           <MenuItem onClick={handleSettings}>
             <ListItemIcon>
               <Settings fontSize="small" />
             </ListItemIcon>
-            <ListItemText>Settings</ListItemText>
+            <ListItemText>Cài đặt</ListItemText>
           </MenuItem>
           <MenuItem onClick={handleSwitchSite}>
             <ListItemIcon>
@@ -468,7 +468,7 @@ export default function AdminHeader({
               <Logout fontSize="small" color="error" />
             </ListItemIcon>
             <ListItemText>
-              <Typography color="error">Logout</Typography>
+              <Typography color="error">Đăng xuất</Typography>
             </ListItemText>
           </MenuItem>
         </Menu>
@@ -499,20 +499,20 @@ export default function AdminHeader({
         >
           <Box sx={{ px: 2, py: 1.5 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              Notifications
+              Thông báo
             </Typography>
           </Box>
           <Divider />
           {notificationCount === 0 ? (
             <MenuItem>
               <Typography variant="body2" color="text.secondary">
-                No new notifications
+                Không có thông báo mới
               </Typography>
             </MenuItem>
           ) : (
             // Add notification items here
             <MenuItem onClick={handleCloseNotifications}>
-              <Typography variant="body2">Sample notification</Typography>
+              <Typography variant="body2">Thông báo mẫu</Typography>
             </MenuItem>
           )}
         </Menu>

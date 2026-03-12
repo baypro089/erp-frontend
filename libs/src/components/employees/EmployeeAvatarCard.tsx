@@ -123,7 +123,7 @@ export default function EmployeeAvatarCard({
               size="small"
               disabled={uploading}
             >
-              {uploading ? 'Uploading...' : 'Change Photo'}
+              {uploading ? 'Đang tải...' : 'Đổi ảnh'}
               <input
                 type="file"
                 hidden
@@ -136,7 +136,7 @@ export default function EmployeeAvatarCard({
           {isEditing ? (
             <TextField
               fullWidth
-              label="Full Name"
+              label="Họ và tên"
               value={formData.fullName}
               onChange={(e) => onFormChange('fullName', e.target.value)}
               size="small"
@@ -166,12 +166,12 @@ export default function EmployeeAvatarCard({
           <Box display="flex" alignItems="center" gap={1} width="100%">
             <AccountCircleIcon color={employee.userId ? 'success' : 'disabled'} />
             <Typography variant="body2" color="text.secondary">
-              Account Status:
+              Trạng thái tài khoản:
             </Typography>
             {employee.userId ? (
-              <Chip icon={<CheckCircleIcon />} label="Has Account" color="success" size="small" />
+              <Chip icon={<CheckCircleIcon />} label="Có tài khoản" color="success" size="small" />
             ) : (
-              <Chip icon={<CancelIcon />} label="No Account" color="default" size="small" />
+              <Chip icon={<CancelIcon />} label="Chưa có tài khoản" color="default" size="small" />
             )}
           </Box>
         </Box>

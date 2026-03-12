@@ -39,8 +39,8 @@ export default function FormDialog({
   children,
   loading = false,
   maxWidth = 'sm',
-  submitText = 'Save',
-  cancelText = 'Cancel',
+  submitText = 'Lưu',
+  cancelText = 'Hủy',
   hideActions = false,
   disableSubmit = false,
   fullWidth = true,
@@ -134,7 +134,7 @@ export default function FormDialog({
               disabled={loading || disableSubmit}
               sx={{ minWidth: 100 }}
             >
-              {loading ? 'Saving...' : submitText}
+              {loading ? 'Đang lưu...' : submitText}
             </Button>
           </DialogActions>
         </>

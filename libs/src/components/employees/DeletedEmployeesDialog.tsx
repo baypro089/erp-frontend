@@ -46,7 +46,7 @@ export default function DeletedEmployeesDialog({ open, onClose }: DeletedEmploye
   const columns: Column<EmployeeTableResponse>[] = [
     {
       id: 'employeeCode',
-      label: 'Employee Code',
+      label: 'Mã nhân viên',
       minWidth: 140,
       format: (value) => (
         <Typography variant="body2" fontWeight={500} color="primary">
@@ -56,7 +56,7 @@ export default function DeletedEmployeesDialog({ open, onClose }: DeletedEmploye
     },
     {
       id: 'fullName',
-      label: 'Full Name',
+      label: 'Họ và tên',
       minWidth: 200,
       format: (value) => (
         <Typography variant="body2" fontWeight={600}>
@@ -66,7 +66,7 @@ export default function DeletedEmployeesDialog({ open, onClose }: DeletedEmploye
     },
     {
       id: 'departmentName',
-      label: 'Department',
+      label: 'Phòng ban',
       minWidth: 150,
       format: (value) => (
         <Chip label={value} size="small" variant="outlined" color="primary" />
@@ -74,7 +74,7 @@ export default function DeletedEmployeesDialog({ open, onClose }: DeletedEmploye
     },
     {
       id: 'positionName',
-      label: 'Position',
+      label: 'Chức vụ',
       minWidth: 150,
       format: (value) => (
         <Chip label={value} size="small" variant="outlined" color="secondary" />
@@ -82,13 +82,13 @@ export default function DeletedEmployeesDialog({ open, onClose }: DeletedEmploye
     },
     {
       id: 'startDate',
-      label: 'Start Date',
+      label: 'Ngày bắt đầu',
       minWidth: 120,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -99,7 +99,7 @@ export default function DeletedEmployeesDialog({ open, onClose }: DeletedEmploye
     },
     {
       id: 'status',
-      label: 'Status',
+      label: 'Trạng thái',
       minWidth: 120,
       align: 'center',
       format: (value) => {
@@ -115,13 +115,13 @@ export default function DeletedEmployeesDialog({ open, onClose }: DeletedEmploye
     },
     {
       id: 'updatedAt',
-      label: 'Deleted At',
+      label: 'Ngày xóa',
       minWidth: 120,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
@@ -136,7 +136,7 @@ export default function DeletedEmployeesDialog({ open, onClose }: DeletedEmploye
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">Deleted Employees</Typography>
+          <Typography variant="h6">Nhân viên đã xóa</Typography>
           <IconButton onClick={onClose} size="small">
             <CloseIcon />
           </IconButton>
@@ -156,7 +156,7 @@ export default function DeletedEmployeesDialog({ open, onClose }: DeletedEmploye
             setPage(0);
           }}
           rowKey="id"
-          emptyMessage="No deleted employees found"
+          emptyMessage="Không tìm thấy nhân viên đã xóa"
         />
       </DialogContent>
     </Dialog>

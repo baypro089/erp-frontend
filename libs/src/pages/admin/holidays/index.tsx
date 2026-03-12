@@ -23,7 +23,9 @@ import {
   CalendarMonth as CalendarIcon,
   TrendingUp as TrendingUpIcon,
 } from '@mui/icons-material';
-import { PageHeader, LoadingOverlay } from '@libs/src/components/common';
+import { PageHeader, LoadingOverlay, PermissionDeniedDialog, PermissionGuard } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import { HolidayFormDialog, SeedHolidaysDialog, HolidayCard } from '@libs/src/components/holidays';
 import {
   fetchHolidays,
@@ -36,7 +38,19 @@ import {
 import type { HolidayResponse, CreateHolidayDto } from '@libs/shared/types/holiday.type';
 
 export default function HolidaysPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.HOLIDAY.VIEW}
+      fallbackPath="/admin"
+    >
+      <HolidaysPageContent />
+    </PermissionGuard>
+  );
+}
+
+function HolidaysPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { holidays, selectedYear, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.holiday
   );
@@ -155,13 +169,13 @@ export default function HolidaysPage() {
         actions={[
           {
             label: 'Auto Seed',
-            onClick: handleSeedClick,
+            onClick: guardAction(PERMISSIONS.HOLIDAY.CREATE, handleSeedClick),
             variant: 'outlined',
             icon: <AutoAwesomeIcon />,
           },
           {
             label: 'Add Holiday',
-            onClick: handleCreateClick,
+            onClick: guardAction(PERMISSIONS.HOLIDAY.CREATE, handleCreateClick),
             variant: 'contained',
             icon: <AddIcon />,
           },
@@ -274,7 +288,7 @@ export default function HolidaysPage() {
             <Chip
               icon={<AutoAwesomeIcon />}
               label="Auto Seed Holidays"
-              onClick={handleSeedClick}
+              onClick={guardAction(PERMISSIONS.HOLIDAY.CREATE, handleSeedClick)}
               clickable
               color="primary"
               sx={{ px: 2 }}
@@ -282,7 +296,7 @@ export default function HolidaysPage() {
             <Chip
               icon={<AddIcon />}
               label="Add Holiday"
-              onClick={handleCreateClick}
+              onClick={guardAction(PERMISSIONS.HOLIDAY.CREATE, handleCreateClick)}
               clickable
               color="secondary"
               sx={{ px: 2 }}
@@ -322,7 +336,7 @@ export default function HolidaysPage() {
                       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
                       .map((holiday) => (
                         <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={holiday.id}>
-                          <HolidayCard holiday={holiday} onDelete={handleDelete} />
+                          <HolidayCard holiday={holiday} onDelete={guardFn(PERMISSIONS.HOLIDAY.DELETE, handleDelete)} />
                         </Grid>
                       ))}
                   </Grid>
@@ -348,6 +362,8 @@ export default function HolidaysPage() {
         onSubmit={handleSeedSubmit}
         loading={operationLoading}
       />
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
 
       {/* Snackbar */}
       <Snackbar

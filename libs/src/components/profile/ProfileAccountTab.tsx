@@ -5,13 +5,11 @@ import {
   Card,
   CardContent,
   Grid,
-  TextField,
   Button,
   Box,
   Typography,
   Divider,
   Chip,
-  Stack,
 } from '@mui/material';
 import {
   Person,
@@ -22,6 +20,50 @@ import {
   Lock,
 } from '@mui/icons-material';
 import type { UserResponse } from '@libs/shared/types/users.type';
+
+function InfoField({
+  icon,
+  label,
+  value,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5, fontWeight: 500 }}>
+        {label}
+      </Typography>
+      <Box
+        display="flex"
+        alignItems="center"
+        gap={1}
+        sx={{
+          minHeight: 44,
+          px: 1.5,
+          py: 1,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+          bgcolor: 'action.hover',
+        }}
+      >
+        {icon && (
+          <Box sx={{ color: 'action.active', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            {icon}
+          </Box>
+        )}
+        <Typography
+          variant="body2"
+          color={!value || value === 'N/A' ? 'text.disabled' : 'text.primary'}
+        >
+          {value || 'N/A'}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
 import { UserStatus } from '@libs/shared/enums/user-status.enum';
 import { StatusChip } from '@libs/src/components/common';
 import { PORTAL_PERMISSION_VALUES } from '@libs/shared/constants/portal-permissions.constant';
@@ -45,14 +87,14 @@ export default function ProfileAccountTab({ user }: ProfileAccountTabProps) {
         <CardContent>
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h6" color="primary">
-              Account Information
+              Thông tin tài khoản
             </Typography>
             <Button
               variant="outlined"
               startIcon={<Lock />}
               onClick={() => setOpenChangePassword(true)}
             >
-              Change Password
+              Đổi mật khẩu
             </Button>
           </Box>
 
@@ -61,35 +103,19 @@ export default function ProfileAccountTab({ user }: ProfileAccountTabProps) {
           <Grid container spacing={3}>
             {/* Username */}
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                label="Username"
-                value={user.username}
-                disabled
-                fullWidth
-                InputProps={{
-                  startAdornment: <Person sx={{ mr: 1, color: 'action.active' }} />,
-                }}
-              />
+              <InfoField icon={<Person />} label="Tên đăng nhập" value={user.username} />
             </Grid>
 
             {/* Email */}
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField
-                label="Email"
-                value={user.email || 'N/A'}
-                disabled
-                fullWidth
-                InputProps={{
-                  startAdornment: <Email sx={{ mr: 1, color: 'action.active' }} />,
-                }}
-              />
+              <InfoField icon={<Email />} label="Email" value={user.email} />
             </Grid>
 
             {/* Role */}
             <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Role
+                  Vai trò
                 </Typography>
                 <Box display="flex" alignItems="center" gap={1} mt={1}>
                   <Security color="action" />
@@ -106,7 +132,7 @@ export default function ProfileAccountTab({ user }: ProfileAccountTabProps) {
             <Grid size={{ xs: 12, md: 6 }}>
               <Box>
                 <Typography variant="caption" color="text.secondary" gutterBottom>
-                  Account Status
+                  Trạng thái tài khoản
                 </Typography>
                 <Box display="flex" alignItems="center" gap={1} mt={1}>
                   <Badge color="action" />
@@ -118,15 +144,7 @@ export default function ProfileAccountTab({ user }: ProfileAccountTabProps) {
             {/* Employee Name */}
             {user.employee && (
               <Grid size={{ xs: 12, md: 6 }}>
-                <TextField
-                  label="Employee Name"
-                  value={user.employee.fullName}
-                  disabled
-                  fullWidth
-                  InputProps={{
-                    startAdornment: <Person sx={{ mr: 1, color: 'action.active' }} />,
-                  }}
-                />
+                <InfoField icon={<Person />} label="Tên nhân viên" value={user.employee.fullName} />
               </Grid>
             )}
           </Grid>
@@ -135,43 +153,31 @@ export default function ProfileAccountTab({ user }: ProfileAccountTabProps) {
 
           {/* System Information */}
           <Typography variant="subtitle2" color="primary" gutterBottom>
-            System Information
+            Thông tin hệ thống
           </Typography>
 
           <Grid container spacing={3} mt={1}>
             <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                label="Created At"
-                value={user.createdAt ? new Date(user.createdAt).toLocaleString() : 'N/A'}
-                disabled
-                fullWidth
-                InputProps={{
-                  startAdornment: <CalendarToday sx={{ mr: 1, color: 'action.active' }} />,
-                }}
+              <InfoField
+                icon={<CalendarToday />}
+                label="Ngày tạo"
+                value={user.createdAt ? new Date(user.createdAt).toLocaleString() : null}
               />
             </Grid>
 
             <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                label="Updated At"
-                value={user.updatedAt ? new Date(user.updatedAt).toLocaleString() : 'N/A'}
-                disabled
-                fullWidth
-                InputProps={{
-                  startAdornment: <CalendarToday sx={{ mr: 1, color: 'action.active' }} />,
-                }}
+              <InfoField
+                icon={<CalendarToday />}
+                label="Cập nhật lần cuối"
+                value={user.updatedAt ? new Date(user.updatedAt).toLocaleString() : null}
               />
             </Grid>
 
             <Grid size={{ xs: 12, md: 4 }}>
-              <TextField
-                label="Last Login"
-                value={user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never logged in'}
-                disabled
-                fullWidth
-                InputProps={{
-                  startAdornment: <CalendarToday sx={{ mr: 1, color: 'action.active' }} />,
-                }}
+              <InfoField
+                icon={<CalendarToday />}
+                label="Đăng nhập lần cuối"
+                value={user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Chưa đăng nhập'}
               />
             </Grid>
           </Grid>

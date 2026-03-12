@@ -32,6 +32,7 @@ interface PersonalPageHeaderProps {
   user?: {
     name: string;
     email: string;
+    role?: string;
     avatar?: string;
   };
   notificationCount?: number;
@@ -39,10 +40,7 @@ interface PersonalPageHeaderProps {
 
 export default function PersonalPageHeader({
   onMenuClick,
-  user = {
-    name: 'User',
-    email: 'user@example.com',
-  },
+  user,
   notificationCount = 0,
 }: PersonalPageHeaderProps) {
   const theme = useTheme();
@@ -169,7 +167,7 @@ export default function PersonalPageHeader({
             <IconButton onClick={handleOpenUserMenu} sx={{ p: 0.5 }}>
               <Avatar
                 alt={user?.name || 'User'}
-                src={user?.avatar}
+                src={user?.avatar || ''}
                 sx={{
                   width: 38,
                   height: 38,

@@ -30,6 +30,7 @@ import {
   FilterBar,
   LoadingOverlay,
   Column,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import WarehouseFormDialog from '@libs/src/components/warehouses/WarehouseFormDialog';
 import {
@@ -45,9 +46,25 @@ import type {
   UpdateWarehouseDto,
 } from '@libs/shared/types/warehouse.type';
 import { WarehouseType } from '@libs/shared/enums/warehouse-type.enum';
+import { CacheService } from '@libs/src/services/cache.service';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function WarehousesPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.WAREHOUSE.VIEW}
+      fallbackPath="/commercial"
+    >
+      <WarehousesPageContent />
+    </PermissionGuard>
+  );
+}
+
+function WarehousesPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { warehouses, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.warehouse
   );
@@ -231,7 +248,7 @@ export default function WarehousesPage() {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
           <Switch
             checked={row.isActive}
-            onChange={() => handleStatusToggle(row)}
+            onChange={() => guardFn<WarehouseResponse>(PERMISSIONS.WAREHOUSE.UPDATE, handleStatusToggle)(row)}
             color="success"
             size="small"
           />
@@ -250,21 +267,21 @@ export default function WarehousesPage() {
   ];
 
   // Handlers
-  const handleAdd = () => {
+  const handleAdd = guardAction(PERMISSIONS.WAREHOUSE.CREATE, () => {
     setSelectedWarehouse(null);
     setOpenForm(true);
-  };
+  });
 
-  const handleEdit = (row: WarehouseResponse) => {
+  const handleEdit = guardFn<WarehouseResponse>(PERMISSIONS.WAREHOUSE.UPDATE, (row: WarehouseResponse) => {
     setSelectedWarehouse(row);
     setOpenForm(true);
-  };
+  });
 
-  const handleDelete = (row: WarehouseResponse) => {
+  const handleDelete = guardFn<WarehouseResponse>(PERMISSIONS.WAREHOUSE.DELETE, (row: WarehouseResponse) => {
     setSelectedWarehouse(row);
     setSelectedRows([row]);
     setOpenDelete(true);
-  };
+  });
 
   const handleFormSubmit = async (
     data: CreateWarehouseDto | UpdateWarehouseDto,
@@ -314,7 +331,8 @@ export default function WarehousesPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchWarehouses());
     setSnackbar({
       open: true,
@@ -518,6 +536,7 @@ export default function WarehousesPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

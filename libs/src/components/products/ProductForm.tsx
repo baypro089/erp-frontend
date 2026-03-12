@@ -33,7 +33,7 @@ import {
   ArrowBack as ArrowBackIcon,
   Image as ImageIcon,
 } from '@mui/icons-material';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type {
   ProductResponse,
   CreateProductDto,
@@ -42,6 +42,7 @@ import type {
 import { fetchBrands } from '@libs/src/features/brand/brand.slice';
 import { fetchCategories } from '@libs/src/features/category/category.slice';
 import productService from '@libs/src/features/product/product.service';
+import { getProductRouteContext } from '../../utils/product-route';
 
 interface ProductFormProps {
   selectedProduct?: ProductResponse | null;
@@ -83,7 +84,9 @@ export default function ProductForm({
   readOnly = false,
 }: ProductFormProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const pathname = usePathname();
   const router = useRouter();
+  const { basePath } = getProductRouteContext(pathname);
   const { brands } = useSelector((state: RootState) => state.brand);
   const { categories } = useSelector((state: RootState) => state.category);
 
@@ -234,7 +237,7 @@ export default function ProductForm({
   };
 
   const handleCancel = () => {
-    router.push('/admin/products');
+    router.push(basePath);
   };
 
   // Thumbnail handlers

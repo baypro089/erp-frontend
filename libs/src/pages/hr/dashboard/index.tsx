@@ -17,19 +17,14 @@ import {
   LinearProgress,
   Chip,
   Button,
-  Tooltip,
-  Avatar,
-  AvatarGroup,
 } from '@mui/material';
 import {
   People,
   TrendingUp,
   TrendingDown,
   PersonOff,
-  Warning,
   AttachMoney,
   EventNote,
-  Cake,
 } from '@mui/icons-material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from 'recharts';
 import { useState, useEffect, useCallback } from 'react';
@@ -38,8 +33,6 @@ import { vi } from 'date-fns/locale';
 import { HrDashboardService } from '@libs/src/services/hr-dashboard.service';
 import type { IHrDashboard } from '@libs/shared/types/hr-statistics.type';
 import Link from 'next/link';
-
-const DEPARTMENT_COLORS = ['#66BB6A', '#42A5F5', '#FFA726', '#AB47BC', '#EF5350', '#26A69A'];
 
 const DEPARTMENT_COLORS = ['#66BB6A', '#42A5F5', '#FFA726', '#AB47BC', '#EF5350', '#26A69A'];
 
@@ -88,9 +81,13 @@ export default function HRDashboard() {
   const departmentChartData = dashboardData?.departmentDistribution.map((dept, index) => ({
     name: dept.departmentName,
     value: dept.count,
-    percentage: dept.percentage,
     color: DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length],
   })) || [];
+
+  // Calculate percentage paid
+  const percentagePaid = dashboardData && dashboardData.payroll.totalEstimated > 0
+    ? Math.round((dashboardData.payroll.totalPaid / dashboardData.payroll.totalEstimated) * 100)
+    : 0;
 
   // Calculate current date info
   const currentDate = new Date();
@@ -255,38 +252,6 @@ export default function HRDashboard() {
                       <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
                         {dashboardData.attendance.onLeaveToday} người
                       </Typography>
-                      {dashboardData.attendance.absentEmployees.length > 0 && (
-                        <Tooltip
-                          title={
-                            <Box>
-                              {dashboardData.attendance.absentEmployees.map((emp) => (
-                                <Typography key={emp.id} variant="caption" sx={{ display: 'block' }}>
-                                  • {emp.fullName}
-                                </Typography>
-                              ))}
-                            </Box>
-                          }
-                          arrow
-                        >
-                          <Box>
-                            <AvatarGroup max={3} sx={{ justifyContent: 'flex-start' }}>
-                              {dashboardData.attendance.absentEmployees.map((emp) => (
-                                <Avatar
-                                  key={emp.id}
-                                  sx={{
-                                    width: 28,
-                                    height: 28,
-                                    bgcolor: alpha(theme.palette.common.white, 0.3),
-                                    fontSize: '0.75rem',
-                                  }}
-                                >
-                                  {emp.fullName.charAt(0)}
-                                </Avatar>
-                              ))}
-                            </AvatarGroup>
-                          </Box>
-                        </Tooltip>
-                      )}
                     </Box>
                     <Box
                       sx={{
@@ -341,24 +306,23 @@ export default function HRDashboard() {
                       <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
                         {dashboardData.attendance.pendingRequests} Đơn nghỉ phép
                       </Typography>
-                      <Link href="/hr/leave-approvals" passHref legacyBehavior>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          component="a"
-                          sx={{
-                            backgroundColor: alpha(theme.palette.common.white, 0.9),
-                            color: '#fa709a',
-                            fontWeight: 700,
-                            fontSize: '0.75rem',
-                            '&:hover': {
-                              backgroundColor: theme.palette.common.white,
-                            },
-                          }}
-                        >
-                          Duyệt ngay
-                        </Button>
-                      </Link>
+                      <Button
+                        variant="contained"
+                        size="small"
+                        component={Link}
+                        href="/hr/leave-approvals"
+                        sx={{
+                          backgroundColor: alpha(theme.palette.common.white, 0.9),
+                          color: '#fa709a',
+                          fontWeight: 700,
+                          fontSize: '0.75rem',
+                          '&:hover': {
+                            backgroundColor: theme.palette.common.white,
+                          },
+                        }}
+                      >
+                        Duyệt ngay
+                      </Button>
                     </Box>
                     <Box
                       sx={{
@@ -416,7 +380,7 @@ export default function HRDashboard() {
                       <Box sx={{ mb: 0.5 }}>
                         <LinearProgress
                           variant="determinate"
-                          value={dashboardData.payroll.percentagePaid}
+                          value={percentagePaid}
                           sx={{
                             height: 8,
                             borderRadius: 4,
@@ -429,7 +393,7 @@ export default function HRDashboard() {
                         />
                       </Box>
                       <Typography variant="caption" sx={{ opacity: 0.9, fontWeight: 600 }}>
-                        Đã thanh toán {dashboardData.payroll.percentagePaid}%
+                        Đã thanh toán {percentagePaid}%
                       </Typography>
                     </Box>
                     <Box
@@ -478,7 +442,7 @@ export default function HRDashboard() {
                       innerRadius={60}
                       outerRadius={100}
                       labelLine={false}
-                      label={({ name, percentage }) => `${name}: ${percentage.toFixed(1)}%`}
+                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(1)}%`}
                       fill="#8884d8"
                       dataKey="value"
                     >
@@ -486,122 +450,95 @@ export default function HRDashboard() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <RechartsTooltip formatter={(value: number) => `${value} người`} />
+                    <RechartsTooltip formatter={(value: number | undefined) => `${value || 0} người`} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </Paper>
             </Grid>
 
-            {/* Right: Events List */}
+            {/* Right: Statistics Summary */}
             <Grid size={{ xs: 12, md: 6 }}>
-              <Paper sx={{ p: 3, height: 450, overflow: 'auto' }}>
+              <Paper sx={{ p: 3, height: 450 }}>
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
-                  Sự kiện sắp tới
+                  Thống kê tháng {monthStr}
                 </Typography>
 
-                {/* Birthdays */}
-                {dashboardData.upcomingEvents.birthdays.length > 0 && (
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: theme.palette.info.main }}>
-                      🎂 Sinh nhật trong tháng này
-                    </Typography>
-                    {dashboardData.upcomingEvents.birthdays.map((event) => (
-                      <Box
-                        key={event.employeeId}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          p: 1.5,
-                          mb: 1,
-                          borderRadius: 1,
-                          backgroundColor: alpha(theme.palette.info.main, 0.05),
-                          border: `1px solid ${alpha(theme.palette.info.main, 0.2)}`,
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Avatar sx={{ bgcolor: theme.palette.info.main, width: 32, height: 32 }}>
-                            <Cake sx={{ fontSize: 18 }} />
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {event.fullName}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {format(new Date(event.birthdayDate), 'dd/MM/yyyy')}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Chip
-                          label={event.daysUntil === 0 ? 'Hôm nay' : `${event.daysUntil} ngày nữa`}
-                          size="small"
-                          color="info"
-                          sx={{ fontWeight: 600 }}
-                        />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {/* Headcount Summary */}
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <People sx={{ fontSize: 32, mr: 1.5, color: theme.palette.primary.main }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                          Biến động nhân sự
+                        </Typography>
                       </Box>
-                    ))}
-                  </Box>
-                )}
-
-                {/* Probation Endings */}
-                {dashboardData.upcomingEvents.probationEndings.length > 0 && (
-                  <Box>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1.5, color: theme.palette.warning.main }}>
-                      ⏰ Nhân viên sắp hết hạn thử việc
-                    </Typography>
-                    {dashboardData.upcomingEvents.probationEndings.map((event) => (
-                      <Box
-                        key={event.employeeId}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          p: 1.5,
-                          mb: 1,
-                          borderRadius: 1,
-                          backgroundColor: alpha(theme.palette.warning.main, 0.05),
-                          border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                          <Avatar sx={{ bgcolor: theme.palette.warning.main, width: 32, height: 32 }}>
-                            <Warning sx={{ fontSize: 18 }} />
-                          </Avatar>
-                          <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                              {event.fullName}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              Hết hạn: {format(new Date(event.endDate), 'dd/MM/yyyy')}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Chip
-                          label={event.daysUntil === 0 ? 'Hôm nay' : `${event.daysUntil} ngày nữa`}
-                          size="small"
-                          color="warning"
-                          sx={{ fontWeight: 600 }}
-                        />
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2" color="text.secondary">Tổng nhân sự hiện tại:</Typography>
+                        <Typography variant="body2" fontWeight={700}>{dashboardData.headcount.totalActive} người</Typography>
                       </Box>
-                    ))}
-                  </Box>
-                )}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2" color="success.main">Nhân sự mới tuyển:</Typography>
+                        <Typography variant="body2" fontWeight={700} color="success.main">+{dashboardData.headcount.newHires} người</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="error.main">Nhân sự nghỉ việc:</Typography>
+                        <Typography variant="body2" fontWeight={700} color="error.main">-{dashboardData.headcount.resigned} người</Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
 
-                {dashboardData.upcomingEvents.birthdays.length === 0 &&
-                  dashboardData.upcomingEvents.probationEndings.length === 0 && (
-                    <Box
-                      sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        height: '100%',
-                        color: 'text.secondary',
-                      }}
-                    >
-                      <Typography variant="body2">Không có sự kiện sắp tới</Typography>
-                    </Box>
-                  )}
+                  {/* Payroll Summary */}
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <AttachMoney sx={{ fontSize: 32, mr: 1.5, color: theme.palette.success.main }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                          Tổng quan lương
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2" color="text.secondary">Tổng quỹ lương:</Typography>
+                        <Typography variant="body2" fontWeight={700}>
+                          {formatCurrency(dashboardData.payroll.totalEstimated)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2" color="success.main">Đã thanh toán:</Typography>
+                        <Typography variant="body2" fontWeight={700} color="success.main">
+                          {formatCurrency(dashboardData.payroll.totalPaid)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="warning.main">Còn lại:</Typography>
+                        <Typography variant="body2" fontWeight={700} color="warning.main">
+                          {formatCurrency(dashboardData.payroll.totalEstimated - dashboardData.payroll.totalPaid)}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+
+                  {/* Attendance Summary */}
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                        <EventNote sx={{ fontSize: 32, mr: 1.5, color: theme.palette.warning.main }} />
+                        <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                          Nghỉ phép & Chấm công
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                        <Typography variant="body2" color="text.secondary">Nghỉ phép hôm nay:</Typography>
+                        <Typography variant="body2" fontWeight={700}>{dashboardData.attendance.onLeaveToday} người</Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="body2" color="warning.main">Đơn chờ duyệt:</Typography>
+                        <Typography variant="body2" fontWeight={700} color="warning.main">{dashboardData.attendance.pendingRequests} đơn</Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Box>
               </Paper>
             </Grid>
           </Grid>

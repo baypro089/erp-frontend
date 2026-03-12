@@ -85,7 +85,7 @@ export default function PageHeader({
             onClick={() => router.push('/')}
           >
             <HomeIcon sx={{ mr: 0.5 }} fontSize="small" />
-            Home
+            Trang chủ
           </Link>
           {breadcrumbs.map((item, index) => {
             const isLast = index === breadcrumbs.length - 1;

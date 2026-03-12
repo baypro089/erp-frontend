@@ -10,12 +10,23 @@ import {
   TextField,
   Box,
   CircularProgress,
+  Typography,
+  Paper,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
+import {
+  Person as PersonIcon,
+  Edit as EditIcon,
+  Clear as ClearIcon,
+} from '@mui/icons-material';
 import type {
   DepartmentResponse,
   CreateDepartmentDTO,
   UpdateDepartmentDTO,
 } from '@libs/shared/types/departments.type';
+import type { EmployeeTableResponse } from '@libs/shared/types/employees.type';
+import EmployeePickerDialog from './EmployeePickerDialog';
 
 interface DepartmentFormDialogProps {
   open: boolean;
@@ -37,6 +48,10 @@ export default function DepartmentFormDialog({
     description: '',
   });
 
+  const [managerId, setManagerId] = useState<string | undefined>(undefined);
+  const [managerInfo, setManagerInfo] = useState<EmployeeTableResponse | null>(null);
+  const [openPicker, setOpenPicker] = useState(false);
+
   const [errors, setErrors] = useState<{ name?: string }>({});
 
   const isEdit = !!selectedDepartment;
@@ -48,11 +63,16 @@ export default function DepartmentFormDialog({
         name: selectedDepartment.name,
         description: selectedDepartment.description || '',
       });
+      setManagerId(selectedDepartment.managerId);
+      // Reset managerInfo so user sees the picker if they want to change
+      setManagerInfo(null);
     } else {
       setFormData({
         name: '',
         description: '',
       });
+      setManagerId(undefined);
+      setManagerInfo(null);
     }
     setErrors({});
   }, [selectedDepartment, open]);
@@ -61,7 +81,7 @@ export default function DepartmentFormDialog({
     const newErrors: { name?: string } = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Department name is required';
+      newErrors.name = 'Tên phòng ban là bắt buộc';
     }
 
     setErrors(newErrors);
@@ -71,7 +91,26 @@ export default function DepartmentFormDialog({
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
-    await onSubmit(formData, isEdit);
+    if (isEdit) {
+      const updateData: UpdateDepartmentDTO = {
+        name: formData.name,
+        description: formData.description,
+        managerId: managerId,
+      };
+      await onSubmit(updateData, true);
+    } else {
+      await onSubmit(formData, false);
+    }
+  };
+
+  const handleManagerSelect = (employee: EmployeeTableResponse) => {
+    setManagerId(employee.id);
+    setManagerInfo(employee);
+  };
+
+  const handleClearManager = () => {
+    setManagerId(undefined);
+    setManagerInfo(null);
   };
 
   const handleClose = () => {
@@ -81,72 +120,161 @@ export default function DepartmentFormDialog({
   };
 
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: 2 },
-      }}
-    >
-      <DialogTitle sx={{ pb: 2 }}>
-        {isEdit ? 'Edit Department' : 'Add New Department'}
-      </DialogTitle>
+    <>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: { borderRadius: 2 },
+        }}
+      >
+        <DialogTitle sx={{ pb: 2 }}>
+          {isEdit ? 'Chỉnh sửa phòng ban' : 'Thêm phòng ban mới'}
+        </DialogTitle>
 
-      <DialogContent dividers>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, py: 1 }}>
-          {/* Department Name */}
-          <TextField
-            label="Department Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            error={!!errors.name}
-            helperText={errors.name}
-            fullWidth
-            required
-            autoFocus
-            disabled={loading}
-          />
-
-          {/* Description */}
-          <TextField
-            label="Description"
-            value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            fullWidth
-            multiline
-            rows={3}
-            disabled={loading}
-            placeholder="Enter department description (optional)"
-          />
-
-          {/* Display employee count if editing */}
-          {isEdit && selectedDepartment && (
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, py: 1 }}>
+            {/* Department Name */}
             <TextField
-              label="Total Employees"
-              value={selectedDepartment.totalEmployees}
+              label="Tên phòng ban"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              error={!!errors.name}
+              helperText={errors.name}
               fullWidth
-              disabled
-              helperText="Number of employees in this department"
+              required
+              autoFocus
+              disabled={loading}
             />
-          )}
-        </Box>
-      </DialogContent>
 
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={handleClose} disabled={loading} color="inherit">
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
-        >
-          {isEdit ? 'Update' : 'Create'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+            {/* Description */}
+            <TextField
+              label="Mô tả"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              fullWidth
+              multiline
+              rows={3}
+              disabled={loading}
+              placeholder="Nhập mô tả (không bắt buộc)"
+            />
+
+            {/* Manager picker — only in edit mode */}
+            {isEdit && (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
+                  Trưởng phòng
+                </Typography>
+
+                {managerInfo ? (
+                  /* Show selected employee info */
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <PersonIcon color="primary" />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" fontWeight={700}>
+                          {managerInfo.fullName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {managerInfo.employeeCode}
+                          {managerInfo.positionName ? ` · ${managerInfo.positionName}` : ''}
+                          {managerInfo.departmentName ? ` · ${managerInfo.departmentName}` : ''}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title="Thay đổi">
+                          <IconButton size="small" onClick={() => setOpenPicker(true)} disabled={loading}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Xóa trưởng phòng">
+                          <IconButton size="small" onClick={handleClearManager} disabled={loading} color="error">
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                  </Paper>
+                ) : managerId && !managerInfo ? (
+                  /* managerId exists from existing department but not yet resolved via picker */
+                  <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <PersonIcon color="action" />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography variant="body2" color="text.secondary">
+                          Đã có trưởng phòng (ID: {managerId})
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Nhấn "Thay đổi" để chọn trưởng phòng mới
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <Tooltip title="Thay đổi">
+                          <IconButton size="small" onClick={() => setOpenPicker(true)} disabled={loading}>
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Xóa trưởng phòng">
+                          <IconButton size="small" onClick={handleClearManager} disabled={loading} color="error">
+                            <ClearIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Box>
+                    </Box>
+                  </Paper>
+                ) : (
+                  /* No manager set */
+                  <Button
+                    variant="outlined"
+                    startIcon={<PersonIcon />}
+                    onClick={() => setOpenPicker(true)}
+                    disabled={loading}
+                    fullWidth
+                    sx={{ justifyContent: 'flex-start', py: 1.5, borderStyle: 'dashed' }}
+                  >
+                    Chọn trưởng phòng...
+                  </Button>
+                )}
+              </Box>
+            )}
+
+            {/* Display employee count if editing */}
+            {isEdit && selectedDepartment && (
+              <TextField
+                label="Tổng số nhân viên"
+                value={selectedDepartment.totalEmployees}
+                fullWidth
+                disabled
+                helperText="Số nhân viên trong phòng ban này"
+              />
+            )}
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={handleClose} disabled={loading} color="inherit">
+            Hủy
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+          >
+            {isEdit ? 'Cập nhật' : 'Tạo mới'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Employee Picker Dialog */}
+      <EmployeePickerDialog
+        open={openPicker}
+        onClose={() => setOpenPicker(false)}
+        onSelect={handleManagerSelect}
+        selectedEmployeeId={managerId}
+      />
+    </>
   );
 }

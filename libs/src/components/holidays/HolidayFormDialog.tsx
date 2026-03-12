@@ -60,11 +60,11 @@ export default function HolidayFormDialog({
     const newErrors: { name?: string; date?: string } = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Holiday name is required';
+      newErrors.name = 'Tên ngày lễ là bắt buộc';
     }
 
     if (!formData.date) {
-      newErrors.date = 'Date is required';
+      newErrors.date = 'Ngày là bắt buộc';
     }
 
     setErrors(newErrors);
@@ -102,14 +102,14 @@ export default function HolidayFormDialog({
       }}
     >
       <DialogTitle sx={{ pb: 2 }}>
-        {isEdit ? 'Edit Holiday' : 'Add New Holiday'}
+        {isEdit ? 'Chỉnh sửa ngày lễ' : 'Thêm ngày lễ mới'}
       </DialogTitle>
 
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, py: 1 }}>
           {/* Holiday Name */}
           <TextField
-            label="Holiday Name"
+            label="Tên ngày lễ"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             error={!!errors.name}
@@ -123,7 +123,7 @@ export default function HolidayFormDialog({
 
           {/* Date */}
           <TextField
-            label="Date"
+            label="Ngày"
             type="date"
             value={formatDateForInput(formData.date)}
             onChange={(e) => setFormData({ ...formData, date: new Date(e.target.value) })}
@@ -139,21 +139,21 @@ export default function HolidayFormDialog({
 
           {/* Description */}
           <TextField
-            label="Description"
+            label="Mô tả"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             fullWidth
             multiline
             rows={3}
             disabled={loading}
-            placeholder="Enter holiday description (optional)"
+            placeholder="Nhập mô tả (không bắt buộc)"
           />
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={handleClose} disabled={loading} color="inherit">
-          Cancel
+          Hủy
         </Button>
         <Button
           onClick={handleSubmit}
@@ -161,7 +161,7 @@ export default function HolidayFormDialog({
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : null}
         >
-          {isEdit ? 'Update' : 'Create'}
+          {isEdit ? 'Cập nhật' : 'Tạo mới'}
         </Button>
       </DialogActions>
     </Dialog>

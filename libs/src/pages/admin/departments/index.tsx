@@ -21,7 +21,11 @@ import {
   FilterBar,
   LoadingOverlay,
   Column,
+  PermissionDeniedDialog,
+  PermissionGuard,
 } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import DepartmentFormDialog from '@libs/src/components/departments/DepartmentFormDialog';
 import {
   fetchDepartments,
@@ -35,9 +39,22 @@ import type {
   CreateDepartmentDTO,
   UpdateDepartmentDTO,
 } from '@libs/shared/types/departments.type';
+import { CacheService } from '@libs/src/services/cache.service';
 
 export default function DepartmentsPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.DEPARTMENT.VIEW}
+      fallbackPath="/admin"
+    >
+      <DepartmentsPageContent />
+    </PermissionGuard>
+  );
+}
+
+function DepartmentsPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { departments, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.department
   );
@@ -207,7 +224,8 @@ export default function DepartmentsPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchDepartments({}));
     setSnackbar({
       open: true,
@@ -247,7 +265,7 @@ export default function DepartmentsPage() {
           },
           {
             label: 'Delete Selected',
-            onClick: handleBulkDelete,
+            onClick: guardAction(PERMISSIONS.DEPARTMENT.DELETE, handleBulkDelete),
             variant: 'outlined',
             color: 'error',
             disabled: selectedRows.length === 0,
@@ -255,7 +273,7 @@ export default function DepartmentsPage() {
           },
           {
             label: 'Add Department',
-            onClick: handleAdd,
+            onClick: guardAction(PERMISSIONS.DEPARTMENT.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
@@ -296,8 +314,8 @@ export default function DepartmentsPage() {
         selectable
         selectedRows={selectedRows}
         onSelectionChange={setSelectedRows}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={guardFn(PERMISSIONS.DEPARTMENT.UPDATE, handleEdit)}
+        onDelete={guardFn(PERMISSIONS.DEPARTMENT.DELETE, handleDelete)}
         rowKey="id"
         emptyMessage="No departments found"
       />
@@ -327,6 +345,8 @@ export default function DepartmentsPage() {
 
       {/* Loading Overlay */}
       <LoadingOverlay open={loading && departments.length === 0} message="Loading departments..." />
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
 
       {/* Snackbar */}
       <Snackbar

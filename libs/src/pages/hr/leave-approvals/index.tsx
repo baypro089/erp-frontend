@@ -23,6 +23,7 @@ import {
   StatusChip,
   LoadingOverlay,
   Column,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import {
   ApproveRejectDialog,
@@ -40,8 +41,20 @@ import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
 import { fetchUserById } from '@libs/src/features/user/user.slice';
 import { fetchRoleByCode } from '@libs/src/features/role/role.slice';
 import { PORTAL_PERMISSIONS } from '@libs/shared/constants/portal-permissions.constant';
+import { CacheService } from '@libs/src/services/cache.service';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function LeaveApprovalsPage() {
+  return (
+    <PermissionGuard permission={PERMISSIONS.LEAVE_REQUEST.VIEW} fallbackPath="/hr">
+      <LeaveApprovalsPageContent />
+    </PermissionGuard>
+  );
+}
+
+function LeaveApprovalsPageContent() {
   const dispatch = useDispatch<AppDispatch>();
   const {
     leaveRequests,
@@ -82,6 +95,8 @@ export default function LeaveApprovalsPage() {
     message: '',
     severity: 'success' as 'success' | 'error',
   });
+
+  const { guardFn, permissionDialogProps } = usePermissionGuard();
 
   // Load current user and role data on mount
   useEffect(() => {
@@ -249,22 +264,22 @@ export default function LeaveApprovalsPage() {
       icon: <ApproveIcon />,
       label: 'Duyệt',
       color: 'success' as const,
-      onClick: (row: LeaveRequestResponse) => {
+      onClick: guardFn<LeaveRequestResponse>(PERMISSIONS.LEAVE_REQUEST.APPROVE, (row) => {
         setSelectedLeaveRequest(row);
         setApproveRejectAction('approve');
         setOpenApproveReject(true);
-      },
+      }),
       hidden: (row: LeaveRequestResponse) => row.status !== LeaveRequestStatus.PENDING,
     },
     {
       icon: <RejectIcon />,
       label: 'Từ chối',
       color: 'error' as const,
-      onClick: (row: LeaveRequestResponse) => {
+      onClick: guardFn<LeaveRequestResponse>(PERMISSIONS.LEAVE_REQUEST.APPROVE, (row) => {
         setSelectedLeaveRequest(row);
         setApproveRejectAction('reject');
         setOpenApproveReject(true);
-      },
+      }),
       hidden: (row: LeaveRequestResponse) => row.status !== LeaveRequestStatus.PENDING,
     },
   ];
@@ -301,7 +316,8 @@ export default function LeaveApprovalsPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     setRefreshCounter(prev => prev + 1);
   };
 
@@ -435,6 +451,8 @@ export default function LeaveApprovalsPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

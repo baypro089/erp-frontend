@@ -63,7 +63,7 @@ export default function BrandFormDialog({
     const newErrors: { name?: string } = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Brand name is required';
+      newErrors.name = 'Tên thương hiệu là bắt buộc';
     }
 
     setErrors(newErrors);
@@ -99,14 +99,14 @@ export default function BrandFormDialog({
       }}
     >
       <DialogTitle sx={{ pb: 2 }}>
-        {isEdit ? 'Edit Brand' : 'Add New Brand'}
+        {isEdit ? 'Chỉnh sửa thương hiệu' : 'Thêm thương hiệu mới'}
       </DialogTitle>
 
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, py: 1 }}>
           {/* Brand Name */}
           <TextField
-            label="Brand Name"
+            label="Tên thương hiệu"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             error={!!errors.name}
@@ -129,7 +129,7 @@ export default function BrandFormDialog({
                   disabled={loading}
                 />
               }
-              label="Active"
+              label="Đang hoạt động"
             />
           )}
         </Box>
@@ -137,7 +137,7 @@ export default function BrandFormDialog({
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={handleClose} disabled={loading} color="inherit">
-          Cancel
+          Hủy
         </Button>
         <Button
           onClick={handleSubmit}
@@ -145,7 +145,7 @@ export default function BrandFormDialog({
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : null}
         >
-          {isEdit ? 'Update' : 'Create'}
+          {isEdit ? 'Cập nhật' : 'Tạo mới'}
         </Button>
       </DialogActions>
     </Dialog>

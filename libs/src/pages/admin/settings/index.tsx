@@ -26,12 +26,27 @@ import {
   Refresh as RefreshIcon,
   Settings as SettingsIcon,
 } from '@mui/icons-material';
-import { PageHeader } from '@libs/src/components/common';
+import { PageHeader, PermissionDeniedDialog, PermissionGuard } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import { fetchSettings, updateSetting } from '@libs/src/features/system-setting/system-setting.slice';
 import type { SystemSettingResponse } from '@libs/shared/types/system-setting.type';
+import { CacheService } from '@libs/src/services/cache.service';
 
 export default function SettingsPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.SYSTEM_SETTING.VIEW}
+      fallbackPath="/admin"
+    >
+      <SettingsPageContent />
+    </PermissionGuard>
+  );
+}
+
+function SettingsPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { settings, loading, operationLoading, error, operationError } = useSelector(
     (state: RootState) => state.systemSetting
   );
@@ -67,7 +82,8 @@ export default function SettingsPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchSettings());
     setSuccessMessage(null);
   };
@@ -170,7 +186,7 @@ export default function SettingsPage() {
                               cursor: 'pointer',
                               '&:hover': { color: 'primary.main' }
                             }}
-                            onClick={() => handleEdit(setting)}
+                            onClick={guardAction(PERMISSIONS.SYSTEM_SETTING.UPDATE, () => handleEdit(setting))}
                           >
                             {setting.value}
                           </Typography>
@@ -205,7 +221,7 @@ export default function SettingsPage() {
                             <IconButton
                               size="small"
                               color="primary"
-                              onClick={() => handleEdit(setting)}
+                            onClick={guardAction(PERMISSIONS.SYSTEM_SETTING.UPDATE, () => handleEdit(setting))}
                             >
                               <EditIcon />
                             </IconButton>
@@ -220,6 +236,8 @@ export default function SettingsPage() {
           </Table>
         </TableContainer>
       </Paper>
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

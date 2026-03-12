@@ -42,7 +42,7 @@ import {
   Info as InfoIcon,
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
-import { PageHeader, LoadingOverlay, DataTable, Column, StatusChip } from '@libs/src/components/common';
+import { PageHeader, LoadingOverlay, DataTable, Column, StatusChip, PermissionGuard } from '@libs/src/components/common';
 import { fetchOrders, fetchOrderById, fulfillOrder, clearError } from '@libs/src/features/order/order.slice';
 import { fetchWarehouses } from '@libs/src/features/warehouse/warehouse.slice';
 import productSerialService from '@libs/src/features/product-serial/product-serial.service';
@@ -50,6 +50,8 @@ import type { OrderResponse, OrderTableReponse, FulfillOrderDto } from '@libs/sh
 import type { FulfillItemDto } from '@libs/shared/types/order-detail.type';
 import type { WarehouseResponse } from '@libs/shared/types/warehouse.type';
 import { OrderStatus } from '@libs/shared/enums/order-status.enum';
+import { CacheService } from '@libs/src/services/cache.service';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 interface FulfillItem {
   orderItemId: string;
@@ -62,6 +64,17 @@ interface FulfillItem {
 }
 
 export default function FulfillmentPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.ORDER.VIEW}
+      fallbackPath="/commercial/orders"
+    >
+      <FulfillmentPageContent />
+    </PermissionGuard>
+  );
+}
+
+function FulfillmentPageContent() {
   const dispatch = useDispatch<AppDispatch>();
   const { pendingOrders, shippedOrders, loading, operationLoading, operationError } = useSelector(
     (state: RootState) => state.order
@@ -305,7 +318,8 @@ export default function FulfillmentPage() {
   };
 
   // Reload orders
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchOrders({ page: 1, pageSize: 100 }));
     setSnackbar({
       open: true,

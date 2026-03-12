@@ -22,7 +22,11 @@ import {
   FilterBar,
   LoadingOverlay,
   Column,
+  PermissionDeniedDialog,
+  PermissionGuard,
 } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import PositionFormDialog from '@libs/src/components/positions/PositionFormDialog';
 import {
   fetchPositions,
@@ -36,9 +40,22 @@ import type {
   CreatePositionDTO,
   UpdatePositionDTO,
 } from '@libs/shared/types/positions.type';
+import { CacheService } from '@libs/src/services/cache.service';
 
 export default function PositionsPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.POSITION.VIEW}
+      fallbackPath="/admin"
+    >
+      <PositionsPageContent />
+    </PermissionGuard>
+  );
+}
+
+function PositionsPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { positions, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.position
   );
@@ -214,7 +231,8 @@ export default function PositionsPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchPositions({}));
     setSnackbar({
       open: true,
@@ -264,7 +282,7 @@ export default function PositionsPage() {
           },
           {
             label: 'Delete Selected',
-            onClick: handleBulkDelete,
+            onClick: guardAction(PERMISSIONS.POSITION.DELETE, handleBulkDelete),
             variant: 'outlined',
             color: 'error',
             disabled: selectedRows.length === 0,
@@ -272,7 +290,7 @@ export default function PositionsPage() {
           },
           {
             label: 'Add Position',
-            onClick: handleAdd,
+            onClick: guardAction(PERMISSIONS.POSITION.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
@@ -333,8 +351,8 @@ export default function PositionsPage() {
         selectable
         selectedRows={selectedRows}
         onSelectionChange={setSelectedRows}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={guardFn(PERMISSIONS.POSITION.UPDATE, handleEdit)}
+        onDelete={guardFn(PERMISSIONS.POSITION.DELETE, handleDelete)}
         rowKey="id"
         emptyMessage="No positions found"
       />
@@ -364,6 +382,8 @@ export default function PositionsPage() {
 
       {/* Loading Overlay */}
       <LoadingOverlay open={loading && positions.length === 0} message="Loading positions..." />
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
 
       {/* Snackbar */}
       <Snackbar

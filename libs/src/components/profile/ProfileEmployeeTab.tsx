@@ -71,6 +71,50 @@ interface ProfileEmployeeTabProps {
   photoAttachment?: AttachmentResponse | null;
 }
 
+function InfoField({
+  icon,
+  label,
+  value,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  value?: string | null;
+}) {
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5, fontWeight: 500 }}>
+        {label}
+      </Typography>
+      <Box
+        display="flex"
+        alignItems="center"
+        gap={1}
+        sx={{
+          minHeight: 44,
+          px: 1.5,
+          py: 1,
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1,
+          bgcolor: 'action.hover',
+        }}
+      >
+        {icon && (
+          <Box sx={{ color: 'action.active', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            {icon}
+          </Box>
+        )}
+        <Typography
+          variant="body2"
+          color={!value || value === 'N/A' ? 'text.disabled' : 'text.primary'}
+        >
+          {value || 'N/A'}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
 export default function ProfileEmployeeTab({
   employee,
   isEditing = false,
@@ -134,7 +178,7 @@ export default function ProfileEmployeeTab({
     if (file && onPhotoUpload) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        alert('Vui lòng chọn tệp ảnh');
         return;
       }
 
@@ -166,13 +210,13 @@ export default function ProfileEmployeeTab({
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       ];
       if (!allowedTypes.includes(file.type)) {
-        alert('Please select a PDF or Word document');
+        alert('Vui lòng chọn tệp PDF hoặc Word');
         return;
       }
 
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert('File size must be less than 10MB');
+        alert('Kích thước tệp phải nhỏ hơn 10MB');
         return;
       }
 
@@ -256,7 +300,7 @@ export default function ProfileEmployeeTab({
                     disabled={isUploadingPhoto}
                     fullWidth
                   >
-                    {isUploadingPhoto ? 'Uploading...' : 'Change Photo'}
+                    {isUploadingPhoto ? 'Đang tải...' : 'Đổi ảnh'}
                     <input
                       type="file"
                       hidden
@@ -278,27 +322,34 @@ export default function ProfileEmployeeTab({
               <Card>
                 <CardContent>
                   <Typography variant="h6" color="primary" gutterBottom>
-                    Basic Information
+                    Thông tin cơ bản
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        label="Full Name"
-                        value={isEditing && formData ? formData.fullName : employee.fullName || 'N/A'}
-                        onChange={(e) => isEditing && onFormChange?.('fullName', e.target.value)}
-                        disabled={!isEditing}
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <Person sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
-                      />
+                      {isEditing && formData ? (
+                        <TextField
+                          label="Họ và tên"
+                          value={formData.fullName}
+                          onChange={(e) => onFormChange?.('fullName', e.target.value)}
+                          fullWidth
+                          InputProps={{
+                            startAdornment: <Person sx={{ mr: 1, color: 'action.active' }} />,
+                          }}
+                        />
+                      ) : (
+                        <InfoField
+                          icon={<Person />}
+                          label="Họ và tên"
+                          value={employee.fullName}
+                        />
+                      )}
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       {isEditing && formData ? (
                         <TextField
                           select
-                          label="Gender"
+                          label="Giới tính"
                           value={formData.gender}
                           onChange={(e) => onFormChange?.('gender', e.target.value as Gender | '')}
                           fullWidth
@@ -311,33 +362,29 @@ export default function ProfileEmployeeTab({
                           ))}
                         </TextField>
                       ) : (
-                        <TextField
-                          label="Gender"
-                          value={employee.gender || 'N/A'}
-                          disabled
-                          fullWidth
-                        />
+                        <InfoField label="Giới tính" value={employee.gender} />
                       )}
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        label="Date of Birth"
-                        type={isEditing ? "date" : "text"}
-                        value={
-                          isEditing && formData
-                            ? formData.dateOfBirth
-                            : employee.dateOfBirth
-                            ? new Date(employee.dateOfBirth).toLocaleDateString()
-                            : 'N/A'
-                        }
-                        onChange={(e) => isEditing && onFormChange?.('dateOfBirth', e.target.value)}
-                        disabled={!isEditing}
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <CalendarToday sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
-                        InputLabelProps={isEditing ? { shrink: true } : undefined}
-                      />
+                      {isEditing && formData ? (
+                        <TextField
+                          label="Ngày sinh"
+                          type="date"
+                          value={formData.dateOfBirth}
+                          onChange={(e) => onFormChange?.('dateOfBirth', e.target.value)}
+                          fullWidth
+                          InputProps={{
+                            startAdornment: <CalendarToday sx={{ mr: 1, color: 'action.active' }} />,
+                          }}
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      ) : (
+                        <InfoField
+                          icon={<CalendarToday />}
+                          label="Ngày sinh"
+                          value={employee.dateOfBirth ? new Date(employee.dateOfBirth).toLocaleDateString() : null}
+                        />
+                      )}
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       {isEditing && formData ? (
@@ -346,16 +393,11 @@ export default function ProfileEmployeeTab({
                           value={formData.nationality || null}
                           onChange={(_, newValue) => onFormChange?.('nationality', newValue || '')}
                           renderInput={(params) => (
-                            <TextField {...params} label="Nationality" placeholder="Select country" />
+                            <TextField {...params} label="Quốc tịch" placeholder="Chọn quốc gia" />
                           )}
                         />
                       ) : (
-                        <TextField
-                          label="Nationality"
-                          value={employee.nationality || 'N/A'}
-                          disabled
-                          fullWidth
-                        />
+                        <InfoField label="Quốc tịch" value={employee.nationality} />
                       )}
                     </Grid>
                   </Grid>
@@ -368,49 +410,58 @@ export default function ProfileEmployeeTab({
               <Card>
                 <CardContent>
                   <Typography variant="h6" color="primary" gutterBottom>
-                    Contact Information
+                    Thông tin liên hệ
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        label="Phone"
-                        value={isEditing && formData ? formData.phone : employee.phone || 'N/A'}
-                        onChange={(e) => isEditing && onFormChange?.('phone', e.target.value)}
-                        disabled={!isEditing}
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <Phone sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
-                      />
+                      {isEditing && formData ? (
+                        <TextField
+                          label="Số điện thoại"
+                          value={formData.phone}
+                          onChange={(e) => onFormChange?.('phone', e.target.value)}
+                          fullWidth
+                          InputProps={{
+                            startAdornment: <Phone sx={{ mr: 1, color: 'action.active' }} />,
+                          }}
+                        />
+                      ) : (
+                        <InfoField icon={<Phone />} label="Số điện thoại" value={employee.phone} />
+                      )}
                     </Grid>
                     <Grid size={{ xs: 12 }}>
-                      <TextField
-                        label="Permanent Address"
-                        value={isEditing && formData ? formData.addressPermanent : employee.addressPermanent || 'N/A'}
-                        onChange={(e) => isEditing && onFormChange?.('addressPermanent', e.target.value)}
-                        disabled={!isEditing}
-                        fullWidth
-                        multiline
-                        rows={2}
-                        InputProps={{
-                          startAdornment: <Home sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
-                      />
+                      {isEditing && formData ? (
+                        <TextField
+                          label="Địa chỉ thường trú"
+                          value={formData.addressPermanent}
+                          onChange={(e) => onFormChange?.('addressPermanent', e.target.value)}
+                          fullWidth
+                          multiline
+                          rows={2}
+                          InputProps={{
+                            startAdornment: <Home sx={{ mr: 1, color: 'action.active' }} />,
+                          }}
+                        />
+                      ) : (
+                        <InfoField icon={<Home />} label="Địa chỉ thường trú" value={employee.addressPermanent} />
+                      )}
                     </Grid>
                     <Grid size={{ xs: 12 }}>
-                      <TextField
-                        label="Current Address"
-                        value={isEditing && formData ? formData.addressCurrent : employee.addressCurrent || 'N/A'}
-                        onChange={(e) => isEditing && onFormChange?.('addressCurrent', e.target.value)}
-                        disabled={!isEditing}
-                        fullWidth
-                        multiline
-                        rows={2}
-                        InputProps={{
-                          startAdornment: <Home sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
-                      />
+                      {isEditing && formData ? (
+                        <TextField
+                          label="Địa chỉ hiện tại"
+                          value={formData.addressCurrent}
+                          onChange={(e) => onFormChange?.('addressCurrent', e.target.value)}
+                          fullWidth
+                          multiline
+                          rows={2}
+                          InputProps={{
+                            startAdornment: <Home sx={{ mr: 1, color: 'action.active' }} />,
+                          }}
+                        />
+                      ) : (
+                        <InfoField icon={<Home />} label="Địa chỉ hiện tại" value={employee.addressCurrent} />
+                      )}
                     </Grid>
                   </Grid>
                 </CardContent>
@@ -422,50 +473,57 @@ export default function ProfileEmployeeTab({
               <Card>
                 <CardContent>
                   <Typography variant="h6" color="primary" gutterBottom>
-                    Identification
+                    CCCD / Chứng minh nhân dân
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        label="Identity Number"
-                        value={isEditing && formData ? formData.identityNumber : employee.identityNumber || 'N/A'}
-                        onChange={(e) => isEditing && onFormChange?.('identityNumber', e.target.value)}
-                        disabled={!isEditing}
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <Badge sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
-                      />
+                      {isEditing && formData ? (
+                        <TextField
+                          label="Số CCCD"
+                          value={formData.identityNumber}
+                          onChange={(e) => onFormChange?.('identityNumber', e.target.value)}
+                          fullWidth
+                          InputProps={{
+                            startAdornment: <Badge sx={{ mr: 1, color: 'action.active' }} />,
+                          }}
+                        />
+                      ) : (
+                        <InfoField icon={<Badge />} label="Số CCCD" value={employee.identityNumber} />
+                      )}
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        label="Issued Date"
-                        type={isEditing ? "date" : "text"}
-                        value={
-                          isEditing && formData
-                            ? formData.identityIssuedDate
-                            : employee.identityIssuedDate
-                            ? new Date(employee.identityIssuedDate).toLocaleDateString()
-                            : 'N/A'
-                        }
-                        onChange={(e) => isEditing && onFormChange?.('identityIssuedDate', e.target.value)}
-                        disabled={!isEditing}
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <CalendarToday sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
-                        InputLabelProps={isEditing ? { shrink: true } : undefined}
-                      />
+                      {isEditing && formData ? (
+                        <TextField
+                          label="Ngày cấp"
+                          type="date"
+                          value={formData.identityIssuedDate}
+                          onChange={(e) => onFormChange?.('identityIssuedDate', e.target.value)}
+                          fullWidth
+                          InputProps={{
+                            startAdornment: <CalendarToday sx={{ mr: 1, color: 'action.active' }} />,
+                          }}
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      ) : (
+                        <InfoField
+                          icon={<CalendarToday />}
+                          label="Ngày cấp"
+                          value={employee.identityIssuedDate ? new Date(employee.identityIssuedDate).toLocaleDateString() : null}
+                        />
+                      )}
                     </Grid>
                     <Grid size={{ xs: 12 }}>
-                      <TextField
-                        label="Issued Place"
-                        value={isEditing && formData ? formData.identityIssuedPlace : employee.identityIssuedPlace || 'N/A'}
-                        onChange={(e) => isEditing && onFormChange?.('identityIssuedPlace', e.target.value)}
-                        disabled={!isEditing}
-                        fullWidth
-                      />
+                      {isEditing && formData ? (
+                        <TextField
+                          label="Nơi cấp"
+                          value={formData.identityIssuedPlace}
+                          onChange={(e) => onFormChange?.('identityIssuedPlace', e.target.value)}
+                          fullWidth
+                        />
+                      ) : (
+                        <InfoField label="Nơi cấp" value={employee.identityIssuedPlace} />
+                      )}
                     </Grid>
                   </Grid>
                 </CardContent>
@@ -477,47 +535,29 @@ export default function ProfileEmployeeTab({
               <Card>
                 <CardContent>
                   <Typography variant="h6" color="primary" gutterBottom>
-                    Work Information
+                    Thông tin công việc
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        label="Department"
-                        value={employee.department?.name || 'N/A'}
-                        disabled
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <Business sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
-                      />
+                      <InfoField icon={<Business />} label="Phòng ban" value={employee.department?.name} />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        label="Position"
-                        value={employee.currentPosition?.name || 'N/A'}
-                        disabled
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <Work sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
-                      />
+                      <InfoField icon={<Work />} label="Vị trí" value={employee.currentPosition?.name} />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
-                      <TextField
-                        label="Level"
-                        value={employee.level || 'N/A'}
-                        disabled
-                        fullWidth
-                      />
+                      <InfoField label="Cấp bậc" value={employee.level} />
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>
                       <Box>
                         <Typography variant="caption" color="text.secondary" display="block" mb={1}>
-                          Status
+                          Trạng thái
                         </Typography>
                         {employee.status && <StatusChip status={statusMap[employee.status]} showIcon />}
                       </Box>
+                    </Grid>
+                    <Grid size={{ xs: 12, md: 6 }}>
+                      <InfoField label="Số người phụ thuộc" value={String(employee.dependentCount ?? 0)} />
                     </Grid>
                   </Grid>
                 </CardContent>
@@ -529,30 +569,22 @@ export default function ProfileEmployeeTab({
               <Card>
                 <CardContent>
                   <Typography variant="h6" color="primary" gutterBottom>
-                    System Information
+                    Thông tin hệ thống
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   <Grid container spacing={2}>
                     <Grid size={{ xs: 12, md: 4 }}>
-                      <TextField
-                        label="Created At"
-                        value={employee.createdAt ? new Date(employee.createdAt).toLocaleString() : 'N/A'}
-                        disabled
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <CalendarToday sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
+                      <InfoField
+                        icon={<CalendarToday />}
+                        label="Ngày tạo"
+                        value={employee.createdAt ? new Date(employee.createdAt).toLocaleString() : null}
                       />
                     </Grid>
                     <Grid size={{ xs: 12, md: 4 }}>
-                      <TextField
-                        label="Updated At"
-                        value={employee.updatedAt ? new Date(employee.updatedAt).toLocaleString() : 'N/A'}
-                        disabled
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <CalendarToday sx={{ mr: 1, color: 'action.active' }} />,
-                        }}
+                      <InfoField
+                        icon={<CalendarToday />}
+                        label="Cập nhật lần cuối"
+                        value={employee.updatedAt ? new Date(employee.updatedAt).toLocaleString() : null}
                       />
                     </Grid>
                   </Grid>
@@ -565,14 +597,14 @@ export default function ProfileEmployeeTab({
               <Card>
                 <CardContent>
                   <Typography variant="h6" color="primary" gutterBottom>
-                    Documents
+                    Tài liệu
                   </Typography>
                   <Divider sx={{ mb: 2 }} />
                   
                   {/* CV Section */}
                   <Box>
                     <Typography variant="subtitle2" gutterBottom>
-                      Curriculum Vitae (CV)
+                      Hồ sơ xin việc (CV)
                     </Typography>
                     {cvAttachment ? (
                       <Alert
@@ -597,7 +629,7 @@ export default function ProfileEmployeeTab({
                                 component="label"
                                 disabled={isUploadingCV}
                               >
-                                {isUploadingCV ? 'Uploading...' : 'Replace'}
+                                {isUploadingCV ? 'Đang tải...' : 'Thay thế'}
                                 <input
                                   type="file"
                                   hidden
@@ -630,7 +662,7 @@ export default function ProfileEmployeeTab({
                       </Alert>
                     ) : (
                       <Alert severity="info" sx={{ mb: 2 }}>
-                        No CV uploaded yet
+                        Chưa có CV nào được tải lên
                       </Alert>
                     )}
                     
@@ -642,7 +674,7 @@ export default function ProfileEmployeeTab({
                         disabled={isUploadingCV}
                         fullWidth
                       >
-                        {isUploadingCV ? 'Uploading...' : 'Upload CV'}
+                        {isUploadingCV ? 'Đang tải...' : 'Tải lên CV'}
                         <input
                           type="file"
                           hidden

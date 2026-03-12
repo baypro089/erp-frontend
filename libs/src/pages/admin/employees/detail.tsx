@@ -24,6 +24,9 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import { PageHeader, LoadingOverlay } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import {
   EmployeeAvatarCard,
   BasicInformationCard,
@@ -69,6 +72,7 @@ interface EmployeeFormData {
   currentPositionId: string;
   level: Level | '';
   status: Status;
+  dependentCount: number;
 }
 
 export default function EmployeeDetailPage() {
@@ -102,6 +106,7 @@ export default function EmployeeDetailPage() {
     currentPositionId: '',
     level: '',
     status: Status.DRAFT,
+    dependentCount: 0,
   });
   const [cvAttachment, setCvAttachment] = useState<AttachmentResponse | null>(null);
   const [photoAttachment, setPhotoAttachment] = useState<AttachmentResponse | null>(null);
@@ -161,6 +166,7 @@ export default function EmployeeDetailPage() {
         currentPositionId: currentEmployee.currentPosition?.id || '',
         level: currentEmployee.level || '',
         status: currentEmployee.status || Status.DRAFT,
+        dependentCount: currentEmployee.dependentCount ?? 0,
       });
     }
   }, [currentEmployee]);
@@ -207,6 +213,8 @@ export default function EmployeeDetailPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const { guardAction, permissionDialogProps } = usePermissionGuard();
+
   const handleEdit = () => {
     setIsEditing(true);
   };
@@ -233,6 +241,7 @@ export default function EmployeeDetailPage() {
         currentPositionId: currentEmployee.currentPosition?.id || '',
         level: currentEmployee.level || '',
         status: currentEmployee.status || Status.DRAFT,
+        dependentCount: currentEmployee.dependentCount ?? 0,
       });
     }
   };
@@ -373,7 +382,7 @@ export default function EmployeeDetailPage() {
                 },
                 {
                   label: 'Edit',
-                  onClick: handleEdit,
+                  onClick: guardAction(PERMISSIONS.EMPLOYEE.UPDATE, handleEdit),
                   icon: <EditIcon />,
                   variant: 'contained',
                 },
@@ -495,7 +504,7 @@ export default function EmployeeDetailPage() {
                 bottom: 24,
                 right: 24,
               }}
-              onClick={() => setDrawerOpen(true)}
+              onClick={guardAction(PERMISSIONS.JOB_HISTORY.CREATE, () => setDrawerOpen(true))}
             >
               <AddIcon />
             </Fab>
@@ -531,6 +540,8 @@ export default function EmployeeDetailPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

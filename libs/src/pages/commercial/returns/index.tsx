@@ -21,6 +21,7 @@ import {
   PageHeader,
   FilterBar,
   LoadingOverlay,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import type { Column, DataTableAction } from '@libs/src/components/common/DataTable';
 import {
@@ -29,6 +30,9 @@ import {
 } from '@libs/src/features/return-request/return-request.slice';
 import { ReturnStatus } from '@libs/shared/enums/return-status.enum';
 import type { ReturnRequesTableResponse } from '@libs/shared/types/return-request.type';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 const RETURN_STATUS_LABELS: Record<ReturnStatus, string> = {
   [ReturnStatus.PENDING]: 'Chờ xử lý',
@@ -43,8 +47,20 @@ const RETURN_STATUS_COLOR: Record<ReturnStatus, string> = {
 };
 
 export default function ReturnsPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.RETURN_REQUEST.VIEW}
+      fallbackPath="/commercial"
+    >
+      <ReturnsPageContent />
+    </PermissionGuard>
+  );
+}
+
+function ReturnsPageContent() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { guardAction, permissionDialogProps } = usePermissionGuard();
   const { pagedReturnRequests, loading, error } = useSelector(
     (state: RootState) => state.returnRequest
   );
@@ -169,7 +185,7 @@ export default function ReturnsPage() {
           },
           {
             label: '+ Tạo Đơn Trả Hàng',
-            onClick: () => router.push('/commercial/returns/initiate'),
+            onClick: guardAction(PERMISSIONS.RETURN_REQUEST.CREATE, () => router.push('/commercial/returns/initiate')),
             icon: <AddIcon />,
             variant: 'contained',
             color: 'primary',
@@ -219,6 +235,7 @@ export default function ReturnsPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

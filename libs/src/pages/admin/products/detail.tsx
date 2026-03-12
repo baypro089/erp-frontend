@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { AppDispatch, RootState } from '@libs/src/store';
 import {
   Box,
@@ -23,6 +23,7 @@ import {
   clearError,
   clearCurrentProduct,
 } from '@libs/src/features/product/product.slice';
+import { getProductRouteContext } from '../../../utils/product-route';
 
 interface ProductDetailPageProps {
   productId: string;
@@ -30,7 +31,9 @@ interface ProductDetailPageProps {
 
 export default function ProductDetailPage({ productId }: ProductDetailPageProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const pathname = usePathname();
   const router = useRouter();
+  const { basePath } = getProductRouteContext(pathname);
   const { currentProduct, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.product
   );
@@ -65,11 +68,11 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
   }, [error, operationError, dispatch]);
 
   const handleEdit = () => {
-    router.push(`/admin/products/${productId}/edit`);
+    router.push(`${basePath}/${productId}/edit`);
   };
 
   const handleBack = () => {
-    router.push('/admin/products');
+    router.push(basePath);
   };
 
   // Show loading when fetching product details
@@ -84,7 +87,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         <PageHeader
           title="Chi tiết sản phẩm"
           breadcrumbs={[
-            { label: 'Sản phẩm', icon: <ProductIcon fontSize="small" />, href: '/admin/products' },
+            { label: 'Sản phẩm', icon: <ProductIcon fontSize="small" />, href: basePath },
             { label: 'Chi tiết' },
           ]}
         />
@@ -105,7 +108,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         title={currentProduct?.name || 'Chi tiết sản phẩm'}
         subtitle={currentProduct ? `SKU: ${currentProduct.sku}` : ''}
         breadcrumbs={[
-          { label: 'Sản phẩm', icon: <ProductIcon fontSize="small" />, href: '/admin/products' },
+          { label: 'Sản phẩm', icon: <ProductIcon fontSize="small" />, href: basePath },
           { label: 'Chi tiết' },
         ]}
         actions={[

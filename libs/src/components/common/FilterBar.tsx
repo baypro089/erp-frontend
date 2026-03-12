@@ -113,7 +113,7 @@ export default function FilterBar({
                 fullWidth
                 size="small"
                 label={field.label}
-                placeholder={field.placeholder || `Search ${field.label.toLowerCase()}...`}
+                placeholder={field.placeholder || `Tìm kiếm ${field.label.toLowerCase()}...`}
                 value={field.value || ''}
                 onChange={(e) => handleSearchChange(field.id, e.target.value)}
                 InputProps={{
@@ -159,7 +159,7 @@ export default function FilterBar({
                   ) : null
                 }
               >
-                Filters
+                Bộ lọc
               </Button>
             )}
             {hasActiveFilters && (
@@ -169,7 +169,7 @@ export default function FilterBar({
                 startIcon={<CloseIcon />}
                 onClick={onClearFilters}
               >
-                Clear All
+                Xóa bộ lọc
               </Button>
             )}
           </Stack>
@@ -203,7 +203,7 @@ export default function FilterBar({
                           label={filter.label}
                         >
                           <MenuItem value="">
-                            <em>All</em>
+                            <em>Tất cả</em>
                           </MenuItem>
                           {filter.options?.map((option) => (
                             <MenuItem key={option.value} value={option.value}>

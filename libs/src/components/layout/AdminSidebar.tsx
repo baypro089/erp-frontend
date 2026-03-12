@@ -12,6 +12,7 @@ import {
   Typography,
   IconButton,
   Divider,
+  Toolbar,
   useTheme,
   useMediaQuery,
   alpha,
@@ -61,55 +62,55 @@ const COLLAPSED_WIDTH = 64;
 const menuItems: MenuItem[] = [
   {
     id: 'dashboard',
-    label: 'Dashboard',
+    label: 'Tổng quan',
     icon: <DashboardIcon />,
     path: '/admin/dashboard',
   },
   {
     id: 'departments',
-    label: 'Departments',
+    label: 'Phòng ban',
     icon: <AccountTreeIcon />,
     path: '/admin/departments',
   },
   {
     id: 'positions',
-    label: 'Positions',
+    label: 'Chức vụ',
     icon: <BusinessCenterIcon />,
     path: '/admin/positions',
   },
   {
     id: 'roles',
-    label: 'Roles',
+    label: 'Vai trò',
     icon: <SecurityIcon />,
     path: '/admin/roles',
   },
   {
     id: 'users',
-    label: 'Users',
+    label: 'Người dùng',
     icon: <AccountCircleIcon />,
     path: '/admin/users',
   },
   {
     id: 'holidays',
-    label: 'Holidays',
+    label: 'Ngày nghỉ lễ',
     icon: <EventIcon />,
     path: '/admin/holidays',
   },
   {
     id: 'categories',
-    label: 'Categories',
+    label: 'Danh mục',
     icon: <CategoryIcon />,
     path: '/admin/categories',
   },
   {
     id: 'brands',
-    label: 'Brands',
+    label: 'Thương hiệu',
     icon: <BrandIcon />,
     path: '/admin/brands',
   },
   {
     id: 'products',
-    label: 'Products',
+    label: 'Sản phẩm',
     icon: <ProductIcon />,
     path: '/admin/products',
   },
@@ -121,7 +122,7 @@ const menuItems: MenuItem[] = [
   },
   {
     id: 'reports',
-    label: 'Reports',
+    label: 'Báo cáo',
     icon: <AssessmentIcon />,
     path: '/admin/reports',
   }
@@ -244,6 +245,9 @@ export default function AdminSidebar({
         background: `linear-gradient(180deg, ${alpha('#6a11cb', 0.03)} 0%, ${theme.palette.background.paper} 100%)`,
       }}
     >
+      {/* Offset for fixed AppBar */}
+      <Toolbar />
+
       {/* Logo Section */}
       <Box
         sx={{

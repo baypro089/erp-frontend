@@ -25,6 +25,7 @@ import {
   LoadingOverlay,
   Column,
   StatusChip,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import {
   fetchOrders,
@@ -35,10 +36,26 @@ import { fetchWarehouses } from '@libs/src/features/warehouse/warehouse.slice';
 import UpdateOrderStatusDialog from '@libs/src/components/dialogs/UpdateOrderStatusDialog';
 import type { OrderResponse, OrderTableReponse } from '@libs/shared/types/order.type';
 import { OrderStatus } from '@libs/shared/enums/order-status.enum';
+import { CacheService } from '@libs/src/services/cache.service';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function OrdersPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.ORDER.VIEW}
+      fallbackPath="/commercial"
+    >
+      <OrdersPageContent />
+    </PermissionGuard>
+  );
+}
+
+function OrdersPageContent() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { pagedOrders, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.order
   );
@@ -97,11 +114,12 @@ export default function OrdersPage() {
   }, [error, operationError, dispatch]);
 
   // Actions
-  const handleAdd = () => {
+  const handleAdd = guardAction(PERMISSIONS.ORDER.CREATE, () => {
     router.push('/commercial/sales/create');
-  };
+  });
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     loadOrders();
     setSnackbar({
       open: true,
@@ -121,7 +139,7 @@ export default function OrdersPage() {
     loadOrders();
   };
 
-  const handleOpenUpdateStatus = async (row: OrderTableReponse) => {
+  const handleOpenUpdateStatusImpl = async (row: OrderTableReponse) => {
     try {
       // Fetch full order details
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/orders/${row.id}`, {
@@ -147,6 +165,8 @@ export default function OrdersPage() {
       });
     }
   };
+
+  const handleOpenUpdateStatus = guardFn<OrderTableReponse>(PERMISSIONS.ORDER.UPDATE, handleOpenUpdateStatusImpl);
 
   const handleConfirmUpdateStatus = async (status: OrderStatus, warehouseIdToReturn?: string) => {
     if (!selectedOrder) return;
@@ -380,6 +400,7 @@ export default function OrdersPage() {
       </Snackbar>
 
       {operationLoading && <LoadingOverlay open={true} message="Đang xử lý..." />}
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

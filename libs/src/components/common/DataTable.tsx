@@ -93,7 +93,7 @@ export default function DataTable<T extends Record<string, any>>({
   onDelete,
   onView,
   rowKey = 'id',
-  emptyMessage = 'No data available',
+  emptyMessage = 'Không có dữ liệu',
   dense = false,
   stickyHeader = true,
 }: DataTableProps<T>) {
@@ -209,7 +209,7 @@ export default function DataTable<T extends Record<string, any>>({
                     backgroundColor: theme.palette.background.paper,
                   }}
                 >
-                  Actions
+                  Thao tác
                 </TableCell>
               )}
             </TableRow>
@@ -268,7 +268,7 @@ export default function DataTable<T extends Record<string, any>>({
                       <TableCell align="center">
                         <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                           {onView && (
-                            <Tooltip title="View">
+                            <Tooltip title="Xem">
                               <IconButton
                                 size="small"
                                 color="info"
@@ -279,7 +279,7 @@ export default function DataTable<T extends Record<string, any>>({
                             </Tooltip>
                           )}
                           {onEdit && (
-                            <Tooltip title="Edit">
+                            <Tooltip title="Chỉnh sửa">
                               <IconButton
                                 size="small"
                                 color="primary"
@@ -290,7 +290,7 @@ export default function DataTable<T extends Record<string, any>>({
                             </Tooltip>
                           )}
                           {onDelete && (
-                            <Tooltip title="Delete">
+                            <Tooltip title="Xóa">
                               <IconButton
                                 size="small"
                                 color="error"

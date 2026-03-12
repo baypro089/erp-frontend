@@ -22,7 +22,11 @@ import {
   FilterBar,
   LoadingOverlay,
   Column,
+  PermissionDeniedDialog,
+  PermissionGuard,
 } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import CategoryFormDialog from '@libs/src/components/categories/CategoryFormDialog';
 import {
   fetchCategories,
@@ -36,9 +40,22 @@ import type {
   CreateCategoryDto,
   UpdateCategoryDto,
 } from '@libs/shared/types/category.type';
+import { CacheService } from '@libs/src/services/cache.service';
 
 export default function CategoriesPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.CATEGORY.VIEW}
+      fallbackPath="/admin"
+    >
+      <CategoriesPageContent />
+    </PermissionGuard>
+  );
+}
+
+function CategoriesPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { categories, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.category
   );
@@ -228,7 +245,8 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchCategories({}));
     setSnackbar({
       open: true,
@@ -268,7 +286,7 @@ export default function CategoriesPage() {
           },
           {
             label: 'Delete Selected',
-            onClick: handleBulkDelete,
+            onClick: guardAction(PERMISSIONS.CATEGORY.DELETE, handleBulkDelete),
             variant: 'outlined',
             color: 'error',
             disabled: selectedRows.length === 0,
@@ -276,7 +294,7 @@ export default function CategoriesPage() {
           },
           {
             label: 'Add Category',
-            onClick: handleAdd,
+            onClick: guardAction(PERMISSIONS.CATEGORY.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
@@ -317,8 +335,8 @@ export default function CategoriesPage() {
         selectable
         selectedRows={selectedRows}
         onSelectionChange={setSelectedRows}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={guardFn(PERMISSIONS.CATEGORY.UPDATE, handleEdit)}
+        onDelete={guardFn(PERMISSIONS.CATEGORY.DELETE, handleDelete)}
         rowKey="id"
         emptyMessage="No categories found"
       />
@@ -349,6 +367,8 @@ export default function CategoriesPage() {
 
       {/* Loading Overlay */}
       <LoadingOverlay open={loading && categories.length === 0} message="Loading categories..." />
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
 
       {/* Snackbar */}
       <Snackbar

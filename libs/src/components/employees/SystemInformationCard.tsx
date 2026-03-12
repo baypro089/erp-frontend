@@ -14,13 +14,13 @@ export default function SystemInformationCard({ employee }: SystemInformationCar
       <CardContent>
         <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
           <DateRangeIcon color="primary" />
-          System Information
+          Thông tin hệ thống
         </Typography>
         <Divider sx={{ mb: 2 }} />
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Created At
+              Ngày tạo
             </Typography>
             <Typography variant="body1">
               {new Date(employee.createdAt).toLocaleString()}
@@ -28,7 +28,7 @@ export default function SystemInformationCard({ employee }: SystemInformationCar
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Last Updated
+              Cập nhật lần cuối
             </Typography>
             <Typography variant="body1">
               {new Date(employee.updatedAt).toLocaleString()}

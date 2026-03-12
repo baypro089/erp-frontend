@@ -35,21 +35,21 @@ export default function DeleteConfirmDialog({
   open,
   onClose,
   onConfirm,
-  title = 'Confirm Delete',
+  title = 'Xác nhận xóa',
   message,
   itemName,
   loading = false,
   variant = 'warning',
-  confirmText = 'Delete',
-  cancelText = 'Cancel',
+  confirmText = 'Xóa',
+  cancelText = 'Hủy',
   maxWidth = 'xs',
 }: DeleteConfirmDialogProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const defaultMessage = itemName
-    ? `Are you sure you want to delete "${itemName}"? This action cannot be undone.`
-    : 'Are you sure you want to delete this item? This action cannot be undone.';
+    ? `Bạn có chắc muốn xóa "${itemName}"? Hành động này không thể hoàn tác.`
+    : 'Bạn có chắc muốn xóa mục này? Hành động này không thể hoàn tác.';
 
   const Icon = variant === 'error' ? ErrorIcon : WarningIcon;
   const iconColor = variant === 'error' ? 'error' : 'warning';

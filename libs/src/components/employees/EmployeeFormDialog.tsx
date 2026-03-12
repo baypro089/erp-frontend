@@ -74,29 +74,29 @@ export default function EmployeeFormDialog({
     const newErrors: typeof errors = {};
 
     if (!formData.fullName.trim()) {
-      newErrors.fullName = 'Full name is required';
+      newErrors.fullName = 'Họ và tên là bắt buộc';
     }
 
     if (!formData.employeeCode.trim()) {
-      newErrors.employeeCode = 'Employee code is required';
+      newErrors.employeeCode = 'Mã nhân viên là bắt buộc';
     }
 
     if (!formData.departmentId) {
-      newErrors.departmentId = 'Department is required';
+      newErrors.departmentId = 'Phòng ban là bắt buộc';
     }
 
     if (!formData.currentPositionId) {
-      newErrors.currentPositionId = 'Position is required';
+      newErrors.currentPositionId = 'Chức vụ là bắt buộc';
     }
 
     if (!formData.startDate) {
-      newErrors.startDate = 'Start date is required';
+      newErrors.startDate = 'Ngày bắt đầu là bắt buộc';
     }
 
     if (formData.initSalary === undefined || formData.initSalary === 0) {
-      newErrors.initSalary = 'Initial salary is required and must be greater than 0';
+      newErrors.initSalary = 'Lương khởi điểm là bắt buộc và phải lớn hơn 0';
     } else if (isNaN(Number(formData.initSalary))) {
-      newErrors.initSalary = 'Initial salary must be a number';
+      newErrors.initSalary = 'Lương khởi điểm phải là một số';
     }
 
     setErrors(newErrors);

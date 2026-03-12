@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { AppDispatch, RootState } from '@libs/src/store';
 import {
   Box,
@@ -23,7 +23,10 @@ import {
   FilterBar,
   LoadingOverlay,
   Column,
+  PermissionGuard,
 } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import {
   fetchProducts,
   deleteProducts,
@@ -34,10 +37,29 @@ import type {
 } from '@libs/shared/types/product.type';
 import { fetchBrands } from '@libs/src/features/brand/brand.slice';
 import { fetchCategories } from '@libs/src/features/category/category.slice';
+import { CacheService } from '@libs/src/services/cache.service';
+import { getProductRouteContext } from '../../../utils/product-route';
 
 export default function ProductsPage() {
+  const pathname = usePathname();
+  const { fallbackPath } = getProductRouteContext(pathname);
+
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.PRODUCT.VIEW}
+      fallbackPath={fallbackPath}
+    >
+      <ProductsPageContent />
+    </PermissionGuard>
+  );
+}
+
+function ProductsPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const pathname = usePathname();
   const router = useRouter();
+  const { guardFn } = usePermissionGuard();
+  const { basePath } = getProductRouteContext(pathname);
   const { products, loading, error, operationLoading, operationError } =
     useSelector((state: RootState) => state.product);
   const { brands } = useSelector((state: RootState) => state.brand);
@@ -127,7 +149,7 @@ export default function ProductsPage() {
     },
     {
       id: 'retailPrice',
-      label: 'Price',
+      label: 'Giá',
       minWidth: 120,
       align: 'right',
       format: (value) => (
@@ -138,7 +160,7 @@ export default function ProductsPage() {
     },
     {
       id: 'stockQuantity',
-      label: 'Stock',
+      label: 'Tồn kho',
       minWidth: 100,
       align: 'center',
       format: (value) => {
@@ -155,12 +177,12 @@ export default function ProductsPage() {
     },
     {
       id: 'isActive',
-      label: 'Status',
+      label: 'Trạng thái',
       minWidth: 100,
       align: 'center',
       format: (value) => (
         <Chip
-          label={value ? 'Active' : 'Inactive'}
+          label={value ? 'Hoạt động' : 'Không hoạt động'}
           color={value ? 'success' : 'default'}
           size="small"
           sx={{ minWidth: 80 }}
@@ -171,15 +193,15 @@ export default function ProductsPage() {
 
   // Handlers
   const handleAdd = () => {
-    router.push('/admin/products/create');
+    router.push(`${basePath}/create`);
   };
 
   const handleView = (row: ProductTableResponse) => {
-    router.push(`/admin/products/${row.id}`);
+    router.push(`${basePath}/${row.id}`);
   };
 
   const handleEdit = (row: ProductTableResponse) => {
-    router.push(`/admin/products/${row.id}/edit`);
+    router.push(`${basePath}/${row.id}/edit`);
   };
 
   const handleDelete = (row: ProductTableResponse) => {
@@ -199,7 +221,7 @@ export default function ProductsPage() {
       await dispatch(deleteProducts(ids)).unwrap();
       setSnackbar({
         open: true,
-        message: `${ids.length} product(s) deleted successfully`,
+        message: `Đã xóa ${ids.length} sản phẩm thành công`,
         severity: 'success',
       });
       setOpenDelete(false);
@@ -210,11 +232,12 @@ export default function ProductsPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchProducts({}));
     setSnackbar({
       open: true,
-      message: 'Data refreshed',
+      message: 'Đã làm mới dữ liệu',
       severity: 'success',
     });
   };
@@ -249,18 +272,18 @@ export default function ProductsPage() {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title="Product Management"
-        subtitle="Manage products, inventory, and specifications"
-        breadcrumbs={[{ label: 'Products', icon: <ProductIcon fontSize="small" /> }]}
+        title="Quản lý sản phẩm"
+        subtitle="Quản lý sản phẩm, tồn kho và thông số"
+        breadcrumbs={[{ label: 'Sản phẩm', icon: <ProductIcon fontSize="small" /> }]}
         actions={[
           {
-            label: 'Refresh',
+            label: 'Làm mới',
             onClick: handleRefresh,
             icon: <RefreshIcon />,
             variant: 'outlined',
           },
           {
-            label: 'Delete Selected',
+            label: 'Xóa đã chọn',
             onClick: handleBulkDelete,
             variant: 'outlined',
             color: 'error',
@@ -268,13 +291,13 @@ export default function ProductsPage() {
             hidden: selectedRows.length === 0,
           },
           {
-            label: 'Add Product',
+            label: 'Thêm sản phẩm',
             onClick: handleAdd,
             icon: <AddIcon />,
             variant: 'contained',
           },
         ]}
-        tags={[{ label: `${filteredProducts.length} Total` }]}
+        tags={[{ label: `${filteredProducts.length} Tổng` }]}
       />
 
       {/* Filter Bar */}
@@ -282,28 +305,28 @@ export default function ProductsPage() {
         searchFields={[
           {
             id: 'sku',
-            label: 'SKU',
-            placeholder: 'Search by SKU...',
+              label: 'Mã SKU',
+            placeholder: 'Tìm theo mã SKU...',
             value: searchSku,
           },
           {
             id: 'name',
-            label: 'Product Name',
-            placeholder: 'Search by product name...',
+              label: 'Tên sản phẩm',
+            placeholder: 'Tìm theo tên sản phẩm...',
             value: searchName,
           },
         ]}
         filters={[
           {
             id: 'brand',
-            label: 'Brand',
+            label: 'Thương hiệu',
             type: 'select',
             value: filterBrand,
             options: brands.map((b) => ({ value: b.name, label: b.name })),
           },
           {
             id: 'category',
-            label: 'Category',
+            label: 'Danh mục',
             type: 'select',
             value: filterCategory,
             options: categories.map((c) => ({ value: c.name, label: c.name })),
@@ -341,7 +364,7 @@ export default function ProductsPage() {
         onEdit={handleEdit}
         onDelete={handleDelete}
         rowKey="id"
-        emptyMessage="No products found"
+        emptyMessage="Không có sản phẩm nào"
       />
 
       {/* Delete Confirmation Dialog */}
@@ -349,17 +372,17 @@ export default function ProductsPage() {
         open={openDelete}
         onClose={() => setOpenDelete(false)}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${selectedRows.length} Product(s)`}
+        title={`Xóa ${selectedRows.length} sản phẩm`}
         message={
           selectedRows.length === 1
-            ? `Are you sure you want to delete product "${selectedRows[0]?.name}"?`
-            : `Are you sure you want to delete ${selectedRows.length} products?`
+            ? `Bạn có chắc muốn xóa sản phẩm "${selectedRows[0]?.name}" không?`
+            : `Bạn có chắc muốn xóa ${selectedRows.length} sản phẩm không?`
         }
         loading={operationLoading}
       />
 
       {/* Loading Overlay */}
-      <LoadingOverlay open={loading && products.length === 0} message="Loading products..." />
+      <LoadingOverlay open={loading && products.length === 0} message="Đang tải sản phẩm..." />
 
       {/* Snackbar */}
       <Snackbar

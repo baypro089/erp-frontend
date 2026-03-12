@@ -42,6 +42,7 @@ export default function MainLayout({
     name: currentUser.username || 'User',
     email: currentUser.email || '',
     role: currentUser.role?.role_name || 'Admin',
+    avatar: currentUser.employee.photoUrl || '', // Assuming employee has a photoUrl field
   } : undefined;
 
   return (

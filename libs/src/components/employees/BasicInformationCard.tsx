@@ -28,13 +28,13 @@ export default function BasicInformationCard({
       <CardContent>
         <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
           <PersonIcon color="primary" />
-          Basic Information
+          Thông tin cơ bản
         </Typography>
         <Divider sx={{ mb: 2 }} />
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Employee Code
+              Mã nhân viên
             </Typography>
             <Typography variant="body1" fontWeight={500}>
               {employee.employeeCode}
@@ -42,7 +42,7 @@ export default function BasicInformationCard({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Gender
+              Giới tính
             </Typography>
             {isEditing ? (
               <TextField
@@ -66,7 +66,7 @@ export default function BasicInformationCard({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Date of Birth
+              Ngày sinh
             </Typography>
             {isEditing ? (
               <TextField
@@ -80,7 +80,7 @@ export default function BasicInformationCard({
             ) : (
               <Typography variant="body1">
                 {employee.dateOfBirth
-                  ? new Date(employee.dateOfBirth).toLocaleDateString('en-US', {
+                  ? new Date(employee.dateOfBirth).toLocaleDateString('vi-VN', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',
@@ -91,7 +91,7 @@ export default function BasicInformationCard({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Nationality
+              Quốc tịch
             </Typography>
             {isEditing ? (
               <Autocomplete
@@ -99,7 +99,7 @@ export default function BasicInformationCard({
                 value={formData.nationality || null}
                 onChange={(_, newValue) => onFormChange('nationality', newValue || '')}
                 renderInput={(params) => (
-                  <TextField {...params} size="small" placeholder="Select country" />
+                  <TextField {...params} size="small" placeholder="Chọn quốc gia" />
                 )}
                 sx={{ mt: 0.5 }}
               />

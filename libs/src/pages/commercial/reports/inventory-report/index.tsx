@@ -24,7 +24,7 @@ import {
   CheckCircle as CheckCircleIcon,
   Cancel as CancelIcon,
 } from '@mui/icons-material';
-import { PageHeader, DataTable, Column, LoadingOverlay } from '@libs/src/components/common';
+import { PageHeader, DataTable, Column, LoadingOverlay, PermissionGuard } from '@libs/src/components/common';
 import { fetchWarehouses } from '@libs/src/features/warehouse/warehouse.slice';
 import {
   fetchProductStatistics,
@@ -32,9 +32,24 @@ import {
   clearError,
 } from '@libs/src/features/warehouse-report/warehouse-report.slice';
 import type { IProductStatistics } from '@libs/shared/types/warehouse-report.type';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function InventoryReportPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.WAREHOUSE_REPORT.VIEW}
+      fallbackPath="/commercial"
+    >
+      <InventoryReportPageContent />
+    </PermissionGuard>
+  );
+}
+
+function InventoryReportPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, permissionDialogProps } = usePermissionGuard();
   
   const { warehouses } = useSelector((state: RootState) => state.warehouse);
   const { report, loading, error, exportLoading, exportError } = useSelector(
@@ -88,7 +103,7 @@ export default function InventoryReportPage() {
     window.print();
   };
 
-  const handleExport = async () => {
+  const handleExportImpl = async () => {
     try {
       const filter = {
         month: selectedMonth,
@@ -105,6 +120,8 @@ export default function InventoryReportPage() {
       // Error handled by useEffect
     }
   };
+
+  const handleExport = guardAction(PERMISSIONS.WAREHOUSE_REPORT.VIEW, handleExportImpl);
 
   // Generate month options
   const months = Array.from({ length: 12 }, (_, i) => ({
@@ -452,6 +469,7 @@ export default function InventoryReportPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      <PermissionDeniedDialog {...permissionDialogProps} />
 
       {/* Print Styles */}
       <style jsx global>{`

@@ -22,7 +22,11 @@ import {
   FilterBar,
   LoadingOverlay,
   Column,
+  PermissionDeniedDialog,
+  PermissionGuard,
 } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import BrandFormDialog from '@libs/src/components/brands/BrandFormDialog';
 import {
   fetchBrands,
@@ -36,9 +40,22 @@ import type {
   CreateBrandDto,
   UpdateBrandDto,
 } from '@libs/shared/types/brand.type';
+import { CacheService } from '@libs/src/services/cache.service';
 
 export default function BrandsPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.BRAND.VIEW}
+      fallbackPath="/admin"
+    >
+      <BrandsPageContent />
+    </PermissionGuard>
+  );
+}
+
+function BrandsPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { brands, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.brand
   );
@@ -211,7 +228,8 @@ export default function BrandsPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchBrands({}));
     setSnackbar({
       open: true,
@@ -251,7 +269,7 @@ export default function BrandsPage() {
           },
           {
             label: 'Delete Selected',
-            onClick: handleBulkDelete,
+            onClick: guardAction(PERMISSIONS.BRAND.DELETE, handleBulkDelete),
             variant: 'outlined',
             color: 'error',
             disabled: selectedRows.length === 0,
@@ -259,7 +277,7 @@ export default function BrandsPage() {
           },
           {
             label: 'Add Brand',
-            onClick: handleAdd,
+            onClick: guardAction(PERMISSIONS.BRAND.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
@@ -300,8 +318,8 @@ export default function BrandsPage() {
         selectable
         selectedRows={selectedRows}
         onSelectionChange={setSelectedRows}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={guardFn(PERMISSIONS.BRAND.UPDATE, handleEdit)}
+        onDelete={guardFn(PERMISSIONS.BRAND.DELETE, handleDelete)}
         rowKey="id"
         emptyMessage="No brands found"
       />
@@ -331,6 +349,8 @@ export default function BrandsPage() {
 
       {/* Loading Overlay */}
       <LoadingOverlay open={loading && brands.length === 0} message="Loading brands..." />
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
 
       {/* Snackbar */}
       <Snackbar

@@ -24,7 +24,11 @@ import {
   StatusChip,
   LoadingOverlay,
   Column,
+  PermissionDeniedDialog,
+  PermissionGuard,
 } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import RoleFormDialog from '@libs/src/components/roles/RoleFormDialog';
 import {
   fetchRoles,
@@ -36,9 +40,22 @@ import {
 } from '@libs/src/features/role/role.slice';
 import type { RoleResponse, CreateRoleDTO, UpdateRoleDTO } from '@libs/shared/types/roles.type';
 import { PORTAL_PERMISSION_VALUES } from '@libs/shared/constants/portal-permissions.constant';
+import { CacheService } from '@libs/src/services/cache.service';
 
 export default function RolesPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.ROLE.VIEW}
+      fallbackPath="/admin"
+    >
+      <RolesPageContent />
+    </PermissionGuard>
+  );
+}
+
+function RolesPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { roles, permissions, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.role
   );
@@ -173,7 +190,8 @@ export default function RolesPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchRoles({}));
     dispatch(fetchAllPermissions());
     setSnackbar({
@@ -225,7 +243,7 @@ export default function RolesPage() {
           },
           {
             label: 'Delete Selected',
-            onClick: handleBulkDelete,
+            onClick: guardAction(PERMISSIONS.ROLE.DELETE, handleBulkDelete),
             variant: 'outlined',
             color: 'error',
             disabled: selectedRows.length === 0,
@@ -233,7 +251,7 @@ export default function RolesPage() {
           },
           {
             label: 'Add Role',
-            onClick: handleAdd,
+            onClick: guardAction(PERMISSIONS.ROLE.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
@@ -297,8 +315,8 @@ export default function RolesPage() {
         selectable
         selectedRows={selectedRows}
         onSelectionChange={setSelectedRows}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
+        onEdit={guardFn(PERMISSIONS.ROLE.UPDATE, handleEdit)}
+        onDelete={guardFn(PERMISSIONS.ROLE.DELETE, handleDelete)}
         rowKey="role_code"
         emptyMessage="No roles found"
       />
@@ -329,6 +347,8 @@ export default function RolesPage() {
 
       {/* Loading Overlay */}
       <LoadingOverlay open={loading && roles.length === 0} message="Loading roles..." />
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
 
       {/* Snackbar */}
       <Snackbar

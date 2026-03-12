@@ -35,6 +35,7 @@ import {
   StatusChip,
   LoadingOverlay,
   Column,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import {
   GeneratePayrollDialog,
@@ -48,8 +49,20 @@ import {
   clearGenerationResult,
 } from '@libs/src/features/payslip/payslip.slice';
 import type { PayslipResponse, PaySlipTableResponse } from '@libs/shared/types/payslips.type';
+import { CacheService } from '@libs/src/services/cache.service';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function PayrollPage() {
+  return (
+    <PermissionGuard permission={PERMISSIONS.PAYSLIP.VIEW} fallbackPath="/hr">
+      <PayrollPageContent />
+    </PermissionGuard>
+  );
+}
+
+function PayrollPageContent() {
   const dispatch = useDispatch<AppDispatch>();
   const {
     payslips,
@@ -84,6 +97,8 @@ export default function PayrollPage() {
     message: '',
     severity: 'success' as 'success' | 'error',
   });
+
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
 
   // Reload payslips when filters or pagination changes
   useEffect(() => {
@@ -250,13 +265,16 @@ export default function PayrollPage() {
         actions={[
           {
             label: 'Làm mới',
-            onClick: () => setRefreshCounter((prev) => prev + 1),
+            onClick: async () => {
+              await CacheService.refreshCache();
+              setRefreshCounter((prev) => prev + 1);
+            },
             icon: <RefreshIcon />,
             variant: 'outlined',
           },
           {
             label: 'Tính lương tháng này',
-            onClick: () => setOpenGenerateDialog(true),
+            onClick: guardAction(PERMISSIONS.PAYSLIP.GENERATE, () => setOpenGenerateDialog(true)),
             icon: <CalculateIcon />,
             variant: 'contained',
           },
@@ -341,7 +359,7 @@ export default function PayrollPage() {
         open={openDetailDialog}
         onClose={() => setOpenDetailDialog(false)}
         payslipId={selectedPayslip?.id || ''}
-        onMarkAsPaid={handleMarkAsPaid}
+        onMarkAsPaid={guardFn<string>(PERMISSIONS.PAYSLIP.MARK_PAID, handleMarkAsPaid)}
         isMarkingPaid={operationLoading}
         showMarkPaidButton={true}
       />
@@ -428,6 +446,8 @@ export default function PayrollPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

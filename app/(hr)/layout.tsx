@@ -41,6 +41,7 @@ export default function HRLayout({
     name: currentUser.username || 'User',
     email: currentUser.email || '',
     role: currentUser.role?.role_name || 'HR',
+    avatar: currentUser.employee.photoUrl || '', // Assuming employee has a photoUrl field
   } : undefined;
 
   return (

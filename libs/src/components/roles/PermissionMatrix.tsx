@@ -48,7 +48,7 @@ export default function PermissionMatrix({
     onConfirm,
     permissions,
     selectedPermissions = [],
-    title = 'Select Permissions',
+    title = 'Chọn quyền hạn',
     loading = false,
 }: PermissionMatrixProps) {
     const theme = useTheme();
@@ -152,7 +152,7 @@ export default function PermissionMatrix({
                         {title}
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                        Select permissions to assign to this role
+                        Chọn quyền hạn để gán cho vai trò này
                     </Typography>
                 </Box>
                 <IconButton
@@ -193,12 +193,12 @@ export default function PermissionMatrix({
                         }
                         label={
                             <Typography fontWeight={600}>
-                                Select All Permissions
+                                Chọn tất cả quyền hạn
                             </Typography>
                         }
                     />
                     <Chip
-                        label={`${selected.length} / ${permissions.length} selected`}
+                        label={`${selected.length} / ${permissions.length} đã chọn`}
                         color="primary"
                         size="small"
                     />
@@ -380,7 +380,7 @@ export default function PermissionMatrix({
                                                         {type.replace(/_/g, ' ')}
                                                     </Typography>
                                                     <Typography variant="caption" color="text.secondary">
-                                                        {typePermissions.length} permissions
+                                                        {typePermissions.length} quyền hạn
                                                     </Typography>
                                                 </Box>
                                             </Box>
@@ -475,7 +475,7 @@ export default function PermissionMatrix({
                     variant="outlined"
                     color="inherit"
                 >
-                    Cancel
+                    Hủy
                 </Button>
                 <Button
                     onClick={handleConfirm}
@@ -483,7 +483,7 @@ export default function PermissionMatrix({
                     disabled={loading || !hasPortalAccessSelected}
                     sx={{ minWidth: 120 }}
                 >
-                    {loading ? 'Saving...' : 'Confirm'}
+                    {loading ? 'Đang lưu...' : 'Xác nhận'}
                 </Button>
             </DialogActions>
         </Dialog>

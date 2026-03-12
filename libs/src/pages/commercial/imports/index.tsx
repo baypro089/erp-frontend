@@ -26,6 +26,7 @@ import {
   LoadingOverlay,
   Column,
   StatusChip,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import {
   fetchImportReceipts,
@@ -36,10 +37,26 @@ import type { ImportReceiptTableResponse } from '@libs/shared/types/import-recei
 import { ReceiptStatus } from '@libs/shared/enums/receipt-status.enum';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { CacheService } from '@libs/src/services/cache.service';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function ImportsListPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.IMPORT_RECEIPT.VIEW}
+      fallbackPath="/commercial"
+    >
+      <ImportsListPageContent />
+    </PermissionGuard>
+  );
+}
+
+function ImportsListPageContent() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, permissionDialogProps } = usePermissionGuard();
   
   const { importReceipts, pagedImportReceipts, loading, error } = useSelector(
     (state: RootState) => state.importReceipt
@@ -103,7 +120,8 @@ export default function ImportsListPage() {
   };
 
   // Handle refresh
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(
       fetchImportReceipts({
         page: page + 1,
@@ -222,7 +240,7 @@ export default function ImportsListPage() {
           {
             label: 'Tạo phiếu nhập',
             icon: <AddIcon />,
-            onClick: () => router.push('/commercial/inventory/imports/create'),
+            onClick: guardAction(PERMISSIONS.IMPORT_RECEIPT.CREATE, () => router.push('/commercial/inventory/imports/create')),
             variant: 'contained',
           },
           {
@@ -344,6 +362,7 @@ export default function ImportsListPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

@@ -98,10 +98,12 @@ const authSlice = createSlice({
                 state.loading = false;
                 state.user = action.payload;
                 state.isAuth = true;
+                state.authChecked = true;
             })
             .addCase(fetchCurrentUser.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload as string;
+                state.authChecked = true;
             });
     },
 });

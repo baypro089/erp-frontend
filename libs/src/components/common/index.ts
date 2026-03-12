@@ -21,3 +21,8 @@ export { default as EmptyState } from './EmptyState';
 export type { EmptyStateType } from './EmptyState';
 
 export { default as LoadingOverlay } from './LoadingOverlay';
+
+export { default as PermissionDeniedDialog } from './PermissionDeniedDialog';
+export type { PermissionDeniedDialogProps } from './PermissionDeniedDialog';
+
+export { PermissionGuard } from './PermissionGuard';

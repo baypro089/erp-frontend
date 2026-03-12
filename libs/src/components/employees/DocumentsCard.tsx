@@ -49,13 +49,13 @@ export default function DocumentsCard({
     // Validate file type
     const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (!validTypes.includes(file.type)) {
-      setError('Please upload a PDF or Word document');
+      setError('Vui lòng tải lên tệp PDF hoặc Word');
       return;
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB');
+      setError('Kích thước tệp phải nhỏ hơn 10MB');
       return;
     }
 
@@ -64,7 +64,7 @@ export default function DocumentsCard({
     try {
       await onCVUpload(file);
     } catch (err) {
-      setError('Failed to upload file. Please try again.');
+      setError('Tải tệp thất bại. Vui lòng thử lại.');
     } finally {
       setUploading(false);
     }
@@ -96,7 +96,7 @@ export default function DocumentsCard({
         <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
           <Typography variant="h6" display="flex" alignItems="center" gap={1}>
             <DocumentIcon color="primary" />
-            Documents & CV
+            Tài liệu & CV
           </Typography>
           {isEditing && (
             <Button
@@ -105,7 +105,7 @@ export default function DocumentsCard({
               startIcon={<UploadIcon />}
               disabled={uploading}
             >
-              {uploading ? 'Uploading...' : 'Upload CV'}
+              {uploading ? 'Đang tải...' : 'Tải lên CV'}
               <input
                 type="file"
                 hidden
@@ -168,10 +168,10 @@ export default function DocumentsCard({
                 }}
               >
                 <DocumentIcon sx={{ fontSize: 48, opacity: 0.5, mb: 1 }} />
-                <Typography variant="body2">No CV uploaded yet</Typography>
+                <Typography variant="body2">Chưa có CV nào được tải lên</Typography>
                 {isEditing && (
                   <Typography variant="caption" display="block" mt={1}>
-                    Click "Upload CV" to add a document
+                    Nhấn "Tải lên CV" để thêm tài liệu
                   </Typography>
                 )}
               </Box>

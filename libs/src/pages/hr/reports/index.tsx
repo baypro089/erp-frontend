@@ -48,11 +48,24 @@ import {
   fetchManagerReport,
   clearError,
 } from '@libs/src/features/hr-report/hr-report.slice';
+import { fetchSalaryComponents } from '@libs/src/features/system-setting/system-setting.slice';
 import * as XLSX from 'xlsx';
+import { ManagerReportFilterDto } from '@libs/shared/types/manager-report.type';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog, PermissionGuard } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
 
 export default function HrReportsPage() {
+  return (
+    <PermissionGuard permission={PERMISSIONS.HR_REPORT.VIEW} fallbackPath="/hr">
+      <HrReportsPageContent />
+    </PermissionGuard>
+  );
+}
+
+function HrReportsPageContent() {
   const theme = useTheme();
   const currentDate = new Date();
   const dispatch = useDispatch<AppDispatch>();
@@ -61,27 +74,40 @@ export default function HrReportsPage() {
   const { report: reportData, loading, error } = useSelector(
     (state: RootState) => state.hrReport
   );
+  const { salaryComponents } = useSelector((state: RootState) => state.systemSetting);
   
   // Filters
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState<number | 'all'>('all');
 
-  // Fetch report data when filters change
+  // Fetch report data and salary components when filters change
   useEffect(() => {
-    const filter = {
-      year: selectedYear,
-      ...(selectedMonth !== 'all' && { month: selectedMonth as number }),
+    const filter: ManagerReportFilterDto = {
+      year: Number(selectedYear),
+      ...(selectedMonth !== 'all' && { month: Number(selectedMonth) }),
     };
     
     dispatch(fetchManagerReport(filter));
-  }, [dispatch, selectedYear, selectedMonth]);
+    
+    if (salaryComponents.length === 0) {
+      dispatch(fetchSalaryComponents());
+    }
+  }, [dispatch, selectedYear, selectedMonth, salaryComponents.length]);
 
-  // Clear error on unmount
-  useEffect(() => {
-    return () => {
-      dispatch(clearError());
-    };
-  }, [dispatch]);
+  // Helper functions to get allowance and deduction from details
+  const getAllowance = useCallback((details: Record<string, number> = {}) => {
+    if (!salaryComponents.length) return 0;
+    return salaryComponents
+      .filter(comp => comp.type === 'ALLOWANCE' || comp.type === 'BONUS')
+      .reduce((total, comp) => total + (details[comp.code] || 0), 0);
+  }, [salaryComponents]);
+
+  const getDeduction = useCallback((details: Record<string, number> = {}) => {
+    if (!salaryComponents.length) return 0;
+    return salaryComponents
+      .filter(comp => comp.type === 'DEDUCTION')
+      .reduce((total, comp) => total + (details[comp.code] || 0), 0);
+  }, [salaryComponents]);
 
   // Format currency
   const formatCurrency = (value: string | number) => {
@@ -107,9 +133,8 @@ export default function HrReportsPage() {
       'Tháng': item.month || '',
       'Năm': item.year || '',
       'Lương Cơ Bản': typeof item.baseSalary === 'number' ? item.baseSalary : parseFloat(item.baseSalary || '0'),
-      'Phụ Cấp': item.details?.allowance || 0,
-      'Thưởng': item.details?.bonus || 0,
-      'Khấu Trừ': item.details?.deduction || 0,
+      'Phụ Cấp & Thưởng': getAllowance(item.details),
+      'Khấu Trừ': getDeduction(item.details),
       'Thực Nhận': typeof item.finalSalary === 'number' ? item.finalSalary : parseFloat(item.finalSalary || '0'),
     }));
 
@@ -127,8 +152,7 @@ export default function HrReportsPage() {
       { wch: 8 },  // Tháng
       { wch: 8 },  // Năm
       { wch: 15 }, // Lương Cơ Bản
-      { wch: 15 }, // Phụ Cấp
-      { wch: 15 }, // Thưởng
+      { wch: 20 }, // Phụ Cấp & Thưởng
       { wch: 15 }, // Khấu Trừ
       { wch: 15 }, // Thực Nhận
     ];
@@ -157,6 +181,8 @@ export default function HrReportsPage() {
 
   // Generate year options (last 5 years)
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentDate.getFullYear() - i);
+
+  const { guardAction, permissionDialogProps } = usePermissionGuard();
 
   return (
     <Box>
@@ -213,7 +239,7 @@ export default function HrReportsPage() {
             variant="contained"
             color="success"
             startIcon={<FileDownloadIcon />}
-            onClick={handleExportExcel}
+            onClick={guardAction(PERMISSIONS.HR_REPORT.VIEW, handleExportExcel)}
             disabled={!reportData?.payrollDetails || reportData.payrollDetails.length === 0}
           >
             Xuất Excel Bảng Lương
@@ -369,8 +395,7 @@ export default function HrReportsPage() {
                       <TableCell><strong>Phòng Ban</strong></TableCell>
                       <TableCell align="center"><strong>Tháng</strong></TableCell>
                       <TableCell align="right"><strong>Lương Cơ Bản</strong></TableCell>
-                      <TableCell align="right"><strong>Phụ Cấp</strong></TableCell>
-                      <TableCell align="right"><strong>Thưởng</strong></TableCell>
+                      <TableCell align="right"><strong>Phụ Cấp & Thưởng</strong></TableCell>
                       <TableCell align="right"><strong>Khấu Trừ</strong></TableCell>
                       <TableCell align="right"><strong>Thực Nhận</strong></TableCell>
                     </TableRow>
@@ -386,10 +411,9 @@ export default function HrReportsPage() {
                         <TableCell>{row.employee?.department?.name || '-'}</TableCell>
                         <TableCell align="center">{row.month}/{row.year}</TableCell>
                         <TableCell align="right">{formatCurrency(row.baseSalary)}</TableCell>
-                        <TableCell align="right">{formatCurrency(row.details?.allowance || 0)}</TableCell>
-                        <TableCell align="right">{formatCurrency(row.details?.bonus || 0)}</TableCell>
+                        <TableCell align="right">{formatCurrency(getAllowance(row.details))}</TableCell>
                         <TableCell align="right" sx={{ color: theme.palette.error.main }}>
-                          {formatCurrency(row.details?.deduction || 0)}
+                          {formatCurrency(getDeduction(row.details))}
                         </TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600, color: theme.palette.success.main }}>
                           {formatCurrency(row.finalSalary)}
@@ -412,6 +436,8 @@ export default function HrReportsPage() {
           )}
         </Box>
       )}
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

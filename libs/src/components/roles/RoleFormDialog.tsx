@@ -113,11 +113,11 @@ export default function RoleFormDialog({
         open={open}
         onClose={onClose}
         onSubmit={handleFormSubmit}
-        title={selectedRole ? 'Edit Role' : 'Add New Role'}
+        title={selectedRole ? 'Chỉnh sửa vai trò' : 'Thêm vai trò mới'}
         subtitle={
           selectedRole
-            ? 'Update role information and permissions'
-            : 'Create a new role with permissions'
+            ? 'Cập nhật thông tin và quyền hạn vai trò'
+            : 'Tạo vai trò mới với quyền hạn'
         }
         loading={loading}
         maxWidth="md"
@@ -127,20 +127,20 @@ export default function RoleFormDialog({
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              label="Role Code"
+              label="Mã vai trò"
               value={formData.roleCode}
               onChange={(e) =>
                 setFormData({ ...formData, roleCode: e.target.value.toUpperCase() })
               }
               required
               disabled={!!selectedRole}
-              helperText={selectedRole ? 'Role code cannot be changed' : 'Unique identifier'}
+              helperText={selectedRole ? 'Mã vai trò không thể thay đổi' : 'Mã định danh duy nhất'}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               fullWidth
-              label="Role Name"
+              label="Tên vai trò"
               value={formData.roleName}
               onChange={(e) => setFormData({ ...formData, roleName: e.target.value })}
               required
@@ -165,14 +165,14 @@ export default function RoleFormDialog({
                 }}
               >
                 <Typography variant="subtitle2" fontWeight={600}>
-                  Permissions ({formData.permissionCodes.length})
+                  Quyền hạn ({formData.permissionCodes.length})
                 </Typography>
                 <Button
                   variant="outlined"
                   size="small"
                   onClick={handleOpenPermissionMatrix}
                 >
-                  Select Permissions
+                  Chọn quyền hạn
                 </Button>
               </Box>
               <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -192,7 +192,7 @@ export default function RoleFormDialog({
                   ))
                 ) : (
                   <Typography variant="body2" color="text.secondary">
-                    No permissions selected
+                    Chưa chọn quyền hạn nào
                   </Typography>
                 )}
               </Box>
@@ -208,7 +208,7 @@ export default function RoleFormDialog({
         onConfirm={handlePermissionConfirm}
         permissions={permissions}
         selectedPermissions={formData.permissionCodes}
-        title="Select Role Permissions"
+        title="Chọn Quyền Hạn Vai Trò"
         loading={false}
       />
     </>

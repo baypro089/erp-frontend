@@ -31,7 +31,8 @@ import {
   InfoOutlined as InfoIcon,
   Warehouse as WarehouseIcon,
 } from '@mui/icons-material';
-import { PageHeader, LoadingOverlay, StatusChip } from '@libs/src/components/common';
+import { PageHeader, LoadingOverlay, StatusChip, PermissionGuard } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import { fetchReturnRequestById } from '@libs/src/features/return-request/return-request.slice';
 import { ReturnStatus } from '@libs/shared/enums/return-status.enum';
 
@@ -52,6 +53,17 @@ interface ReturnDetailPageProps {
 }
 
 export default function ReturnDetailPage({ id }: ReturnDetailPageProps) {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.RETURN_REQUEST.VIEW}
+      fallbackPath="/commercial/returns"
+    >
+      <ReturnDetailPageContent id={id} />
+    </PermissionGuard>
+  );
+}
+
+function ReturnDetailPageContent({ id }: ReturnDetailPageProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { currentReturnRequest, loading } = useSelector(
@@ -82,7 +94,247 @@ export default function ReturnDetailPage({ id }: ReturnDetailPageProps) {
   }
 
   const handlePrint = () => {
-    window.print();
+    if (!rma) return;
+
+    const formatCurrency = (amount: number) =>
+      new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+
+    const formatDate = (date: string | Date) =>
+      new Date(date).toLocaleDateString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+    const statusLabel =
+      rma.status === ReturnStatus.COMPLETED
+        ? 'Hoàn tất'
+        : rma.status === ReturnStatus.REJECTED
+          ? 'Từ chối'
+          : 'Chờ xử lý';
+
+    const itemRows =
+      (rma.items ?? [])
+        .map((item) => {
+          const serials =
+            item.returnedSerials && item.returnedSerials.length > 0
+              ? item.returnedSerials.join(', ')
+              : `SL: ${item.quantity}`;
+          const total = (item.refundPrice ?? 0) * (item.quantity ?? 1);
+          return `
+          <tr>
+            <td>${item.product?.name ?? '—'}</td>
+            <td class="center">${serials}</td>
+            <td class="right">${formatCurrency(item.refundPrice ?? 0)}</td>
+            <td class="right bold">${formatCurrency(total)}</td>
+          </tr>`;
+        })
+        .join('') || '<tr><td colspan="4" class="center">Không có mặt hàng</td></tr>';
+
+    const html = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Phiếu RMA ${rma.code}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Arial', sans-serif; font-size: 13px; color: #111; background: #fff; }
+    .page { width: 210mm; min-height: 297mm; margin: 0 auto; padding: 16mm 14mm; }
+
+    /* Header */
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1565c0; padding-bottom: 12px; margin-bottom: 12px; }
+    .company h1 { font-size: 20px; color: #1565c0; font-weight: 800; letter-spacing: 1px; }
+    .company p { font-size: 11px; color: #555; margin-top: 2px; }
+    .doc-info { text-align: right; }
+    .doc-info .rma-code { font-size: 22px; font-weight: 800; color: #e65100; }
+    .doc-info .doc-title { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: 1px; }
+    .doc-info .doc-date { font-size: 11px; color: #555; margin-top: 3px; }
+
+    /* Status badge */
+    .status-row { text-align: center; margin: 10px 0 14px; }
+    .status-badge { display: inline-block; padding: 4px 20px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .status-completed { background: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .status-pending   { background: #fff8e1; color: #e65100; border: 1px solid #ffe082; }
+    .status-rejected  { background: #ffebee; color: #c62828; border: 1px solid #ef9a9a; }
+
+    /* Info grid */
+    .section { margin-bottom: 14px; }
+    .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #1565c0; letter-spacing: 0.5px; border-left: 4px solid #1565c0; padding-left: 8px; margin-bottom: 8px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px 16px; }
+    .info-grid.two { grid-template-columns: 1fr 1fr; }
+    .info-item .label { font-size: 10px; color: #777; text-transform: uppercase; letter-spacing: 0.4px; }
+    .info-item .value { font-size: 13px; font-weight: 600; color: #111; margin-top: 1px; }
+    .info-item .value.highlight { color: #e65100; font-size: 15px; }
+    .info-item .value.link { color: #1565c0; }
+
+    /* Reason */
+    .reason-box { background: #f5f5f5; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #333; line-height: 1.6; }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { background: #1565c0; color: #fff; padding: 7px 8px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+    th.center, td.center { text-align: center; }
+    th.right,  td.right  { text-align: right; }
+    td { padding: 7px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:nth-child(even) td { background: #fafafa; }
+    .total-row td { background: #e3f2fd !important; font-weight: 700; font-size: 13px; border-top: 2px solid #1565c0; }
+    .total-row .amount { color: #c62828; font-size: 15px; }
+    .bold { font-weight: 700; }
+
+    /* Signatures */
+    .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 24px; }
+    .sig-box { border: 1px dashed #bbb; border-radius: 6px; padding: 12px; text-align: center; min-height: 90px; }
+    .sig-box .sig-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #555; margin-bottom: 4px; }
+    .sig-box .sig-sub { font-size: 10px; color: #999; }
+    .sig-box .sig-name { font-size: 12px; font-weight: 600; color: #222; margin-top: 4px; }
+
+    /* Note */
+    .note { font-size: 10.5px; color: #777; font-style: italic; margin-top: 14px; text-align: center; border-top: 1px solid #eee; padding-top: 10px; }
+
+    /* Divider */
+    .divider { border: none; border-top: 1px solid #e0e0e0; margin: 12px 0; }
+
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .page { padding: 10mm 12mm; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="company">
+      <h1>ERP COMMERCIAL</h1>
+      <p>Hệ thống quản lý thương mại</p>
+      <p style="margin-top:6px; font-size:12px; color:#333;">
+        <strong>PHIẾU NHẬN TRẢ HÀNG / BẢO HÀNH</strong>
+      </p>
+    </div>
+    <div class="doc-info">
+      <div class="doc-title">Mã phiếu RMA</div>
+      <div class="rma-code">${rma.code}</div>
+      <div class="doc-date">Ngày lập: ${formatDate(rma.createdAt)}</div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-row">
+    <span class="status-badge status-${rma.status === ReturnStatus.COMPLETED ? 'completed' : rma.status === ReturnStatus.REJECTED ? 'rejected' : 'pending'}">
+      Trạng thái: ${statusLabel}
+    </span>
+  </div>
+
+  <!-- Thông tin phiếu -->
+  <div class="section">
+    <div class="section-title">Thông tin phiếu RMA</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <div class="label">Mã phiếu RMA</div>
+        <div class="value link">${rma.code}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Đơn hàng gốc</div>
+        <div class="value link">${rma.order?.code ?? '—'}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Ngày tạo phiếu</div>
+        <div class="value">${formatDate(rma.createdAt)}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Khách hàng</div>
+        <div class="value">${rma.customer?.fullName ?? '—'}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Số điện thoại</div>
+        <div class="value">${rma.customer?.phoneNumber ?? '—'}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Nhân viên xử lý</div>
+        <div class="value">${rma.creator?.employee?.fullName ?? rma.creator?.username ?? '—'}</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Kho & lý do -->
+  <div class="section">
+    <div class="section-title">Kho tiếp nhận &amp; Lý do</div>
+    <div class="info-grid two" style="margin-bottom:8px">
+      <div class="info-item">
+        <div class="label">Kho tiếp nhận</div>
+        <div class="value">${rma.warehouse?.name ?? '—'}</div>
+      </div>
+      <div class="info-item">
+        <div class="label">Tiền hoàn trả khách</div>
+        <div class="value highlight">${formatCurrency(rma.refundAmount ?? 0)}</div>
+      </div>
+    </div>
+    <div class="label" style="font-size:10px;color:#777;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Lý do trả hàng</div>
+    <div class="reason-box">${rma.reason ?? '—'}</div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Danh sách hàng hóa -->
+  <div class="section">
+    <div class="section-title">Danh sách hàng hóa trả (${rma.items?.length ?? 0} mặt hàng)</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:38%">Tên sản phẩm</th>
+          <th class="center" style="width:26%">Serial / Số lượng</th>
+          <th class="right" style="width:18%">Đơn giá hoàn</th>
+          <th class="right" style="width:18%">Thành tiền</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemRows}
+        <tr class="total-row">
+          <td colspan="3" style="text-align:right; padding-right:12px;">Tổng tiền hoàn lại:</td>
+          <td class="right amount">${formatCurrency(rma.refundAmount ?? 0)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Chữ ký -->
+  <div class="signatures">
+    <div class="sig-box">
+      <div class="sig-title">Khách hàng xác nhận</div>
+      <div class="sig-sub">(Ký, ghi rõ họ tên)</div>
+      <br /><br />
+      <div class="sig-name">${rma.customer?.fullName ?? '..........................................'}</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-title">Nhân viên tiếp nhận</div>
+      <div class="sig-sub">(Ký, ghi rõ họ tên)</div>
+      <br /><br />
+      <div class="sig-name">${rma.creator?.employee?.fullName ?? rma.creator?.username ?? '..........................................'}</div>
+    </div>
+  </div>
+
+  <p class="note">
+    Phiếu này là bằng chứng xác nhận việc tiếp nhận hàng trả / bảo hành. Xin vui lòng giữ lại để đối chiếu khi cần.<br/>
+    In lúc: ${new Date().toLocaleString('vi-VN')}
+  </p>
+
+</div>
+<script>
+  window.onload = function () { window.print(); };
+</script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    }
   };
 
   return (

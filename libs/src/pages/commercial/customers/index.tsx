@@ -28,6 +28,7 @@ import {
   FilterBar,
   LoadingOverlay,
   Column,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import CustomerFormDialog from '@libs/src/components/customers/CustomerFormDialog';
 import {
@@ -46,9 +47,25 @@ import type {
 import { CustomerTier } from '@libs/shared/enums/customer-tier.enum';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { CacheService } from '@libs/src/services/cache.service';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function CustomersPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.CUSTOMER.VIEW}
+      fallbackPath="/commercial"
+    >
+      <CustomersPageContent />
+    </PermissionGuard>
+  );
+}
+
+function CustomersPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { customers, pagedCustomers, currentCustomer, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.customer
   );
@@ -192,16 +209,6 @@ export default function CustomersPage() {
       ),
     },
     {
-      id: 'address',
-      label: 'Địa chỉ',
-      minWidth: 200,
-      format: (value) => (
-        <Typography variant="body2" color="text.secondary" noWrap>
-          {value || '--'}
-        </Typography>
-      ),
-    },
-    {
       id: 'createdAt',
       label: 'Ngày tạo',
       minWidth: 120,
@@ -224,7 +231,7 @@ export default function CustomersPage() {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
           <Switch
             checked={row.isActive}
-            onChange={() => handleStatusToggle(row)}
+            onChange={() => guardFn<CustomerResponse>(PERMISSIONS.CUSTOMER.UPDATE, handleStatusToggle)(row)}
             color="success"
             size="small"
           />
@@ -243,12 +250,12 @@ export default function CustomersPage() {
   ];
 
   // Handlers
-  const handleAdd = () => {
+  const handleAdd = guardAction(PERMISSIONS.CUSTOMER.CREATE, () => {
     setSelectedCustomer(null);
     setOpenForm(true);
-  };
+  });
 
-  const handleEdit = async (row: CustomerResponse) => {
+  const handleEditImpl = async (row: CustomerResponse) => {
     try {
       // Fetch full customer data before editing
       const fullCustomer = await dispatch(fetchCustomerById(row.id)).unwrap();
@@ -259,11 +266,13 @@ export default function CustomersPage() {
     }
   };
 
-  const handleDelete = (row: CustomerResponse) => {
+  const handleEdit = guardFn<CustomerResponse>(PERMISSIONS.CUSTOMER.UPDATE, handleEditImpl);
+
+  const handleDelete = guardFn<CustomerResponse>(PERMISSIONS.CUSTOMER.DELETE, (row: CustomerResponse) => {
     setSelectedCustomer(row);
     setSelectedRows([row]);
     setOpenDelete(true);
-  };
+  });
 
   const handleFormSubmit = async (
     data: CreateCustomerDto | UpdateCustomerDto,
@@ -313,7 +322,8 @@ export default function CustomersPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchCustomers({ page: 1, pageSize: 100 }));
     setSnackbar({
       open: true,
@@ -544,6 +554,7 @@ export default function CustomersPage() {
 
       {/* Loading Overlay */}
       <LoadingOverlay open={loading && customers.length === 0} message="Đang tải dữ liệu..." />
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

@@ -26,13 +26,13 @@ export default function IdentificationCard({
       <CardContent>
         <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
           <BadgeIcon color="primary" />
-          Identification
+          Thông tin CMND/CCCD
         </Typography>
         <Divider sx={{ mb: 2 }} />
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Identity Number
+              Số CMND/CCCD
             </Typography>
             {isEditing ? (
               <TextField
@@ -48,7 +48,7 @@ export default function IdentificationCard({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Issued Date
+              Ngày cấp
             </Typography>
             {isEditing ? (
               <TextField
@@ -69,7 +69,7 @@ export default function IdentificationCard({
           </Grid>
           <Grid size={{ xs: 12 }}>
             <Typography variant="caption" color="text.secondary">
-              Issued Place
+              Nơi cấp
             </Typography>
             {isEditing ? (
               <TextField

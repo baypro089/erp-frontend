@@ -55,7 +55,7 @@ interface CommercialHeaderProps {
 
 export default function CommercialHeader({
   onMenuClick,
-  title = 'Commercial Dashboard',
+  title = 'Bảng điều khiển Thương mại',
   showMenuButton = true,
   user,
   notificationCount = 0,

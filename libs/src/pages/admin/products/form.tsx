@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import type { AppDispatch, RootState } from '@libs/src/store';
 import { Box, Alert, Snackbar } from '@mui/material';
 import ProductForm from '@libs/src/components/products/ProductForm';
@@ -16,6 +16,7 @@ import {
   clearCurrentProduct,
 } from '@libs/src/features/product/product.slice';
 import type { CreateProductDto, UpdateProductDto } from '@libs/shared/types/product.type';
+import { getProductRouteContext } from '../../../utils/product-route';
 
 interface ProductFormPageProps {
   productId?: string;
@@ -23,7 +24,9 @@ interface ProductFormPageProps {
 
 export default function ProductFormPage({ productId }: ProductFormPageProps) {
   const dispatch = useDispatch<AppDispatch>();
+  const pathname = usePathname();
   const router = useRouter();
+  const { basePath } = getProductRouteContext(pathname);
   const { currentProduct, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.product
   );
@@ -66,7 +69,7 @@ export default function ProductFormPage({ productId }: ProductFormPageProps) {
         await dispatch(updateProduct({ id: productId, data: data as UpdateProductDto, thumbnail })).unwrap();
         setSnackbar({
           open: true,
-          message: 'Product updated successfully',
+          message: 'Cập nhật sản phẩm thành công',
           severity: 'success',
         });
       } else {
@@ -74,14 +77,14 @@ export default function ProductFormPage({ productId }: ProductFormPageProps) {
         await dispatch(createProduct({ data: data as CreateProductDto, thumbnail })).unwrap();
         setSnackbar({
           open: true,
-          message: 'Product created successfully',
+          message: 'Tạo sản phẩm thành công',
           severity: 'success',
         });
       }
 
       // Redirect to products list after a short delay
       setTimeout(() => {
-        router.push('/admin/products');
+        router.push(basePath);
       }, 1000);
     } catch (err: any) {
       // Error handled by useEffect
@@ -90,7 +93,7 @@ export default function ProductFormPage({ productId }: ProductFormPageProps) {
 
   // Show loading when fetching product details
   if (isEdit && loading && !currentProduct) {
-    return <LoadingOverlay open={true} message="Loading product..." />;
+    return <LoadingOverlay open={true} message="Đang tải sản phẩm..." />;
   }
 
   // Show error if product not found
@@ -98,10 +101,10 @@ export default function ProductFormPage({ productId }: ProductFormPageProps) {
     return (
       <Box>
         <PageHeader
-          title={isEdit ? 'Edit Product' : 'Create Product'}
+          title={isEdit ? 'Chỉnh sửa sản phẩm' : 'Tạo sản phẩm'}
           breadcrumbs={[
-            { label: 'Products', icon: <ProductIcon fontSize="small" />, href: '/admin/products' },
-            { label: isEdit ? 'Edit' : 'Create' },
+            { label: 'Sản phẩm', icon: <ProductIcon fontSize="small" />, href: basePath },
+            { label: isEdit ? 'Chỉnh sửa' : 'Tạo mới' },
           ]}
         />
         <Alert severity="error" sx={{ mt: 2 }}>
@@ -115,15 +118,15 @@ export default function ProductFormPage({ productId }: ProductFormPageProps) {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title={isEdit ? 'Edit Product' : 'Create Product'}
+        title={isEdit ? 'Chỉnh sửa sản phẩm' : 'Tạo sản phẩm'}
         subtitle={
           isEdit && currentProduct
-            ? `Editing: ${currentProduct.name}`
-            : 'Add a new product to inventory'
+            ? `Đang chỉnh sửa: ${currentProduct.name}`
+            : 'Thêm sản phẩm mới vào kho'
         }
         breadcrumbs={[
-          { label: 'Products', icon: <ProductIcon fontSize="small" />, href: '/admin/products' },
-          { label: isEdit ? 'Edit' : 'Create' },
+          { label: 'Sản phẩm', icon: <ProductIcon fontSize="small" />, href: basePath },
+          { label: isEdit ? 'Chỉnh sửa' : 'Tạo mới' },
         ]}
       />
 

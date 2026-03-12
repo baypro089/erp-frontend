@@ -61,19 +61,19 @@ const DRAWER_WIDTH = 280;
 const menuItems: MenuItem[] = [
     {
         id: 'dashboards',
-        label: 'Dashboard',
+        label: 'Tổng quan',
         icon: <DashboardIcon />,
         path: '/hr',
     },
     {
         id: 'employees',
-        label: 'Employees',
+        label: 'Nhân viên',
         icon: <PeopleIcon />,
         path: '/hr/employees',
     },
     {
         id: 'leave-approvals',
-        label: 'Leave Approvals',
+        label: 'Duyệt đơn nghỉ',
         icon: <CheckCircleIcon />,
         path: '/hr/leave-approvals',
         badge: 5,
@@ -81,7 +81,7 @@ const menuItems: MenuItem[] = [
     },
     {
         id: 'resignation-management',
-        label: 'Resignations',
+        label: 'Đơn nghỉ việc',
         icon: <AssignmentTurnedInIcon />,
         path: '/hr/resignations',
         badge: 2,
@@ -89,25 +89,25 @@ const menuItems: MenuItem[] = [
     },
     {
         id: 'payroll-list',
-        label: 'Payroll',
+        label: 'Bảng lương',
         icon: <AttachMoneyIcon />,
         path: '/hr/payroll',
     },
     {
         id: 'departments',
-        label: 'Departments',
+        label: 'Phòng ban',
         icon: <AccountTreeIcon />,
         path: '/hr/departments',
     },
     {
         id: 'positions',
-        label: 'Positions',
+        label: 'Chức vụ',
         icon: <BusinessCenterIcon />,
         path: '/hr/positions',
     },
     {
         id: 'reports',
-        label: 'Reports & Analytics',
+        label: 'Báo cáo & Phân tích',
         icon: <AssessmentIcon />,
         path: '/hr/reports',
     },

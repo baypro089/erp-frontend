@@ -24,6 +24,7 @@ import {
   StatusChip,
   LoadingOverlay,
   Column,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import {
   ResignationApproveModal,
@@ -43,8 +44,20 @@ import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
 import { fetchUserById } from '@libs/src/features/user/user.slice';
 import { fetchRoleByCode } from '@libs/src/features/role/role.slice';
 import { PORTAL_PERMISSIONS } from '@libs/shared/constants/portal-permissions.constant';
+import { CacheService } from '@libs/src/services/cache.service';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function HRResignationPage() {
+  return (
+    <PermissionGuard permission={PERMISSIONS.RESIGNATION_REQUEST.VIEW} fallbackPath="/hr">
+      <HRResignationPageContent />
+    </PermissionGuard>
+  );
+}
+
+function HRResignationPageContent() {
   const dispatch = useDispatch<AppDispatch>();
   const {
     resignationRequests,
@@ -86,6 +99,8 @@ export default function HRResignationPage() {
     message: '',
     severity: 'success' as 'success' | 'error',
   });
+
+  const { guardFn, permissionDialogProps } = usePermissionGuard();
 
   // Load current user and role data on mount
   useEffect(() => {
@@ -253,20 +268,20 @@ export default function HRResignationPage() {
       icon: <ApproveIcon />,
       label: 'Duyệt',
       color: 'success' as const,
-      onClick: (row: ResighnationRequestResponse) => {
+      onClick: guardFn<ResighnationRequestResponse>(PERMISSIONS.RESIGNATION_REQUEST.APPROVE, (row) => {
         setSelectedResignation(row);
         setOpenApprove(true);
-      },
+      }),
       hidden: (row: ResighnationRequestResponse) => row.status !== ResignationStatus.PENDING,
     },
     {
       icon: <RejectIcon />,
       label: 'Từ chối',
       color: 'error' as const,
-      onClick: (row: ResighnationRequestResponse) => {
+      onClick: guardFn<ResighnationRequestResponse>(PERMISSIONS.RESIGNATION_REQUEST.APPROVE, (row) => {
         setSelectedResignation(row);
         setOpenReject(true);
-      },
+      }),
       hidden: (row: ResighnationRequestResponse) => row.status !== ResignationStatus.PENDING,
     },
   ];
@@ -329,7 +344,8 @@ export default function HRResignationPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     setRefreshCounter(prev => prev + 1);
   };
 
@@ -498,6 +514,8 @@ export default function HRResignationPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

@@ -42,7 +42,9 @@ import {
   AccountBalanceWallet as WalletIcon,
   Inventory as InventoryIcon,
 } from '@mui/icons-material';
-import { PageHeader, LoadingOverlay, StatusChip } from '@libs/src/components/common';
+import { PageHeader, LoadingOverlay, StatusChip, PermissionGuard } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import {
   fetchOrderById,
   updateOrderStatus,
@@ -62,10 +64,22 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 export default function OrderDetailPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.ORDER.VIEW}
+      fallbackPath="/commercial/orders"
+    >
+      <OrderDetailPageContent />
+    </PermissionGuard>
+  );
+}
+
+function OrderDetailPageContent() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const params = useParams();
   const orderId = params.id as string;
+  const { guardAction } = usePermissionGuard();
 
   const { currentOrder, loading, operationLoading, operationError } = useSelector(
     (state: RootState) => state.order
@@ -109,7 +123,194 @@ export default function OrderDetailPage() {
   };
 
   const handlePrint = () => {
-    window.print();
+    const order = currentOrder;
+    if (!order) return;
+
+    const fmt = (n: number) =>
+      new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+
+    const fmtDate = (d: string | Date) =>
+      new Date(d).toLocaleString('vi-VN', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+
+    const statusLabel: Record<OrderStatus, string> = {
+      [OrderStatus.PENDING]:    'Chờ xuất kho',
+      [OrderStatus.PROCESSING]: 'Đang xử lý',
+      [OrderStatus.SHIPPED]:    'Đã xuất kho',
+      [OrderStatus.DELIVERED]:  'Đã giao',
+      [OrderStatus.CANCELLED]:  'Đã hủy',
+    };
+    const statusClass: Record<OrderStatus, string> = {
+      [OrderStatus.PENDING]:    'pending',
+      [OrderStatus.PROCESSING]: 'pending',
+      [OrderStatus.SHIPPED]:    'completed',
+      [OrderStatus.DELIVERED]:  'completed',
+      [OrderStatus.CANCELLED]:  'rejected',
+    };
+
+    const itemRows = order.items
+      .map(
+        (item, idx) => `
+        <tr>
+          <td class="center">${idx + 1}</td>
+          <td>
+            <strong>${item.product.name}</strong>
+            ${item.product.sku ? `<br/><span class="sku">SKU: ${item.product.sku}</span>` : ''}
+            ${item.assignedSerials && item.assignedSerials.length > 0 ? `<br/><span class="serial-list">Serial: ${item.assignedSerials.join(', ')}</span>` : ''}
+          </td>
+          <td class="center">${item.quantity}</td>
+          <td class="right">${fmt(item.unitPrice)}</td>
+          <td class="right bold">${fmt(item.amount)}</td>
+        </tr>`
+      )
+      .join('');
+
+    const subtotalAmt = order.items.reduce((s, i) => s + i.amount, 0);
+    const discAmt = order.discountAmount || 0;
+
+    const html = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Đơn Hàng ${order.code}</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:Arial,sans-serif; font-size:13px; color:#111; background:#fff; }
+    .page { width:210mm; min-height:297mm; margin:0 auto; padding:16mm 14mm; }
+    .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #1565c0; padding-bottom:12px; margin-bottom:12px; }
+    .company h1 { font-size:20px; color:#1565c0; font-weight:800; letter-spacing:1px; }
+    .company p { font-size:11px; color:#555; margin-top:2px; }
+    .doc-info { text-align:right; }
+    .doc-info .code { font-size:22px; font-weight:800; color:#e65100; }
+    .doc-info .title { font-size:11px; color:#777; text-transform:uppercase; letter-spacing:1px; }
+    .doc-info .date  { font-size:11px; color:#555; margin-top:3px; }
+    .status-row { text-align:center; margin:10px 0 14px; }
+    .badge { display:inline-block; padding:4px 20px; border-radius:20px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+    .completed { background:#e8f5e9; color:#2e7d32; border:1px solid #a5d6a7; }
+    .pending   { background:#fff8e1; color:#e65100; border:1px solid #ffe082; }
+    .rejected  { background:#ffebee; color:#c62828; border:1px solid #ef9a9a; }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+    .section { margin-bottom:14px; }
+    .section-title { font-size:12px; font-weight:700; text-transform:uppercase; color:#1565c0; letter-spacing:.5px; border-left:4px solid #1565c0; padding-left:8px; margin-bottom:8px; }
+    .info-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px 16px; }
+    .label { font-size:10px; color:#777; text-transform:uppercase; letter-spacing:.4px; }
+    .value { font-size:13px; font-weight:600; color:#111; margin-top:1px; }
+    .note-box { background:#f5f5f5; border:1px solid #e0e0e0; border-radius:6px; padding:10px 12px; font-size:12px; color:#333; line-height:1.6; }
+    table { width:100%; border-collapse:collapse; font-size:12px; }
+    th { background:#1565c0; color:#fff; padding:7px 8px; text-align:left; font-size:11px; text-transform:uppercase; }
+    th.center, td.center { text-align:center; }
+    th.right,  td.right  { text-align:right; }
+    td { padding:7px 8px; border-bottom:1px solid #eee; vertical-align:top; }
+    tr:nth-child(even) td { background:#fafafa; }
+    .subtotal-row td { background:#f5f5f5 !important; font-weight:600; }
+    .discount-row td { color:#c62828; }
+    .total-row td { background:#e3f2fd !important; font-weight:700; font-size:14px; border-top:2px solid #1565c0; }
+    .total-amount { color:#c62828; font-size:16px; }
+    .bold { font-weight:700; }
+    .sku { color:#888; font-size:11px; }
+    .serial-list { color:#1565c0; font-size:11px; word-break:break-all; }
+    .signatures { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:24px; }
+    .sig-box { border:1px dashed #bbb; border-radius:6px; padding:12px; text-align:center; min-height:90px; }
+    .sig-title { font-size:11px; font-weight:700; text-transform:uppercase; color:#555; margin-bottom:4px; }
+    .sig-sub { font-size:10px; color:#999; }
+    .sig-name { font-size:12px; font-weight:600; color:#222; margin-top:4px; }
+    .note { font-size:10.5px; color:#777; font-style:italic; margin-top:14px; text-align:center; border-top:1px solid #eee; padding-top:10px; }
+    hr.divider { border:none; border-top:1px solid #e0e0e0; margin:12px 0; }
+    @media print { body { -webkit-print-color-adjust:exact; print-color-adjust:exact; } .page { padding:10mm 12mm; } }
+  </style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="company">
+      <h1>ERP COMMERCIAL</h1>
+      <p>Hệ thống quản lý thương mại</p>
+      <p style="margin-top:6px;font-size:12px;color:#333;"><strong>ĐƠN HÀNG BÁN</strong></p>
+    </div>
+    <div class="doc-info">
+      <div class="title">Mã đơn hàng</div>
+      <div class="code">${order.code}</div>
+      <div class="date">Ngày tạo: ${fmtDate(order.createdAt)}</div>
+    </div>
+  </div>
+  <div class="status-row">
+    <span class="badge ${statusClass[order.status]}">
+      Trạng thái: ${statusLabel[order.status]}
+    </span>
+  </div>
+  <div class="two-col">
+    <div class="section">
+      <div class="section-title">Thông tin đơn hàng</div>
+      <div class="info-grid" style="grid-template-columns:1fr 1fr">
+        <div><div class="label">Mã đơn hàng</div><div class="value" style="color:#1565c0">${order.code}</div></div>
+        <div><div class="label">Người tạo</div><div class="value">${order.creator.username}</div></div>
+        <div><div class="label">Ngày tạo</div><div class="value">${fmtDate(order.createdAt)}</div></div>
+        <div><div class="label">Cập nhật</div><div class="value">${fmtDate(order.updatedAt)}</div></div>
+      </div>
+      ${order.note ? `<div style="margin-top:10px"><div class="label" style="margin-bottom:4px">Ghi chú</div><div class="note-box">${order.note}</div></div>` : ''}
+    </div>
+    <div class="section">
+      <div class="section-title">Thông tin khách hàng</div>
+      <div class="info-grid" style="grid-template-columns:1fr">
+        <div><div class="label">Tên khách hàng</div><div class="value">${order.customer.fullName}</div></div>
+        <div><div class="label">Số điện thoại</div><div class="value">${order.customer.phoneNumber}</div></div>
+        ${order.customer.email ? `<div><div class="label">Email</div><div class="value">${order.customer.email}</div></div>` : ''}
+        ${order.customer.address ? `<div><div class="label">Địa chỉ</div><div class="value">${order.customer.address}</div></div>` : ''}
+      </div>
+    </div>
+  </div>
+  <hr class="divider" />
+  <div class="section">
+    <div class="section-title">Danh sách sản phẩm (${order.items.length} mặt hàng)</div>
+    <table>
+      <thead>
+        <tr>
+          <th class="center" style="width:5%">STT</th>
+          <th style="width:40%">Sản phẩm</th>
+          <th class="center" style="width:10%">SL</th>
+          <th class="right" style="width:20%">Đơn giá</th>
+          <th class="right" style="width:25%">Thành tiền</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${itemRows}
+        <tr class="subtotal-row">
+          <td colspan="4" style="text-align:right;padding-right:12px;">Tạm tính:</td>
+          <td class="right">${fmt(subtotalAmt)}</td>
+        </tr>
+        ${discAmt > 0 ? `<tr class="discount-row"><td colspan="4" style="text-align:right;padding-right:12px;">Chiết khấu:</td><td class="right">-${fmt(discAmt)}</td></tr>` : ''}
+        <tr class="total-row">
+          <td colspan="4" style="text-align:right;padding-right:12px;">Tổng cộng:</td>
+          <td class="right total-amount">${fmt(order.totalAmount)}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="signatures">
+    <div class="sig-box">
+      <div class="sig-title">Khách hàng xác nhận</div>
+      <div class="sig-sub">(Ký, ghi rõ họ tên)</div><br/><br/>
+      <div class="sig-name">${order.customer.fullName}</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-title">Nhân viên bán hàng</div>
+      <div class="sig-sub">(Ký, ghi rõ họ tên)</div><br/><br/>
+      <div class="sig-name">${order.creator.username}</div>
+    </div>
+  </div>
+  <p class="note">Đây là chứng từ bán hàng hợp lệ. Vui lòng giữ lại để đối chiếu khi cần.<br/>In lúc: ${new Date().toLocaleString('vi-VN')}</p>
+</div>
+<script>window.onload = function () { window.print(); };<\/script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=900,height=700');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    }
   };
 
   const handleCancelOrder = async () => {

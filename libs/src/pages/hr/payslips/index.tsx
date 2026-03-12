@@ -38,6 +38,7 @@ import {
 import type { PayslipResponse, PaySlipTableResponse } from '@libs/shared/types/payslips.type';
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
 import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { CacheService } from '@libs/src/services/cache.service';
 
 export default function EmployeePayslipsPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -56,6 +57,16 @@ export default function EmployeePayslipsPage() {
   
   // Get detailed user info with employee
   const { currentUser } = useSelector((state: RootState) => state.user);
+
+  // Debug currentUser
+  useEffect(() => {
+    console.log('🔍 currentUser:', currentUser);
+    if (currentUser?.employee) {
+      console.log('✅ Employee info loaded:', currentUser.employee);
+    } else if (currentUser) {
+      console.warn('⚠️ currentUser exists but no employee info');
+    }
+  }, [currentUser]);
 
   // Dialog states
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
@@ -82,15 +93,20 @@ export default function EmployeePayslipsPage() {
   // Load current user data on mount
   useEffect(() => {
     const loadUserData = async () => {
-      await dispatch(fetchCurrentUser());
+      const result = await dispatch(fetchCurrentUser());
+      console.log('🔍 fetchCurrentUser result:', result);
     };
     loadUserData();
   }, [dispatch]);
 
   // Load detailed user info when auth user is available
   useEffect(() => {
+    console.log('🔍 Auth user:', user);
     if (user?.id) {
+      console.log('🔍 Fetching user by id:', user.id);
       dispatch(fetchUserById(user.id));
+    } else {
+      console.warn('⚠️ User id not found in auth state');
     }
   }, [dispatch, user?.id]);
 
@@ -98,8 +114,17 @@ export default function EmployeePayslipsPage() {
   useEffect(() => {
     // Only fetch if user is authenticated
     if (!isAuth) {
+      console.warn('⚠️ User not authenticated, skipping payslips fetch');
       return;
     }
+
+    console.log('🔍 Fetching payslips with params:', {
+      month: filterMonth,
+      year: filterYear,
+      page: page + 1,
+      pageSize: rowsPerPage,
+      isAuth,
+    });
 
     dispatch(
       fetchMyPayslips({
@@ -237,7 +262,10 @@ export default function EmployeePayslipsPage() {
           },
           {
             label: 'Làm mới',
-            onClick: () => setRefreshCounter((prev) => prev + 1),
+            onClick: async () => {
+              await CacheService.refreshCache();
+              setRefreshCounter((prev) => prev + 1);
+            },
             icon: <RefreshIcon />,
             variant: 'outlined',
           },

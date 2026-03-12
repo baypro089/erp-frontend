@@ -36,18 +36,18 @@ const defaultConfig: Record<
 > = {
   'no-data': {
     icon: <InboxIcon sx={{ fontSize: 80 }} />,
-    title: 'No data available',
-    description: 'There are no items to display at the moment.',
+    title: 'Không có dữ liệu',
+    description: 'Hiện không có dữ liệu để hiển thị.',
   },
   'no-results': {
     icon: <SearchOffIcon sx={{ fontSize: 80 }} />,
-    title: 'No results found',
-    description: 'Try adjusting your search or filter to find what you are looking for.',
+    title: 'Không tìm thấy kết quả',
+    description: 'Hãy thử điều chỉnh tìm kiếm hoặc bộ lọc.',
   },
   error: {
     icon: <ErrorIcon sx={{ fontSize: 80 }} />,
-    title: 'Something went wrong',
-    description: 'An error occurred while loading data. Please try again.',
+    title: 'Đã xảy ra lỗi',
+    description: 'Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại.',
   },
 };
 

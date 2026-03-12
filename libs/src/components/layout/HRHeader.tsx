@@ -54,7 +54,7 @@ interface HRHeaderProps {
 
 export default function HRHeader({
   onMenuClick,
-  title = 'HR Dashboard',
+  title = 'Quản lý Nhân sự',
   showMenuButton = true,
   user,
   notificationCount = 0,
@@ -171,7 +171,7 @@ export default function HRHeader({
                 fontSize: '0.7rem',
               }}
             >
-              People Management System
+              Hệ thống Quản lý Nhân sự
             </Typography>
           </Box>
         </Box>
@@ -324,14 +324,13 @@ export default function HRHeader({
             >
               <Avatar
                 alt={user?.name || 'User'}
-                src={user?.avatar}
+                src={user?.avatar || ''}
                 sx={{
                   width: 38,
                   height: 38,
-                  bgcolor: '#00BCD4',
+                  bgcolor: theme.palette.secondary.main,
+                  border: `2px solid ${alpha(theme.palette.common.white, 0.3)}`,
                   fontWeight: 700,
-                  border: '2px solid white',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                 }}
               >
                 {user?.name?.charAt(0).toUpperCase() || 'U'}

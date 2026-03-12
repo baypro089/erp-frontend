@@ -65,11 +65,11 @@ export default function PositionFormDialog({
     const newErrors: { name?: string; baseSalary?: string } = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Position name is required';
+      newErrors.name = 'Tên chức vụ là bắt buộc';
     }
 
     if (!formData.baseSalary || formData.baseSalary <= 0) {
-      newErrors.baseSalary = 'Base salary must be greater than 0';
+      newErrors.baseSalary = 'Lương cơ bản phải lớn hơn 0';
     }
 
     setErrors(newErrors);
@@ -99,14 +99,14 @@ export default function PositionFormDialog({
       }}
     >
       <DialogTitle sx={{ pb: 2 }}>
-        {isEdit ? 'Edit Position' : 'Add New Position'}
+        {isEdit ? 'Chỉnh sửa chức vụ' : 'Thêm chức vụ mới'}
       </DialogTitle>
 
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, py: 1 }}>
           {/* Position Name */}
           <TextField
-            label="Position Name"
+            label="Tên chức vụ"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             error={!!errors.name}
@@ -120,7 +120,7 @@ export default function PositionFormDialog({
 
           {/* Base Salary */}
           <TextField
-            label="Base Salary"
+            label="Lương cơ bản"
             type="number"
             value={formData.baseSalary}
             onChange={(e) => setFormData({ ...formData, baseSalary: Number(e.target.value) })}
@@ -140,21 +140,21 @@ export default function PositionFormDialog({
 
           {/* Description */}
           <TextField
-            label="Description"
+            label="Mô tả"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             fullWidth
             multiline
             rows={3}
             disabled={loading}
-            placeholder="Enter position description (optional)"
+            placeholder="Nhập mô tả (không bắt buộc)"
           />
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={handleClose} disabled={loading} color="inherit">
-          Cancel
+          Hủy
         </Button>
         <Button
           onClick={handleSubmit}
@@ -162,7 +162,7 @@ export default function PositionFormDialog({
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : null}
         >
-          {isEdit ? 'Update' : 'Create'}
+          {isEdit ? 'Cập nhật' : 'Tạo mới'}
         </Button>
       </DialogActions>
     </Dialog>

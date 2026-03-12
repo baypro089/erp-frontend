@@ -311,7 +311,7 @@ export default function CommercialDashboard() {
                   {data.topStaffs.length > 0 ? (
                     data.topStaffs.map((staff) => (
                       <TableRow
-                        key={staff.rank}
+                        key={staff.staffName || staff.rank}
                         sx={{
                           backgroundColor:
                             staff.rank === 1
@@ -381,9 +381,9 @@ export default function CommercialDashboard() {
             </Typography>
             {data.topCustomers.length > 0 ? (
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                {data.topCustomers.map((customer, index) => (
+                {data.topCustomers.map((customer) => (
                   <Paper
-                    key={index}
+                    key={customer.phone || customer.customerName}
                     sx={{
                       p: 2,
                       border: `1px solid ${theme.palette.divider}`,

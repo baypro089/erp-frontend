@@ -1,15 +1,18 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import leaveRequestService from './leave-request.service';
-import type {
+import {
   LeaveRequestResponse,
   LeaveRequestCreateDto,
   PagedAndFilteredLeaveRequest,
+  CalculateWorkingDaysDto,
 } from '@libs/shared/types/leave-requests.type';
 import { LeaveRequestStatus } from '@libs/shared/enums/leave-request-status.enum';
 
 interface LeaveRequestState {
   leaveRequests: LeaveRequestResponse[];
   currentLeaveRequest: LeaveRequestResponse | null;
+  workingDays: number;
+  calculatingDays: boolean;
   totalCount: number;
   totalPages: number;
   loading: boolean;
@@ -21,6 +24,8 @@ interface LeaveRequestState {
 const initialState: LeaveRequestState = {
   leaveRequests: [],
   currentLeaveRequest: null,
+  workingDays: 0,
+  calculatingDays: false,
   totalCount: 0,
   totalPages: 0,
   loading: false,
@@ -131,6 +136,20 @@ export const updateLeaveRequestStatus = createAsyncThunk(
   }
 );
 
+export const calculateWorkingDays = createAsyncThunk(
+  'leaveRequest/calculateWorkingDays',
+  async (dto: CalculateWorkingDaysDto, { rejectWithValue }) => {
+    try {
+      const response = await leaveRequestService.calculateWorkingDays(dto);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to calculate working days'
+      );
+    }
+  }
+);
+
 const leaveRequestSlice = createSlice({
   name: 'leaveRequest',
   initialState,
@@ -138,6 +157,10 @@ const leaveRequestSlice = createSlice({
     clearError: (state) => {
       state.error = null;
       state.operationError = null;
+    },
+    resetWorkingDays: (state) => {
+      state.workingDays = 0;
+      state.calculatingDays = false;
     },
   },
   extraReducers: (builder) => {
@@ -210,8 +233,22 @@ const leaveRequestSlice = createSlice({
         state.operationLoading = false;
         state.operationError = action.payload as string;
       });
+
+    // Calculate working days
+    builder
+      .addCase(calculateWorkingDays.pending, (state) => {
+        state.calculatingDays = true;
+      })
+      .addCase(calculateWorkingDays.fulfilled, (state, action) => {
+        state.calculatingDays = false;
+        state.workingDays = action.payload;
+      })
+      .addCase(calculateWorkingDays.rejected, (state) => {
+        state.calculatingDays = false;
+        state.workingDays = 0;
+      });
   },
 });
 
-export const { clearError } = leaveRequestSlice.actions;
+export const { clearError, resetWorkingDays } = leaveRequestSlice.actions;
 export default leaveRequestSlice.reducer;

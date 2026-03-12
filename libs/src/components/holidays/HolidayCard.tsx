@@ -32,9 +32,9 @@ const getMonthColor = (date: Date): string => {
 
 export default function HolidayCard({ holiday, onDelete }: HolidayCardProps) {
   const date = new Date(holiday.date);
-  const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
+  const dayOfWeek = date.toLocaleDateString('vi-VN', { weekday: 'short' });
   const day = date.getDate();
-  const monthYear = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const monthYear = date.toLocaleDateString('vi-VN', { month: 'short', year: 'numeric' });
   const color = getMonthColor(date);
 
   return (
@@ -83,7 +83,7 @@ export default function HolidayCard({ holiday, onDelete }: HolidayCardProps) {
             </Typography>
           </Box>
 
-          <Tooltip title="Delete">
+          <Tooltip title="Xóa">
             <IconButton
               onClick={() => onDelete(holiday.id)}
               size="small"

@@ -38,6 +38,7 @@ import { LeaveRequestStatus, LeaveRequestType } from '@libs/shared/enums/leave-r
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
 import { fetchUserById } from '@libs/src/features/user/user.slice';
 import { fetchRoleByCode } from '@libs/src/features/role/role.slice';
+import { CacheService } from '@libs/src/services/cache.service';
 
 export default function LeavesPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -245,7 +246,8 @@ export default function LeavesPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     setRefreshCounter(prev => prev + 1);
     if (user?.id) {
       dispatch(fetchUserById(user.id));
@@ -343,6 +345,7 @@ export default function LeavesPage() {
         onSubmit={handleCreateLeaveRequest}
         loading={operationLoading}
         employeeId={currentUser?.employee?.id}
+        leaveBalance={leaveBalance.remaining}
       />
 
       {/* Snackbar */}

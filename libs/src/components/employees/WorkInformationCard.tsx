@@ -17,6 +17,7 @@ interface WorkInformationCardProps {
     currentPositionId: string;
     level: Level | '';
     status: Status;
+    dependentCount: number;
   };
   onFormChange: (field: string, value: any) => void;
   departments: DepartmentResponse[];
@@ -38,13 +39,13 @@ export default function WorkInformationCard({
       <CardContent>
         <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
           <WorkIcon color="primary" />
-          Work Information
+          Thông tin công việc
         </Typography>
         <Divider sx={{ mb: 2 }} />
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Department
+              Phòng ban
             </Typography>
             {isEditing ? (
               <TextField
@@ -69,7 +70,7 @@ export default function WorkInformationCard({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Position
+              Chức vụ
             </Typography>
             {isEditing ? (
               <TextField
@@ -94,10 +95,10 @@ export default function WorkInformationCard({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Start Date
+              Ngày bắt đầu
             </Typography>
             <Typography variant="body1">
-              {new Date(employee.startDate).toLocaleDateString('en-US', {
+              {new Date(employee.startDate).toLocaleDateString('vi-VN', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
@@ -106,7 +107,7 @@ export default function WorkInformationCard({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Level
+              Cấp bậc
             </Typography>
             {isEditing ? (
               <TextField
@@ -130,7 +131,7 @@ export default function WorkInformationCard({
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Status
+              Trạng thái
             </Typography>
             {isEditing ? (
               <TextField
@@ -151,6 +152,26 @@ export default function WorkInformationCard({
               <Box display="flex" alignItems="center" mt={0.5}>
                 <StatusChip status={statusMap[employee.status]} showIcon />
               </Box>
+            )}
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Typography variant="caption" color="text.secondary">
+              Số người phụ thuộc
+            </Typography>
+            {isEditing ? (
+              <TextField
+                type="number"
+                fullWidth
+                size="small"
+                value={formData.dependentCount}
+                onChange={(e) => onFormChange('dependentCount', Number(e.target.value))}
+                inputProps={{ min: 0 }}
+                sx={{ mt: 0.5 }}
+              />
+            ) : (
+              <Typography variant="body1" fontWeight={500}>
+                {employee.dependentCount ?? 0}
+              </Typography>
             )}
           </Grid>
         </Grid>

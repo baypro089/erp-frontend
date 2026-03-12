@@ -54,7 +54,7 @@ export default function ChangePasswordDialog({
 
   const handleRequestOTP = async () => {
     if (!formData.email) {
-      setError('Please enter your email address');
+      setError('Vui lòng nhập địa chỉ email của bạn');
       return;
     }
     
@@ -74,17 +74,17 @@ export default function ChangePasswordDialog({
   const handleResetPassword = async () => {
     // Validation
     if (!formData.otp || formData.otp.length !== 6) {
-      setError('Please enter a valid 6-digit OTP');
+      setError('Vui lòng nhập mã OTP 6 chữ số hợp lệ');
       return;
     }
     
     if (!formData.newPassword || formData.newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+      setError('Mật khẩu phải có ít nhất 6 ký tự');
       return;
     }
     
     if (formData.newPassword !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError('Mật khẩu không khớp');
       return;
     }
 
@@ -125,7 +125,7 @@ export default function ChangePasswordDialog({
         <Box display="flex" alignItems="center" gap={1}>
           <Lock color="primary" />
           <Typography variant="h6">
-            Change Password
+            Đổi mật khẩu
           </Typography>
         </Box>
       </DialogTitle>
@@ -161,19 +161,19 @@ export default function ChangePasswordDialog({
                   </InputAdornment>
                 ),
               }}
-              helperText="OTP will be sent to this email"
+              helperText="Mã OTP sẽ được gửi đến email này"
             />
 
             {step === 'request' && (
               <Alert severity="info">
-                Click "Send OTP" to receive a verification code via email. The code will expire in 5 minutes.
+                Nhấn "Gửi OTP" để nhận mã xác thực qua email. Mã sẽ hết hạn sau 5 phút.
               </Alert>
             )}
 
             {step === 'verify' && (
               <>
                 <TextField
-                  label="OTP Code"
+                  label="Mã OTP"
                   value={formData.otp}
                   onChange={(e) => {
                     const value = e.target.value.replace(/\D/g, '').slice(0, 6);
@@ -181,7 +181,7 @@ export default function ChangePasswordDialog({
                   }}
                   required
                   fullWidth
-                  placeholder="Enter 6-digit OTP"
+                  placeholder="Nhập mã OTP 6 chữ số"
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -189,11 +189,11 @@ export default function ChangePasswordDialog({
                       </InputAdornment>
                     ),
                   }}
-                  helperText="Enter the 6-digit code sent to your email"
+                  helperText="Nhập mã 6 chữ số đã gửi đến email"
                 />
 
                 <TextField
-                  label="New Password"
+                  label="Mật khẩu mới"
                   type={showPassword ? 'text' : 'password'}
                   value={formData.newPassword}
                   onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
@@ -216,11 +216,11 @@ export default function ChangePasswordDialog({
                       </InputAdornment>
                     ),
                   }}
-                  helperText="Minimum 6 characters"
+                  helperText="Tối thiểu 6 ký tự"
                 />
 
                 <TextField
-                  label="Confirm New Password"
+                  label="Xác nhận mật khẩu mới"
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
@@ -243,7 +243,7 @@ export default function ChangePasswordDialog({
                       </InputAdornment>
                     ),
                   }}
-                  helperText="Re-enter your new password"
+                  helperText="Nhập lại mật khẩu mới"
                 />
               </>
             )}
@@ -253,9 +253,8 @@ export default function ChangePasswordDialog({
       <Divider />
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={handleClose} disabled={loading}>
-          Cancel
+            Hủy
         </Button>
-        
         {step === 'request' ? (
           <Button
             variant="contained"
@@ -263,7 +262,7 @@ export default function ChangePasswordDialog({
             disabled={loading}
             startIcon={loading && <CircularProgress size={20} />}
           >
-            {loading ? 'Sending...' : 'Send OTP'}
+            {loading ? 'Đang gửi...' : 'Gửi OTP'}
           </Button>
         ) : (
           <>
@@ -276,7 +275,7 @@ export default function ChangePasswordDialog({
               }}
               disabled={loading}
             >
-              Back
+              Quay lại
             </Button>
             <Button
               variant="contained"
@@ -284,7 +283,7 @@ export default function ChangePasswordDialog({
               disabled={loading}
               startIcon={loading && <CircularProgress size={20} />}
             >
-              {loading ? 'Changing...' : 'Change Password'}
+              {loading ? 'Đang đổi...' : 'Đổi mật khẩu'}
             </Button>
           </>
         )}

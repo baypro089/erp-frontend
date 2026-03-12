@@ -26,6 +26,7 @@ import {
   StatusChip,
   LoadingOverlay,
   Column,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import EmployeeFormDialog from '@libs/src/components/employees/EmployeeFormDialog';
 import DeletedEmployeesDialog from '@libs/src/components/employees/DeletedEmployeesDialog';
@@ -43,8 +44,23 @@ import type {
 } from '@libs/shared/types/employees.type';
 import { Status } from '@libs/shared/enums/employee-status.enum';
 import { Level } from '@libs/shared/enums/level.enum';
+import { CacheService } from '@libs/src/services/cache.service';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function EmployeesPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.EMPLOYEE.VIEW}
+      fallbackPath="/admin"
+    >
+      <EmployeesPageContent />
+    </PermissionGuard>
+  );
+}
+
+function EmployeesPageContent() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { employees, currentEmployee, totalCount, totalPages, loading, error, operationLoading, operationError } =
@@ -76,6 +92,8 @@ export default function EmployeesPage() {
     message: '',
     severity: 'success' as 'success' | 'error',
   });
+
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
 
   // Load data on mount
   useEffect(() => {
@@ -217,16 +235,16 @@ export default function EmployeesPage() {
     router.push(`/hr/employees/${row.id}`);
   };
 
-  const handleDelete = (row: EmployeeTableResponse) => {
+  const handleDelete = guardFn<EmployeeTableResponse>(PERMISSIONS.EMPLOYEE.DELETE, (row) => {
     setSelectedRows([row]);
     setOpenDelete(true);
-  };
+  });
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = guardAction(PERMISSIONS.EMPLOYEE.DELETE, () => {
     if (selectedRows.length > 0) {
       setOpenDelete(true);
     }
-  };
+  });
 
   const handleFormSubmit = async (data: CreateEmployeeDto) => {
     try {
@@ -260,7 +278,8 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     setRefreshCounter(prev => prev + 1);
     setSnackbar({
       open: true,
@@ -319,7 +338,7 @@ export default function EmployeesPage() {
           },
           {
             label: 'Add Employee',
-            onClick: handleAdd,
+            onClick: guardAction(PERMISSIONS.EMPLOYEE.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
@@ -455,6 +474,8 @@ export default function EmployeesPage() {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

@@ -28,6 +28,7 @@ import {
   FilterBar,
   LoadingOverlay,
   Column,
+  PermissionGuard,
 } from '@libs/src/components/common';
 import SupplierFormDialog from '@libs/src/components/suppliers/SupplierFormDialog';
 import {
@@ -44,9 +45,25 @@ import type {
 } from '@libs/shared/types/supplier.type';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { CacheService } from '@libs/src/services/cache.service';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PermissionDeniedDialog } from '@libs/src/components/common';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 
 export default function SuppliersPage() {
+  return (
+    <PermissionGuard 
+      permission={PERMISSIONS.SUPPLIER.VIEW}
+      fallbackPath="/commercial"
+    >
+      <SuppliersPageContent />
+    </PermissionGuard>
+  );
+}
+
+function SuppliersPageContent() {
   const dispatch = useDispatch<AppDispatch>();
+  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
   const { suppliers, pagedSuppliers, loading, error, operationLoading, operationError } = useSelector(
     (state: RootState) => state.supplier
   );
@@ -166,7 +183,7 @@ export default function SuppliersPage() {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
           <Switch
             checked={row.isActive}
-            onChange={() => handleStatusToggle(row)}
+            onChange={() => guardFn<SupplierResponse>(PERMISSIONS.SUPPLIER.UPDATE, handleStatusToggle)(row)}
             color="success"
             size="small"
           />
@@ -185,21 +202,21 @@ export default function SuppliersPage() {
   ];
 
   // Handlers
-  const handleAdd = () => {
+  const handleAdd = guardAction(PERMISSIONS.SUPPLIER.CREATE, () => {
     setSelectedSupplier(null);
     setOpenForm(true);
-  };
+  });
 
-  const handleEdit = (row: SupplierResponse) => {
+  const handleEdit = guardFn<SupplierResponse>(PERMISSIONS.SUPPLIER.UPDATE, (row: SupplierResponse) => {
     setSelectedSupplier(row);
     setOpenForm(true);
-  };
+  });
 
-  const handleDelete = (row: SupplierResponse) => {
+  const handleDelete = guardFn<SupplierResponse>(PERMISSIONS.SUPPLIER.DELETE, (row: SupplierResponse) => {
     setSelectedSupplier(row);
     setSelectedRows([row]);
     setOpenDelete(true);
-  };
+  });
 
   const handleFormSubmit = async (
     data: CreateSupplierDTO | UpdateSupplierDTO,
@@ -249,7 +266,8 @@ export default function SuppliersPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    await CacheService.refreshCache();
     dispatch(fetchSuppliers({ page: 1, pageSize: 100 }));
     setSnackbar({
       open: true,
@@ -438,6 +456,7 @@ export default function SuppliersPage() {
 
       {/* Loading Overlay */}
       <LoadingOverlay open={loading && suppliers.length === 0} message="Đang tải dữ liệu..." />
+      <PermissionDeniedDialog {...permissionDialogProps} />
     </Box>
   );
 }

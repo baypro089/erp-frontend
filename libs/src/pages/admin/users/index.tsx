@@ -15,7 +15,11 @@ import {
     DataTable,
     FilterBar,
     StatusChip,
+    PermissionDeniedDialog,
+    PermissionGuard,
 } from '@libs/src/components/common';
+import { usePermissionGuard } from '@libs/src/hooks';
+import { PERMISSIONS } from '@libs/shared/constants/permissions.constant';
 import type { Column } from '@libs/src/components/common/DataTable';
 import UserFormDialog from '@libs/src/components/users/UserFormDialog';
 import { fetchUsersWithOptional, banUser } from '@libs/src/features/user/user.slice';
@@ -23,9 +27,22 @@ import { fetchRoles } from '@libs/src/features/role/role.slice';
 import type { UserResponse } from '@libs/shared/types/users.type';
 import { UserStatus } from '@libs/shared/enums/user-status.enum';
 import { RoleResponse } from '@libs/shared/types/roles.type';
+import { CacheService } from '@libs/src/services/cache.service';
 
 export default function UsersPage() {
+    return (
+        <PermissionGuard 
+            permission={PERMISSIONS.USER.VIEW}
+            fallbackPath="/admin"
+        >
+            <UsersPageContent />
+        </PermissionGuard>
+    );
+}
+
+function UsersPageContent() {
     const dispatch = useDispatch<AppDispatch>();
+    const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
     const { users, totalCount, totalPages, loading, operationLoading } = useSelector(
         (state: RootState) => state.user
     );
@@ -79,7 +96,8 @@ export default function UsersPage() {
         console.log('Loading:', loading);
     }, [users, loading]);
 
-    const handleRefresh = () => {
+    const handleRefresh = async () => {
+        await CacheService.refreshCache();
         setRefreshCounter((prev) => prev + 1);
     };
 
@@ -126,7 +144,7 @@ export default function UsersPage() {
     const columns: Column<UserResponse>[] = [
         {
             id: 'username',
-            label: 'Username / Employee Code',
+            label: 'Tên đăng nhập / Mã nhân viên',
             minWidth: 150,
             format: (value) => (
                 <Typography variant="body2" fontWeight={600} color="primary">
@@ -146,7 +164,7 @@ export default function UsersPage() {
         },
         {
             id: 'employee',
-            label: 'Employee Name',
+            label: 'Tên nhân viên',
             minWidth: 180,
             format: (value) => value ? (
                 <Typography variant="body2" fontWeight={600}>
@@ -156,7 +174,7 @@ export default function UsersPage() {
         },
         {
             id: 'role',
-            label: 'Role',
+            label: 'Vai trò',
             minWidth: 150,
             format: (value: RoleResponse) =>
                 value ? (
@@ -167,7 +185,7 @@ export default function UsersPage() {
         },
         {
             id: 'status',
-            label: 'Status',
+            label: 'Trạng thái',
             minWidth: 120,
             format: (value) => value ? <StatusChip status={statusMap[value as UserStatus]} showIcon /> : 'N/A',
         },
@@ -175,20 +193,20 @@ export default function UsersPage() {
     const searchFields = [
         {
             id: 'username',
-            label: 'Username',
-            placeholder: 'Search by username...',
+            label: 'Tên đăng nhập',
+            placeholder: 'Tìm theo tên đăng nhập...',
             value: searchUsername,
         },
         {
             id: 'email',
             label: 'Email',
-            placeholder: 'Search by email...',
+            placeholder: 'Tìm theo email...',
             value: searchEmail,
         },
         {
             id: 'employeeName',
-            label: 'Employee Name',
-            placeholder: 'Search by employee name...',
+            label: 'Tên nhân viên',
+            placeholder: 'Tìm theo tên nhân viên...',
             value: searchEmployeeName,
         },
     ];
@@ -197,7 +215,7 @@ export default function UsersPage() {
         {
             id: 'roleId',
             type: 'select' as const,
-            label: 'Role',
+            label: 'Vai trò',
             options: roles.map((role) => ({
                 value: role.role_code,
                 label: role.role_name,
@@ -209,34 +227,34 @@ export default function UsersPage() {
     return (
         <Box>
             <PageHeader
-                title="User Management"
-                subtitle="Manage system user accounts"
+                title="Quản lý tài khoản"
+                subtitle="Quản lý tài khoản người dùng hệ thống"
                 breadcrumbs={[
-                    { label: 'Users', icon: <PeopleIcon fontSize="small" /> },
+                    { label: 'Người dùng', icon: <PeopleIcon fontSize="small" /> },
                 ]}
                 actions={[
                     {
-                        label: 'Refresh',
+                        label: 'Làm mới',
                         onClick: handleRefresh,
                         icon: <RefreshIcon />,
                         variant: 'outlined',
                     },
                     {
-                        label: 'Ban Selected',
-                        onClick: handleBulkBan,
+                        label: 'Khóa đã chọn',
+                        onClick: guardAction(PERMISSIONS.USER.BAN, handleBulkBan),
                         variant: 'outlined',
                         color: 'error',
                         disabled: selectedRows.length === 0,
                         hidden: selectedRows.length === 0,
                     },
                     {
-                        label: 'Create Account',
-                        onClick: () => setOpenCreateDialog(true),
+                        label: 'Tạo tài khoản',
+                        onClick: guardAction(PERMISSIONS.USER.CREATE, () => setOpenCreateDialog(true)),
                         icon: <AddIcon />,
                         variant: 'contained',
                     },
                 ]}
-                tags={[{ label: `${totalCount || 0} Total` }]}
+                tags={[{ label: `${totalCount || 0} Tổng` }]}
             />
 
             <FilterBar
@@ -276,14 +294,14 @@ export default function UsersPage() {
                 selectable
                 selectedRows={selectedRows}
                 onSelectionChange={setSelectedRows}
-                onEdit={handleEdit}
-                onDelete={(row: UserResponse) => {
+                onEdit={guardFn(PERMISSIONS.USER.UPDATE, handleEdit)}
+                onDelete={guardFn(PERMISSIONS.USER.BAN, (row: UserResponse) => {
                     setConfirmBanDialog({
                         open: true,
                         userId: row.id,
                         username: row.username,
                     });
-                }}
+                })}
                 rowKey="id"
             />
 
@@ -309,11 +327,10 @@ export default function UsersPage() {
                 open={confirmBanDialog.open}
                 onClose={() => setConfirmBanDialog({ open: false, userId: null, username: '' })}
             >
-                <DialogTitle>Ban User</DialogTitle>
+                <DialogTitle>Khóa tài khoản</DialogTitle>
                 <DialogContent>
                     <Alert severity="warning">
-                        Are you sure you want to ban user "{confirmBanDialog.username}"? This action will
-                        prevent the user from accessing the system.
+                        Bạn có chắc muốn khóa tài khoản "{confirmBanDialog.username}"? Hành động này sẽ ngăn người dùng truy cập hệ thống.
                     </Alert>
                 </DialogContent>
                 <DialogActions>
@@ -321,7 +338,7 @@ export default function UsersPage() {
                         onClick={() => setConfirmBanDialog({ open: false, userId: null, username: '' })}
                         disabled={operationLoading}
                     >
-                        Cancel
+                        Hủy
                     </Button>
                     <Button
                         onClick={handleBanUser}
@@ -329,10 +346,12 @@ export default function UsersPage() {
                         color="error"
                         disabled={operationLoading}
                     >
-                        {operationLoading ? 'Banning...' : 'Ban User'}
+                        {operationLoading ? 'Đang khóa...' : 'Khóa tài khoản'}
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <PermissionDeniedDialog {...permissionDialogProps} />
         </Box>
     );
 }

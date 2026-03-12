@@ -144,13 +144,13 @@ const menuItems: MenuItem[] = [
     children: [
       {
         id: 'sales-report',
-        label: 'Doanh thu',
+        label: 'Doanh Số & Lợi Nhuận',
         icon: <TrendingUpIcon />,
         path: '/commercial/reports/sales',
       },
       {
         id: 'inventory-report',
-        label: 'Tồn kho',
+        label: 'Xuất Nhập Tồn',
         icon: <InventoryIcon />,
         path: '/commercial/reports/inventory',
       },
@@ -395,6 +395,9 @@ export default function CommercialSidebar({
           boxSizing: 'border-box',
           borderRight: `1px solid ${theme.palette.divider}`,
           boxShadow: '4px 0 12px rgba(0,0,0,0.05)',
+          // Offset permanent drawer below the fixed AppBar so logo is fully visible
+          top: { xs: '56px', md: '64px' },
+          height: { xs: 'calc(100% - 56px)', md: 'calc(100% - 64px)' },
         },
       }}
       ModalProps={{

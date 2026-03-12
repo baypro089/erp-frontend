@@ -170,7 +170,7 @@ export default function UserFormDialog({
           <Box display="flex" alignItems="center" gap={1}>
             <Person color="primary" />
             <Typography variant="h6">
-              {isEditMode ? 'Edit User Account' : 'Create New User Account'}
+              {isEditMode ? 'Chỉnh sửa tài khoản' : 'Tạo tài khoản mới'}
             </Typography>
           </Box>
         </DialogTitle>
@@ -188,11 +188,11 @@ export default function UserFormDialog({
               {!isEditMode && (
                 <>
                   <Typography variant="subtitle2" color="primary">
-                    Employee Information
+                    Thông tin nhân viên
                   </Typography>
                   <TextField
                     select
-                    label="Employee"
+                    label="Nhân viên"
                     value={selectedEmployee}
                     onChange={(e) => handleEmployeeChange(e.target.value)}
                     required
@@ -204,10 +204,10 @@ export default function UserFormDialog({
                         </InputAdornment>
                       ),
                     }}
-                    helperText="Select an employee to create account"
+                    helperText="Chọn nhân viên để tạo tài khoản"
                   >
                     {availableEmployees.length === 0 ? (
-                      <MenuItem disabled>No employees available</MenuItem>
+                      <MenuItem disabled>Không có nhân viên</MenuItem>
                     ) : (
                       availableEmployees.map((emp) => (
                         <MenuItem key={emp.id} value={emp.id}>
@@ -221,11 +221,11 @@ export default function UserFormDialog({
 
               {/* Account Information */}
               <Typography variant="subtitle2" color="primary">
-                Account Information
+                Thông tin tài khoản
               </Typography>
               <Box display="flex" gap={2}>
                 <TextField
-                  label="Username"
+                  label="Tên đăng nhập"
                   value={formData.username}
                   disabled
                   fullWidth
@@ -236,12 +236,12 @@ export default function UserFormDialog({
                       </InputAdornment>
                     ),
                   }}
-                  helperText={isEditMode ? 'Username cannot be changed' : 'Auto-filled from employee code'}
+                  helperText={isEditMode ? 'Tên đăng nhập không thể thay đổi' : 'Tự điền từ mã nhân viên'}
                 />
 
                 {!isEditMode && (
                   <TextField
-                    label="Password"
+                    label="Mật khẩu"
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
@@ -264,7 +264,7 @@ export default function UserFormDialog({
                         </InputAdornment>
                       ),
                     }}
-                    helperText="Default: 123456"
+                    helperText="Mặc định: 123456"
                   />
                 )}
               </Box>
@@ -286,12 +286,12 @@ export default function UserFormDialog({
 
               {/* Role & Status */}
               <Typography variant="subtitle2" color="primary">
-                Role & Permissions
+                Vai trò & Quyền hạn
               </Typography>
               <Box display="flex" gap={2}>
                 <TextField
                   select
-                  label="Role"
+                  label="Vai trò"
                   value={formData.roleCode}
                   onChange={(e) => setFormData({ ...formData, roleCode: e.target.value })}
                   required
@@ -307,14 +307,14 @@ export default function UserFormDialog({
                 {isEditMode && (
                   <TextField
                     select
-                    label="Status"
+                    label="Trạng thái"
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as UserStatus })}
                     required
                     fullWidth
                   >
-                    <MenuItem value={UserStatus.ACTIVE}>Active</MenuItem>
-                    <MenuItem value={UserStatus.BANNED}>Banned</MenuItem>
+                    <MenuItem value={UserStatus.ACTIVE}>Hoạt động</MenuItem>
+                    <MenuItem value={UserStatus.BANNED}>Bị khóa</MenuItem>
                   </TextField>
                 )}
               </Box>
@@ -323,30 +323,30 @@ export default function UserFormDialog({
               {isEditMode && currentUser && (
                 <>
                   <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
-                    System Information
+                    Thông tin hệ thống
                   </Typography>
                   <Box display="flex" gap={2}>
                     <TextField
-                      label="Created At"
+                      label="Ngày tạo"
                       value={currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleString() : 'N/A'}
                       disabled
                       fullWidth
-                      helperText="Account creation date"
+                      helperText="Ngày tạo tài khoản"
                     />
                     <TextField
-                      label="Updated At"
+                      label="Cập nhật lần cuối"
                       value={currentUser.updatedAt ? new Date(currentUser.updatedAt).toLocaleString() : 'N/A'}
                       disabled
                       fullWidth
-                      helperText="Last modification date"
+                      helperText="Ngày chỉnh sửa cuối"
                     />
                   </Box>
                   <TextField
-                    label="Last Login"
-                    value={currentUser.lastLogin ? new Date(currentUser.lastLogin).toLocaleString() : 'Never logged in'}
+                    label="Đăng nhập lần cuối"
+                    value={currentUser.lastLogin ? new Date(currentUser.lastLogin).toLocaleString() : 'Chưa đăng nhập'}
                     disabled
                     fullWidth
-                    helperText="Last login timestamp"
+                    helperText="Thời điểm đăng nhập lần cuối"
                   />
                 </>
               )}
@@ -356,14 +356,14 @@ export default function UserFormDialog({
         <Divider />
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button onClick={handleClose} disabled={operationLoading}>
-            Cancel
+            Hủy
           </Button>
           <Button
             type="submit"
             variant="contained"
             disabled={operationLoading || (!isEditMode && !selectedEmployee)}
           >
-            {operationLoading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update User' : 'Create User')}
+            {operationLoading ? (isEditMode ? 'Đang cập nhật...' : 'Đang tạo...') : (isEditMode ? 'Cập nhật' : 'Tạo tài khoản')}
           </Button>
         </DialogActions>
       </form>

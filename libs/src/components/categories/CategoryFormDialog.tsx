@@ -73,7 +73,7 @@ export default function CategoryFormDialog({
     const newErrors: { name?: string } = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'Category name is required';
+      newErrors.name = 'Tên danh mục là bắt buộc';
     }
 
     setErrors(newErrors);
@@ -112,14 +112,14 @@ export default function CategoryFormDialog({
       }}
     >
       <DialogTitle sx={{ pb: 2 }}>
-        {isEdit ? 'Edit Category' : 'Add New Category'}
+        {isEdit ? 'Chỉnh sửa danh mục' : 'Thêm danh mục mới'}
       </DialogTitle>
 
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, py: 1 }}>
           {/* Category Name */}
           <TextField
-            label="Category Name"
+            label="Tên danh mục"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             error={!!errors.name}
@@ -132,10 +132,10 @@ export default function CategoryFormDialog({
 
           {/* Parent Category */}
           <FormControl fullWidth disabled={loading}>
-            <InputLabel id="parent-category-label">Parent Category</InputLabel>
+            <InputLabel id="parent-category-label">Danh mục cha</InputLabel>
             <Select
               labelId="parent-category-label"
-              label="Parent Category"
+              label="Danh mục cha"
               value={formData.parentId || ''}
               onChange={(e) =>
                 setFormData({
@@ -145,7 +145,7 @@ export default function CategoryFormDialog({
               }
             >
               <MenuItem value="">
-                <em>None (Top Level)</em>
+                <em>Không có (Cấp cao nhất)</em>
               </MenuItem>
               {availableParentCategories.map((cat) => (
                 <MenuItem key={cat.id} value={cat.id}>
@@ -154,7 +154,7 @@ export default function CategoryFormDialog({
               ))}
             </Select>
             <FormHelperText>
-              Select a parent category to create a subcategory
+              Chọn danh mục cha để tạo danh mục con
             </FormHelperText>
           </FormControl>
 
@@ -169,14 +169,14 @@ export default function CategoryFormDialog({
                 disabled={loading}
               />
             }
-            label="Active"
+            label="Đang hoạt động"
           />
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
         <Button onClick={handleClose} disabled={loading} color="inherit">
-          Cancel
+          Hủy
         </Button>
         <Button
           onClick={handleSubmit}
@@ -184,7 +184,7 @@ export default function CategoryFormDialog({
           disabled={loading}
           startIcon={loading ? <CircularProgress size={20} /> : null}
         >
-          {isEdit ? 'Update' : 'Create'}
+          {isEdit ? 'Cập nhật' : 'Tạo mới'}
         </Button>
       </DialogActions>
     </Dialog>

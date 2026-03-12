@@ -8,19 +8,18 @@ const hrReportService = {
    * @returns Báo cáo chi tiết về nhân sự và quỹ lương
    */
   async getManagerReport(filter?: ManagerReportFilterDto): Promise<IManagerReport> {
-    const params = new URLSearchParams();
+    const params: Record<string, any> = {};
     
     if (filter?.month) {
-      params.append('month', String(filter.month));
+      params.month = Number(filter.month);
     }
     if (filter?.year) {
-      params.append('year', String(filter.year));
+      params.year = Number(filter.year);
     }
 
-    const queryString = params.toString();
-    const url = `/hr/reports/manager${queryString ? `?${queryString}` : ''}`;
+    const url = `/hr/reports/manager`;
     
-    const response = await api.get<{ data: IManagerReport }>(url);
+    const response = await api.get<{ data: IManagerReport }>(url, { params });
     return response.data.data;
   },
 };

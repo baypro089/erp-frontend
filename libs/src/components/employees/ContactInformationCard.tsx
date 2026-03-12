@@ -26,13 +26,13 @@ export default function ContactInformationCard({
       <CardContent>
         <Typography variant="h6" gutterBottom display="flex" alignItems="center" gap={1}>
           <PhoneIcon color="primary" />
-          Contact Information
+          Thông tin liên hệ
         </Typography>
         <Divider sx={{ mb: 2 }} />
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Typography variant="caption" color="text.secondary">
-              Phone Number
+              Số điện thoại
             </Typography>
             {isEditing ? (
               <TextField
@@ -48,7 +48,7 @@ export default function ContactInformationCard({
           </Grid>
           <Grid size={{ xs: 12 }}>
             <Typography variant="caption" color="text.secondary">
-              Permanent Address
+              Địa chỉ thường trú
             </Typography>
             {isEditing ? (
               <TextField
@@ -66,7 +66,7 @@ export default function ContactInformationCard({
           </Grid>
           <Grid size={{ xs: 12 }}>
             <Typography variant="caption" color="text.secondary">
-              Current Address
+              Địa chỉ hiện tại
             </Typography>
             {isEditing ? (
               <TextField

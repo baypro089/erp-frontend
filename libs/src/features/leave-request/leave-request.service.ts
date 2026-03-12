@@ -3,6 +3,7 @@ import type {
   LeaveRequestResponse,
   LeaveRequestCreateDto,
   PagedAndFilteredLeaveRequest,
+  CalculateWorkingDaysDto,
 } from '@libs/shared/types/leave-requests.type';
 import { LeaveRequestStatus } from '@libs/shared/enums/leave-request-status.enum';
 
@@ -64,6 +65,12 @@ class LeaveRequestService {
       reason,
     });
     return response.data.data;
+  }
+
+  // Calculate working days between two dates (considering holidays)
+  async calculateWorkingDays(dto: CalculateWorkingDaysDto): Promise<number> {
+    const response = await api.post<any>(`${this.BASE_URL}/calculate-days`, dto);
+    return response.data.data.duration;
   }
 }
 
