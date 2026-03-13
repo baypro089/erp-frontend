@@ -2,6 +2,7 @@ import api from '@libs/src/services/api.service';
 import type {
   LeaveRequestResponse,
   LeaveRequestCreateDto,
+  CreateLeaveRequestPayload,
   PagedAndFilteredLeaveRequest,
   CalculateWorkingDaysDto,
 } from '@libs/shared/types/leave-requests.type';
@@ -11,8 +12,32 @@ class LeaveRequestService {
   private readonly BASE_URL = '/leave-requests';
 
   // Create a new leave request
-  async createLeaveRequest(data: LeaveRequestCreateDto): Promise<LeaveRequestResponse> {
-    const response = await api.post<any>(this.BASE_URL, data);
+  async createLeaveRequest(payload: CreateLeaveRequestPayload): Promise<LeaveRequestResponse> {
+    const { data, documentFile } = payload;
+    const formData = new FormData();
+
+    formData.append('employeeId', data.employeeId);
+    formData.append('startDate', data.startDate.toISOString());
+    if (data.endDate) {
+      formData.append('endDate', data.endDate.toISOString());
+    }
+    formData.append('type', data.type);
+    formData.append('reason', data.reason);
+    if (typeof data.autoSplitIfInsufficient === 'boolean') {
+      formData.append('autoSplitIfInsufficient', String(data.autoSplitIfInsufficient));
+    }
+    if (data.documentUrl) {
+      formData.append('documentUrl', data.documentUrl);
+    }
+    if (documentFile) {
+      formData.append('document', documentFile);
+    }
+
+    const response = await api.post<any>(this.BASE_URL, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
     return response.data.data;
   }
 
@@ -71,6 +96,12 @@ class LeaveRequestService {
   async calculateWorkingDays(dto: CalculateWorkingDaysDto): Promise<number> {
     const response = await api.post<any>(`${this.BASE_URL}/calculate-days`, dto);
     return response.data.data.duration;
+  }
+
+  // Mark maternity leave request as BHXH claimed
+  async claimBhxh(id: string): Promise<LeaveRequestResponse> {
+    const response = await api.patch<any>(`${this.BASE_URL}/${id}/bhxh-claim`);
+    return response.data.data;
   }
 }
 

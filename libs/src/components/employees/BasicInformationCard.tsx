@@ -2,7 +2,7 @@
 
 import { Card, CardContent, Typography, Grid, Divider, TextField, MenuItem, Autocomplete } from '@mui/material';
 import { Person as PersonIcon } from '@mui/icons-material';
-import { Gender } from '@libs/shared/enums/gender.enum';
+import { Gender, GENDER_LABELS } from '@libs/shared/enums/gender.enum';
 import { COUNTRIES } from '@libs/shared/constants/countries.constant';
 import type { EmployeeResponse } from '@libs/shared/types/employees.type';
 
@@ -56,12 +56,12 @@ export default function BasicInformationCard({
                 <MenuItem value="">N/A</MenuItem>
                 {Object.values(Gender).map((g) => (
                   <MenuItem key={g} value={g}>
-                    {g}
+                    {GENDER_LABELS[g]}
                   </MenuItem>
                 ))}
               </TextField>
             ) : (
-              <Typography variant="body1">{employee.gender || 'N/A'}</Typography>
+              <Typography variant="body1">{employee.gender ? GENDER_LABELS[employee.gender as Gender] : 'N/A'}</Typography>
             )}
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>

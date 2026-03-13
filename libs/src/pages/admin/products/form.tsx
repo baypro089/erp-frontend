@@ -132,11 +132,13 @@ export default function ProductFormPage({ productId }: ProductFormPageProps) {
 
       {/* Product Form */}
       {(!isEdit || currentProduct) && (
-        <ProductForm
-          selectedProduct={isEdit ? currentProduct : null}
-          onSubmit={handleSubmit}
-          loading={operationLoading}
-        />
+        <Box sx={{ mt: 2 }}>
+          <ProductForm
+            selectedProduct={isEdit ? currentProduct : null}
+            onSubmit={handleSubmit}
+            loading={operationLoading}
+          />
+        </Box>
       )}
 
       {/* Snackbar */}

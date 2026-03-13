@@ -41,6 +41,7 @@ export default function CommercialLayout({
         name: currentUser.username || 'User',
         email: currentUser.email || '',
         role: currentUser.role?.role_name || 'Commercial',
+        avatar: currentUser.employee.photoUrl || '/default-avatar.png',
       }
     : undefined;
 

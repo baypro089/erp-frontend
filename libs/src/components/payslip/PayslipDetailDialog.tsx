@@ -68,6 +68,24 @@ export default function PayslipDetailDialog({
   // Separate earnings and deductions
   const { earnings, deductions } = groupPayslipItems(payslip, salaryComponents);
 
+  const maternityKeywordRegex = /(maternity|thai[\s_-]?s[aả]n|nghi[\s_-]?thai[\s_-]?s[aả]n)/i;
+  const normalizedNote = (payslip.note || '').toLowerCase();
+  const noteSuggestMaternity = maternityKeywordRegex.test(normalizedNote);
+  const detailsContainMaternitySignal = Object.keys(payslip.details || {}).some((key) => maternityKeywordRegex.test(key));
+  const maternityRelatedEarnings = earnings.filter(
+    (item) => maternityKeywordRegex.test(item.code) || maternityKeywordRegex.test(item.name)
+  );
+  const earningsContainMaternitySignal = maternityRelatedEarnings.length > 0;
+
+  const isMaternityPayslip =
+    noteSuggestMaternity ||
+    detailsContainMaternitySignal ||
+    earningsContainMaternitySignal;
+
+  const bhxhIncomeAmount = isMaternityPayslip
+    ? maternityRelatedEarnings.reduce((sum, item) => sum + item.amount, 0)
+    : 0;
+
   // Calculate totals
   const totalEarnings = earnings.reduce((sum, item) => sum + item.amount, 0) + baseSalaryByWorkDays;
   const totalDeductions = deductions.reduce((sum, item) => sum + item.amount, 0);
@@ -189,9 +207,41 @@ export default function PayslipDetailDialog({
             >
               PHIẾU LƯƠNG THÁNG {monthYear}
             </Typography>
+            {isMaternityPayslip && (
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  textAlign: 'center',
+                  color: 'warning.dark',
+                  fontWeight: 700,
+                }}
+              >
+                Kỳ lương nghỉ thai sản
+              </Typography>
+            )}
           </Box>
 
           <Divider sx={{ mb: 3 }} />
+
+          {isMaternityPayslip && (
+            <Box
+              sx={{
+                mb: 3,
+                p: 2,
+                borderRadius: 2,
+                border: '1px solid',
+                borderColor: 'warning.main',
+                bgcolor: 'warning.50',
+              }}
+            >
+              <Typography variant="body2" sx={{ fontWeight: 700, color: 'warning.dark' }}>
+                Thu nhập hưởng từ quỹ Bảo hiểm xã hội
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Phiếu lương này thuộc kỳ nghỉ thai sản, thu nhập được thể hiện minh bạch theo chế độ BHXH.
+              </Typography>
+            </Box>
+          )}
 
           {/* Employee Info - 2 Column Grid */}
           <Box
@@ -263,12 +313,36 @@ export default function PayslipDetailDialog({
               {/* Base Salary */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.5 }}>
                 <Typography variant="body2">
-                  Lương cơ bản (Ngày: {payslip.actualWorkDays})
+                  {isMaternityPayslip
+                    ? 'Lương cơ bản theo ngày công tại doanh nghiệp'
+                    : `Lương cơ bản (Ngày: ${payslip.actualWorkDays})`}
                 </Typography>
                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                   {formatCurrency(baseSalaryByWorkDays)}
                 </Typography>
               </Box>
+
+              {isMaternityPayslip && (
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    mb: 1.5,
+                    p: 1,
+                    borderRadius: 1,
+                    bgcolor: 'warning.50',
+                    border: '1px dashed',
+                    borderColor: 'warning.main',
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                    Thu nhập hưởng từ quỹ Bảo hiểm xã hội
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 700, color: 'warning.dark' }}>
+                    {formatCurrency(bhxhIncomeAmount)}
+                  </Typography>
+                </Box>
+              )}
 
               {/* Earnings List */}
               {earnings.map((item) => (

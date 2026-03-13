@@ -6,7 +6,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import type { AppDispatch, RootState } from '@libs/src/store';
 import {
   Box,
-  Paper,
   Alert,
   Snackbar,
   Button,
@@ -106,7 +105,6 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
       {/* Page Header */}
       <PageHeader
         title={currentProduct?.name || 'Chi tiết sản phẩm'}
-        subtitle={currentProduct ? `SKU: ${currentProduct.sku}` : ''}
         breadcrumbs={[
           { label: 'Sản phẩm', icon: <ProductIcon fontSize="small" />, href: basePath },
           { label: 'Chi tiết' },
@@ -122,8 +120,8 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
         ]}
       />
 
-      {/* Product Form */}
-      <Paper sx={{ mt: 3, p: 3 }}>
+      {/* Product Detail */}
+      <Box sx={{ mt: 2 }}>
         {currentProduct && (
           <ProductForm
             selectedProduct={currentProduct}
@@ -132,7 +130,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
             readOnly
           />
         )}
-      </Paper>
+      </Box>
 
       {/* Snackbar */}
       <Snackbar

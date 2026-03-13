@@ -40,7 +40,7 @@ import type { AttachmentResponse } from '@libs/shared/types/attachment.type';
 import { StatusChip } from '@libs/src/components/common';
 import { Status } from '@libs/shared/enums/employee-status.enum';
 import { Level } from '@libs/shared/enums/level.enum';
-import { Gender } from '@libs/shared/enums/gender.enum';
+import { Gender, GENDER_LABELS } from '@libs/shared/enums/gender.enum';
 import { COUNTRIES } from '@libs/shared/constants/countries.constant';
 
 interface ProfileEmployeeTabProps {
@@ -357,12 +357,12 @@ export default function ProfileEmployeeTab({
                           <MenuItem value="">N/A</MenuItem>
                           {Object.values(Gender).map((g) => (
                             <MenuItem key={g} value={g}>
-                              {g}
+                              {GENDER_LABELS[g]}
                             </MenuItem>
                           ))}
                         </TextField>
                       ) : (
-                        <InfoField label="Giới tính" value={employee.gender} />
+                        <InfoField label="Giới tính" value={employee.gender ? GENDER_LABELS[employee.gender as Gender] : undefined} />
                       )}
                     </Grid>
                     <Grid size={{ xs: 12, md: 6 }}>

@@ -119,6 +119,8 @@ export default function EmployeeDetailPage() {
 
   const employeeId = params?.id as string;
 
+  const { guardAction, permissionDialogProps } = usePermissionGuard();
+
   useEffect(() => {
     if (employeeId) {
       dispatch(fetchEmployeeById(employeeId));
@@ -212,8 +214,6 @@ export default function EmployeeDetailPage() {
   const handleFormChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
-
-  const { guardAction, permissionDialogProps } = usePermissionGuard();
 
   const handleEdit = () => {
     setIsEditing(true);

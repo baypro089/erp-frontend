@@ -44,6 +44,7 @@ interface CommercialHeaderProps {
     name: string;
     email: string;
     role: string;
+    avatar?: string;
   };
   notificationCount?: number;
   onThemeToggle?: () => void;
@@ -318,6 +319,8 @@ export default function CommercialHeader({
               }}
             >
               <Avatar
+                alt={user?.name || 'User'}
+                src={user?.avatar || '/default-avatar.png'}
                 sx={{
                   width: 36,
                   height: 36,

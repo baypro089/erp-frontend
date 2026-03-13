@@ -31,6 +31,7 @@
     "next-auth": "^4.24.13",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-dropzone": "^15.0.0",
     "react-hook-form": "^7.71.0",
     "react-redux": "^9.2.0",
     "recharts": "^3.7.0",

@@ -15,6 +15,7 @@ import {
   Refresh as RefreshIcon,
   CheckCircle as ApproveIcon,
   Cancel as RejectIcon,
+  AssignmentTurnedIn as BhxhClaimIcon,
 } from '@mui/icons-material';
 import {
   DataTable,
@@ -31,6 +32,7 @@ import {
 import {
   fetchLeaveRequests,
   updateLeaveRequestStatus,
+  claimBhxhLeaveRequest,
   clearError,
 } from '@libs/src/features/leave-request/leave-request.slice';
 import type {
@@ -124,6 +126,9 @@ function LeaveApprovalsPageContent() {
   const isHR = currentRole?.permissions?.some(
     (permission) => permission.permission_code === PORTAL_PERMISSIONS.HR
   ) || false;
+
+  const roleCode = (currentRole?.role_code || currentUser?.role?.role_code || '').toUpperCase();
+  const canClaimBhxh = roleCode === 'HR_MANAGER' || roleCode === 'ADMIN';
 
   // Reload leave requests when filters or pagination changes
   useEffect(() => {
@@ -247,6 +252,25 @@ function LeaveApprovalsPageContent() {
       ),
     },
     {
+      id: 'isBhxhClaimed',
+      label: 'BHXH',
+      minWidth: 140,
+      align: 'center',
+      format: (value: boolean, row: LeaveRequestResponse) => {
+        if (row.type !== LeaveRequestType.MATERNITY) {
+          return <Typography variant="body2" color="text.secondary">N/A</Typography>;
+        }
+
+        return (
+          <StatusChip
+            status={value ? 'active' : 'pending'}
+            label={value ? 'Đã quyết toán' : 'Chưa quyết toán'}
+            showIcon
+          />
+        );
+      },
+    },
+    {
       id: 'createdAt',
       label: 'Ngày tạo',
       minWidth: 120,
@@ -282,6 +306,36 @@ function LeaveApprovalsPageContent() {
       }),
       hidden: (row: LeaveRequestResponse) => row.status !== LeaveRequestStatus.PENDING,
     },
+    {
+      icon: <BhxhClaimIcon />,
+      label: 'Xác nhận hồ sơ BHXH',
+      color: 'primary' as const,
+      onClick: guardFn<LeaveRequestResponse>(PERMISSIONS.LEAVE_REQUEST.APPROVE, async (row) => {
+        try {
+          await dispatch(claimBhxhLeaveRequest(row.id)).unwrap();
+          setSnackbar({
+            open: true,
+            message: 'Đã xác nhận quyết toán BHXH',
+            severity: 'success',
+          });
+          setRefreshCounter((prev) => prev + 1);
+        } catch (err: unknown) {
+          setSnackbar({
+            open: true,
+            message: typeof err === 'string' ? err : 'Không thể xác nhận hồ sơ BHXH',
+            severity: 'error',
+          });
+        }
+      }),
+      hidden: (row: LeaveRequestResponse) => {
+        return (
+          !canClaimBhxh ||
+          row.type !== LeaveRequestType.MATERNITY ||
+          row.status !== LeaveRequestStatus.APPROVED ||
+          row.isBhxhClaimed
+        );
+      },
+    },
   ];
 
   // Handlers
@@ -307,10 +361,10 @@ function LeaveApprovalsPageContent() {
       setOpenApproveReject(false);
       setSelectedLeaveRequest(null);
       setRefreshCounter(prev => prev + 1);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSnackbar({
         open: true,
-        message: err || 'Không thể cập nhật trạng thái',
+        message: typeof err === 'string' ? err : 'Không thể cập nhật trạng thái',
         severity: 'error',
       });
     }

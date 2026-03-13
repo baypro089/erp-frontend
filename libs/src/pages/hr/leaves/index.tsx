@@ -31,8 +31,9 @@ import {
   clearError,
 } from '@libs/src/features/leave-request/leave-request.slice';
 import type {
-  LeaveRequestResponse,
+  CreateLeaveRequestPayload,
   LeaveRequestCreateDto,
+  LeaveRequestResponse,
 } from '@libs/shared/types/leave-requests.type';
 import { LeaveRequestStatus, LeaveRequestType } from '@libs/shared/enums/leave-request-status.enum';
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
@@ -223,9 +224,9 @@ export default function LeavesPage() {
   ];
 
   // Handlers
-  const handleCreateLeaveRequest = async (data: LeaveRequestCreateDto) => {
+  const handleCreateLeaveRequest = async (payload: CreateLeaveRequestPayload) => {
     try {
-      await dispatch(createLeaveRequest(data)).unwrap();
+      await dispatch(createLeaveRequest(payload)).unwrap();
       setSnackbar({
         open: true,
         message: 'Gửi đơn nghỉ phép thành công',

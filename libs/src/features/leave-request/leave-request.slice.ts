@@ -3,7 +3,7 @@ import leaveRequestService from './leave-request.service';
 import {
   LeaveRequestResponse,
   LeaveRequestCreateDto,
-  PagedAndFilteredLeaveRequest,
+  CreateLeaveRequestPayload,
   CalculateWorkingDaysDto,
 } from '@libs/shared/types/leave-requests.type';
 import { LeaveRequestStatus } from '@libs/shared/enums/leave-request-status.enum';
@@ -95,9 +95,9 @@ export const fetchLeaveRequests = createAsyncThunk(
 
 export const createLeaveRequest = createAsyncThunk(
   'leaveRequest/createLeaveRequest',
-  async (data: LeaveRequestCreateDto, { rejectWithValue }) => {
+  async (payload: CreateLeaveRequestPayload, { rejectWithValue }) => {
     try {
-      const response = await leaveRequestService.createLeaveRequest(data);
+      const response = await leaveRequestService.createLeaveRequest(payload);
       return response;
     } catch (error: any) {
       return rejectWithValue(
@@ -145,6 +145,20 @@ export const calculateWorkingDays = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || 'Failed to calculate working days'
+      );
+    }
+  }
+);
+
+export const claimBhxhLeaveRequest = createAsyncThunk(
+  'leaveRequest/claimBhxhLeaveRequest',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await leaveRequestService.claimBhxh(id);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to claim BHXH for leave request'
       );
     }
   }
@@ -246,6 +260,26 @@ const leaveRequestSlice = createSlice({
       .addCase(calculateWorkingDays.rejected, (state) => {
         state.calculatingDays = false;
         state.workingDays = 0;
+      });
+
+    // Claim BHXH for maternity leave request
+    builder
+      .addCase(claimBhxhLeaveRequest.pending, (state) => {
+        state.operationLoading = true;
+        state.operationError = null;
+      })
+      .addCase(claimBhxhLeaveRequest.fulfilled, (state, action) => {
+        state.operationLoading = false;
+        const index = state.leaveRequests.findIndex(
+          (lr) => lr.id === action.payload.id
+        );
+        if (index !== -1) {
+          state.leaveRequests[index] = action.payload;
+        }
+      })
+      .addCase(claimBhxhLeaveRequest.rejected, (state, action) => {
+        state.operationLoading = false;
+        state.operationError = action.payload as string;
       });
   },
 });

@@ -28,10 +28,13 @@ import {
 } from '@mui/icons-material';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from 'recharts';
 import { useState, useEffect, useCallback } from 'react';
-import { format } from 'date-fns';
+import { differenceInCalendarDays, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { HrDashboardService } from '@libs/src/services/hr-dashboard.service';
 import type { IHrDashboard } from '@libs/shared/types/hr-statistics.type';
+import leaveRequestService from '@libs/src/features/leave-request/leave-request.service';
+import { LeaveRequestStatus, LeaveRequestType } from '@libs/shared/enums/leave-request-status.enum';
+import type { LeaveRequestResponse } from '@libs/shared/types/leave-requests.type';
 import Link from 'next/link';
 
 const DEPARTMENT_COLORS = ['#66BB6A', '#42A5F5', '#FFA726', '#AB47BC', '#EF5350', '#26A69A'];
@@ -41,6 +44,7 @@ export default function HRDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<IHrDashboard | null>(null);
+  const [maternityLeaves, setMaternityLeaves] = useState<LeaveRequestResponse[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const now = new Date();
     return format(now, 'yyyy-MM');
@@ -52,12 +56,41 @@ export default function HRDashboard() {
     setError(null);
 
     try {
-      const data = await HrDashboardService.getHrDashboard({
-        month: selectedMonth,
-      });
+      const [data, maternityLeaveData] = await Promise.all([
+        HrDashboardService.getHrDashboard({
+          month: selectedMonth,
+        }),
+        leaveRequestService.getLeaveRequests(
+          LeaveRequestStatus.APPROVED,
+          undefined,
+          undefined,
+          1,
+          100,
+        ),
+      ]);
+
       setDashboardData(data);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Không thể tải dữ liệu dashboard');
+
+      const today = new Date();
+      const activeMaternityLeaves = maternityLeaveData.items.filter((request) => {
+        if (request.type !== LeaveRequestType.MATERNITY) {
+          return false;
+        }
+        const startDate = new Date(request.startDate);
+        const endDate = new Date(request.endDate);
+        return endDate >= today || startDate >= today;
+      });
+
+      setMaternityLeaves(activeMaternityLeaves);
+    } catch (err: unknown) {
+      const message =
+        typeof err === 'object' &&
+        err !== null &&
+        'response' in err &&
+        typeof (err as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
+          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
+          : 'Không thể tải dữ liệu dashboard';
+      setError(message);
       console.error('Error fetching HR dashboard data:', err);
     } finally {
       setLoading(false);
@@ -94,6 +127,23 @@ export default function HRDashboard() {
   const dayOfWeek = format(currentDate, 'EEEE', { locale: vi });
   const dateStr = format(currentDate, 'dd/MM/yyyy');
   const monthStr = format(new Date(selectedMonth + '-01'), 'MM/yyyy');
+
+  const getMaternityProgress = (request: LeaveRequestResponse) => {
+    const today = new Date();
+    const startDate = new Date(request.startDate);
+    const endDate = new Date(request.endDate);
+    const totalDays = Math.max(differenceInCalendarDays(endDate, startDate), 1);
+    const elapsedDays = Math.min(Math.max(differenceInCalendarDays(today, startDate), 0), totalDays);
+    const remainingDays = Math.max(differenceInCalendarDays(endDate, today), 0);
+    const progress = Math.min(Math.round((elapsedDays / totalDays) * 100), 100);
+
+    return {
+      progress,
+      remainingDays,
+      totalDays,
+      isUpcoming: today < startDate,
+    };
+  };
 
   return (
     <Box>
@@ -424,6 +474,81 @@ export default function HRDashboard() {
               </Card>
             </Grid>
           </Grid>
+
+          {/* Maternity leave widget */}
+          <Paper sx={{ p: 3, mb: 4 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Nhân sự nghỉ thai sản
+              </Typography>
+              <Chip
+                label={`${maternityLeaves.length} nhân sự`}
+                color="secondary"
+                variant="outlined"
+                size="small"
+              />
+            </Box>
+
+            {maternityLeaves.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                Hiện không có nhân sự nào đang hoặc sắp bước vào kỳ nghỉ thai sản.
+              </Typography>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {maternityLeaves.slice(0, 6).map((request) => {
+                  const maternityInfo = getMaternityProgress(request);
+
+                  return (
+                    <Box
+                      key={request.id}
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        bgcolor: 'background.paper',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2, mb: 1 }}>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                            {request.employee.fullName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(request.startDate).toLocaleDateString('vi-VN')} - {new Date(request.endDate).toLocaleDateString('vi-VN')}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          size="small"
+                          color={maternityInfo.isUpcoming ? 'info' : maternityInfo.remainingDays <= 30 ? 'warning' : 'success'}
+                          label={
+                            maternityInfo.isUpcoming
+                              ? 'Sắp bắt đầu nghỉ'
+                              : `Còn ${maternityInfo.remainingDays} ngày`
+                          }
+                        />
+                      </Box>
+
+                      <LinearProgress
+                        variant="determinate"
+                        value={maternityInfo.progress}
+                        sx={{
+                          height: 10,
+                          borderRadius: 999,
+                          '& .MuiLinearProgress-bar': {
+                            borderRadius: 999,
+                          },
+                        }}
+                      />
+                      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                        Tiến độ kỳ nghỉ: {maternityInfo.progress}% ({maternityInfo.totalDays} ngày)
+                      </Typography>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+          </Paper>
 
           {/* Charts Row */}
           <Grid container spacing={3}>
