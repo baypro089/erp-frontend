@@ -279,6 +279,7 @@ function SuppliersPageContent() {
   const handleClearFilters = () => {
     setSearchQuery('');
     setFilterStatus('');
+    setPage(0);
   };
 
   // Filter data
@@ -295,6 +296,15 @@ function SuppliersPageContent() {
 
     return matchSearch && matchStatus;
   });
+
+  const paginatedSuppliers = filteredSuppliers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, filterStatus]);
 
   const activeFiltersCount = (searchQuery ? 1 : 0) + (filterStatus ? 1 : 0);
 
@@ -381,7 +391,7 @@ function SuppliersPageContent() {
       {/* Data Table */}
       <DataTable
         columns={columns}
-        data={filteredSuppliers}
+        data={paginatedSuppliers}
         page={page}
         rowsPerPage={rowsPerPage}
         totalRows={filteredSuppliers.length}

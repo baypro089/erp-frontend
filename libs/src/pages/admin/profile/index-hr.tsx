@@ -45,6 +45,7 @@ interface EmployeeFormData {
     currentPositionId: string;
     level: Level | '';
     status: Status;
+    dependentCount?: number;
 }
 
 export default function HRProfilePage() {
@@ -72,6 +73,7 @@ export default function HRProfilePage() {
         currentPositionId: '',
         level: '',
         status: Status.DRAFT,
+        dependentCount: 0,
     });
     const [snackbar, setSnackbar] = useState({
         open: false,
@@ -184,6 +186,7 @@ export default function HRProfilePage() {
                 currentPositionId: employee.currentPosition?.id || '',
                 level: employee.level || '',
                 status: employee.status || Status.DRAFT,
+                dependentCount: employee.dependentCount ?? 0,
             });
         }
     };
@@ -203,6 +206,7 @@ export default function HRProfilePage() {
                         identityIssuedDate: formData.identityIssuedDate
                             ? new Date(formData.identityIssuedDate)
                             : undefined,
+                        dependentCount: formData.dependentCount ?? 0,
                     },
                 })
             ).unwrap();
@@ -280,10 +284,6 @@ export default function HRProfilePage() {
             <PageHeader
                 title="Hồ sơ của tôi"
                 subtitle="Xem và quản lý thông tin cá nhân"
-                breadcrumbs={[
-                    { label: 'HR', href: '/hr' },
-                    { label: 'Hồ sơ', icon: <PersonIcon fontSize="small" /> },
-                ]}
                 actions={
                     isEditing && activeTab === 1 && currentUser?.employee
                         ? [
@@ -303,12 +303,6 @@ export default function HRProfilePage() {
                             },
                         ]
                         : [
-                            {
-                                label: 'Quay lại',
-                                onClick: () => router.back(),
-                                icon: <ArrowBackIcon />,
-                                variant: 'outlined',
-                            },
                             ...(activeTab === 1 && currentUser?.employee
                                 ? [
                                     {

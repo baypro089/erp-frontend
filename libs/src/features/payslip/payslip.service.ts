@@ -19,12 +19,14 @@ class PayslipService {
 
   // Get all payslips with pagination and filters
   async getPayslips(
+    search?: string,
     month?: number,
     year?: number,
     page?: number,
     pageSize?: number
   ): Promise<PagedAndFilteredPayslip> {
     const params: any = {};
+    if (search) params.search = search;
     if (month) params.month = month;
     if (year) params.year = year;
     if (page) params.page = page;

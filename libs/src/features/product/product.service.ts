@@ -44,6 +44,11 @@ class ProductService {
 
   // Create new product
   async createProduct(data: CreateProductDto, thumbnail?: File): Promise<ProductResponse> {
+    if (!thumbnail) {
+      const response = await api.post<any>(this.BASE_URL, data);
+      return response.data.data;
+    }
+
     const formData = new FormData();
     
     // Append all fields to FormData
@@ -76,6 +81,11 @@ class ProductService {
 
   // Update product
   async updateProduct(id: string, data: UpdateProductDto, thumbnail?: File): Promise<ProductResponse> {
+    if (!thumbnail) {
+      const response = await api.put<any>(`${this.BASE_URL}/${id}`, data);
+      return response.data.data;
+    }
+
     const formData = new FormData();
     
     // Append all fields to FormData

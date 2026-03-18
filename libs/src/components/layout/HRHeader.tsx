@@ -26,13 +26,14 @@ import {
   Settings,
   Logout,
   Search as SearchIcon,
+  Close as CloseIcon,
   Brightness4,
   Brightness7,
   EventNote as EventNoteIcon,
   People as PeopleIcon,
   SwapHoriz,
 } from '@mui/icons-material';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface HRHeaderProps {
@@ -52,6 +53,15 @@ interface HRHeaderProps {
   todayAttendance?: number;
 }
 
+const normalizeSearchTerm = (value: string): string =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
+
 export default function HRHeader({
   onMenuClick,
   title = 'Quản lý Nhân sự',
@@ -69,6 +79,23 @@ export default function HRHeader({
   const [anchorElNotifications, setAnchorElNotifications] =
     useState<null | HTMLElement>(null);
   const [searchValue, setSearchValue] = useState('');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      const isSearchShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k';
+
+      if (!isSearchShortcut) {
+        return;
+      }
+
+      event.preventDefault();
+      searchInputRef.current?.focus();
+    };
+
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, []);
 
   const handleOpenUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
@@ -104,6 +131,32 @@ export default function HRHeader({
   const handleSwitchSite = () => {
     handleCloseUserMenu();
     router.push('/portal-selection');
+  };
+
+  const handleSearchSubmit = () => {
+    const normalized = normalizeSearchTerm(searchValue);
+
+    if (!normalized) {
+      searchInputRef.current?.focus();
+      return;
+    }
+
+    const routeMatchers: Array<{ keywords: string[]; path: string }> = [
+      { keywords: ['nhan vien', 'employee'], path: '/hr/employees' },
+      { keywords: ['don nghi', 'nghi phep', 'leave'], path: '/hr/leave-approvals' },
+      { keywords: ['nghi viec', 'resignation'], path: '/hr/resignations' },
+      { keywords: ['sa thai', 'termination'], path: '/hr/terminations' },
+      { keywords: ['bang luong', 'luong', 'payroll'], path: '/hr/payroll' },
+      { keywords: ['phong ban', 'department'], path: '/hr/departments' },
+      { keywords: ['chuc vu', 'position'], path: '/hr/positions' },
+      { keywords: ['bao cao', 'report'], path: '/hr/reports' },
+    ];
+
+    const match = routeMatchers.find((item) =>
+      item.keywords.some((keyword) => normalized.includes(normalizeSearchTerm(keyword))),
+    );
+
+    router.push(match?.path || '/hr');
   };
 
   return (
@@ -194,26 +247,41 @@ export default function HRHeader({
         >
           <Box
             sx={{
-              padding: theme.spacing(0, 2),
+              pl: 1.5,
               height: '100%',
               position: 'absolute',
-              pointerEvents: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <SearchIcon color="action" />
+            <IconButton
+              size="small"
+              onClick={handleSearchSubmit}
+              sx={{
+                color: alpha(theme.palette.common.white, 0.9),
+              }}
+            >
+              <SearchIcon fontSize="small" />
+            </IconButton>
           </Box>
           <InputBase
             placeholder="Tìm nhân viên, đơn nghỉ..."
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                handleSearchSubmit();
+              }
+            }}
+            inputRef={searchInputRef}
             sx={{
               color: 'white',
               '& .MuiInputBase-input': {
                 padding: theme.spacing(1, 1, 1, 0),
-                paddingLeft: `calc(1em + ${theme.spacing(4)})`,
+                paddingLeft: `calc(1em + ${theme.spacing(4.5)})`,
+                paddingRight: `calc(1em + ${theme.spacing(8)})`,
                 transition: theme.transitions.create('width'),
                 width: { xs: '100%', sm: '20ch', md: '35ch' },
                 '&::placeholder': {
@@ -223,62 +291,53 @@ export default function HRHeader({
               },
             }}
           />
+          <Box
+            sx={{
+              pr: 0.75,
+              height: '100%',
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.25,
+            }}
+          >
+            {searchValue && (
+              <Tooltip title="Xóa nhanh">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    setSearchValue('');
+                    searchInputRef.current?.focus();
+                  }}
+                  sx={{ color: alpha(theme.palette.common.white, 0.8) }}
+                >
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
+            <Chip
+              label="Ctrl+K"
+              size="small"
+              sx={{
+                height: 18,
+                color: alpha(theme.palette.common.white, 0.9),
+                backgroundColor: alpha(theme.palette.common.white, 0.12),
+                border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
+                '& .MuiChip-label': {
+                  px: 0.75,
+                  fontSize: '0.65rem',
+                  fontWeight: 700,
+                },
+                display: { xs: 'none', md: 'inline-flex' },
+              }}
+            />
+          </Box>
         </Box>
 
         {/* Spacer */}
         <Box sx={{ flexGrow: 1 }} />
-
-        {/* Quick Stats - Enhanced HR Metrics */}
-        <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, mr: 2 }}>
-          <Chip
-            icon={<EventNoteIcon sx={{ color: '#FF6B35 !important' }} />}
-            label={
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 0.5 }}>
-                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'rgba(0,0,0,0.6)' }}>
-                  Đơn chờ duyệt
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#D32F2F' }}>
-                  {pendingLeaveRequests}
-                </Typography>
-              </Box>
-            }
-            sx={{
-              height: 'auto',
-              py: 1,
-              px: 1.5,
-              backgroundColor: alpha(theme.palette.common.white, 0.95),
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-              cursor: 'pointer',
-              '&:hover': {
-                backgroundColor: 'white',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-              },
-              transition: 'all 0.2s',
-            }}
-            onClick={() => router.push('/hr/leave-approvals')}
-          />
-          <Chip
-            icon={<PeopleIcon sx={{ color: '#00897B !important' }} />}
-            label={
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 0.5 }}>
-                <Typography variant="caption" sx={{ fontSize: '0.65rem', color: 'rgba(0,0,0,0.6)' }}>
-                  Đang làm việc
-                </Typography>
-                <Typography variant="body2" sx={{ fontWeight: 700, color: '#00695C' }}>
-                  {todayAttendance}
-                </Typography>
-              </Box>
-            }
-            sx={{
-              height: 'auto',
-              py: 1,
-              px: 1.5,
-              backgroundColor: alpha(theme.palette.common.white, 0.95),
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-            }}
-          />
-        </Box>
 
         {/* Actions */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

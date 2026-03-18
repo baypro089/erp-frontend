@@ -10,6 +10,7 @@ import leaveRequestReducer from '../features/leave-request/leave-request.slice';
 import payslipReducer from '../features/payslip/payslip.slice';
 import holidayReducer from '../features/holiday/holiday.slice';
 import resignationRequestReducer from '../features/resignation-request/resignation-request.slice';
+import terminationRequestReducer from '../features/termination-request/termination-request.slice';
 import systemSettingReducer from '../features/system-setting/system-setting.slice';
 import categoryReducer from '../features/category/category.slice';
 import brandReducer from '../features/brand/brand.slice';
@@ -39,6 +40,7 @@ const rootReducer = combineReducers({
     payslip: payslipReducer,
     holiday: holidayReducer,
     resignationRequest: resignationRequestReducer,
+    terminationRequest: terminationRequestReducer,
     systemSetting: systemSettingReducer,
     category: categoryReducer,
     brand: brandReducer,

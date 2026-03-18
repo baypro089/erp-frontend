@@ -357,6 +357,17 @@ function CustomersPageContent() {
     return matchSearch && matchTier && matchStatus;
   });
 
+  // Client-side pagination: slice the filtered results for current page
+  const paginatedCustomers = filteredCustomers.slice(
+    page * rowsPerPage,
+    page * rowsPerPage + rowsPerPage
+  );
+
+  // Reset to first page when search/filters change
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, filterTier, filterStatus]);
+
   const activeFiltersCount = 
     (searchQuery ? 1 : 0) + 
     (filterTier ? 1 : 0) + 
@@ -479,7 +490,7 @@ function CustomersPageContent() {
       {/* Data Table */}
       <DataTable
         columns={columns}
-        data={filteredCustomers}
+        data={paginatedCustomers}
         page={page}
         rowsPerPage={rowsPerPage}
         totalRows={filteredCustomers.length}

@@ -59,7 +59,7 @@ export default function ProductDetailPage({ productId }: ProductDetailPageProps)
     if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || operationError || 'An error occurred',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());

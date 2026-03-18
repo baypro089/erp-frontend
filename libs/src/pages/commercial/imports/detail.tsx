@@ -114,8 +114,8 @@ function ImportReceiptDetailPageContent() {
           <td class="center">${idx + 1}</td>
           <td>
             <strong>${item.product.name}</strong><br/>
-            <span class="sku">${item.product.sku || 'N/A'}</span>
-            ${item.scannedSerials && item.scannedSerials.length > 0 ? `<br/><span class="serial-list">Serial: ${item.scannedSerials.join(', ')}</span>` : ''}
+            <span class="sku">${item.product.sku || 'Không có SKU'}</span>
+            ${item.scannedSerials && item.scannedSerials.length > 0 ? `<br/><span class="serial-list">Sê-ri: ${item.scannedSerials.join(', ')}</span>` : ''}
           </td>
           <td class="right">${fmt(item.unitPrice)}</td>
           <td class="center">${item.quantity}</td>
@@ -445,7 +445,7 @@ function ImportReceiptDetailPageContent() {
                             {item.product.name}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {item.product.sku || 'N/A'}
+                            {item.product.sku || 'Không có SKU'}
                           </Typography>
                         </TableCell>
 

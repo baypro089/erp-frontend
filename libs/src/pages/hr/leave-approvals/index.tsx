@@ -258,7 +258,7 @@ function LeaveApprovalsPageContent() {
       align: 'center',
       format: (value: boolean, row: LeaveRequestResponse) => {
         if (row.type !== LeaveRequestType.MATERNITY) {
-          return <Typography variant="body2" color="text.secondary">N/A</Typography>;
+          return <Typography variant="body2" color="text.secondary">Không áp dụng</Typography>;
         }
 
         return (

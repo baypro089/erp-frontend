@@ -55,7 +55,7 @@ export default function ProductFormPage({ productId }: ProductFormPageProps) {
     if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || operationError || 'An error occurred',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());

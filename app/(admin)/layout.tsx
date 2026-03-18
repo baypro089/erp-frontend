@@ -39,9 +39,9 @@ export default function MainLayout({
 
   // Use actual user data from Redux store
   const user = currentUser ? {
-    name: currentUser.username || 'User',
+    name: currentUser.username || 'Người dùng',
     email: currentUser.email || '',
-    role: currentUser.role?.role_name || 'Admin',
+    role: currentUser.role?.role_name || 'Quản trị viên',
     avatar: currentUser.employee.photoUrl || '', // Assuming employee has a photoUrl field
   } : undefined;
 
@@ -51,7 +51,7 @@ export default function MainLayout({
         {/* Header */}
 
         <AdminHeader
-          title="Admin Dashboard"
+          title="Bảng điều khiển quản trị"
           showMenuButton={false}
           user={user}
           notificationCount={5}

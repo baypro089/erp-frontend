@@ -11,12 +11,22 @@ import {
   Box,
   CircularProgress,
   InputAdornment,
+  MenuItem,
 } from '@mui/material';
 import type {
   PositionResponse,
   CreatePositionDTO,
   UpdatePositionDTO,
 } from '@libs/shared/types/positions.type';
+
+const SALARY_UNITS = {
+  ten: { label: 'Chục', multiplier: 10 },
+  hundred: { label: 'Trăm', multiplier: 100 },
+  thousand: { label: 'Nghìn', multiplier: 1_000 },
+  million: { label: 'Triệu', multiplier: 1_000_000 },
+} as const;
+
+type SalaryUnitKey = keyof typeof SALARY_UNITS;
 
 interface PositionFormDialogProps {
   open: boolean;
@@ -40,23 +50,30 @@ export default function PositionFormDialog({
   });
 
   const [errors, setErrors] = useState<{ name?: string; baseSalary?: string }>({});
+  const [salaryAmountInput, setSalaryAmountInput] = useState<number>(0);
+  const [salaryUnit, setSalaryUnit] = useState<SalaryUnitKey>('million');
 
   const isEdit = !!selectedPosition;
 
   // Load data when editing
   useEffect(() => {
     if (selectedPosition) {
+      const unit: SalaryUnitKey = 'million';
       setFormData({
         name: selectedPosition.name,
         baseSalary: selectedPosition.baseSalary,
         description: selectedPosition.description || '',
       });
+      setSalaryUnit(unit);
+      setSalaryAmountInput(Number((selectedPosition.baseSalary / SALARY_UNITS[unit].multiplier).toFixed(2)));
     } else {
       setFormData({
         name: '',
         baseSalary: 0,
         description: '',
       });
+      setSalaryAmountInput(0);
+      setSalaryUnit('million');
     }
     setErrors({});
   }, [selectedPosition, open]);
@@ -86,6 +103,23 @@ export default function PositionFormDialog({
     if (!loading) {
       onClose();
     }
+  };
+
+  const handleSalaryAmountChange = (value: string) => {
+    const parsed = Number(value);
+    const amount = Number.isNaN(parsed) ? 0 : parsed;
+    setSalaryAmountInput(amount);
+    setFormData({
+      ...formData,
+      baseSalary: amount * SALARY_UNITS[salaryUnit].multiplier,
+    });
+  };
+
+  const handleSalaryUnitChange = (unit: SalaryUnitKey) => {
+    const currentSalary = Number(formData.baseSalary) || 0;
+    const nextAmount = currentSalary / SALARY_UNITS[unit].multiplier;
+    setSalaryUnit(unit);
+    setSalaryAmountInput(Number.isFinite(nextAmount) ? Number(nextAmount.toFixed(2)) : 0);
   };
 
   return (
@@ -119,24 +153,43 @@ export default function PositionFormDialog({
           />
 
           {/* Base Salary */}
-          <TextField
-            label="Lương cơ bản"
-            type="number"
-            value={formData.baseSalary}
-            onChange={(e) => setFormData({ ...formData, baseSalary: Number(e.target.value) })}
-            error={!!errors.baseSalary}
-            helperText={errors.baseSalary}
-            fullWidth
-            required
-            disabled={loading}
-            InputProps={{
-              startAdornment: <InputAdornment position="start">$</InputAdornment>,
-            }}
-            inputProps={{
-              min: 0,
-              step: 100,
-            }}
-          />
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+            <TextField
+              label="Lương cơ bản"
+              type="number"
+              value={salaryAmountInput}
+              onChange={(e) => handleSalaryAmountChange(e.target.value)}
+              error={!!errors.baseSalary}
+              helperText={
+                errors.baseSalary || `Tương đương: ${Number(formData.baseSalary || 0).toLocaleString('vi-VN')} đ`
+              }
+              fullWidth
+              required
+              disabled={loading}
+              InputProps={{
+                endAdornment: <InputAdornment position="end">{SALARY_UNITS[salaryUnit].label}</InputAdornment>,
+              }}
+              inputProps={{
+                min: 0,
+                step: 0.01,
+              }}
+            />
+
+            <TextField
+              label="Đơn vị"
+              select
+              value={salaryUnit}
+              onChange={(e) => handleSalaryUnitChange(e.target.value as SalaryUnitKey)}
+              disabled={loading}
+              sx={{ minWidth: 160 }}
+            >
+              {Object.entries(SALARY_UNITS).map(([key, unit]) => (
+                <MenuItem key={key} value={key}>
+                  {unit.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
 
           {/* Description */}
           <TextField

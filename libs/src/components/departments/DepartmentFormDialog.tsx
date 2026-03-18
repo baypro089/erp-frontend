@@ -14,6 +14,7 @@ import {
   Paper,
   IconButton,
   Tooltip,
+  Alert,
 } from '@mui/material';
 import {
   Person as PersonIcon,
@@ -27,6 +28,7 @@ import type {
 } from '@libs/shared/types/departments.type';
 import type { EmployeeTableResponse } from '@libs/shared/types/employees.type';
 import EmployeePickerDialog from './EmployeePickerDialog';
+import employeeService from '@libs/src/features/employee/employee.service';
 
 interface DepartmentFormDialogProps {
   open: boolean;
@@ -50,11 +52,13 @@ export default function DepartmentFormDialog({
 
   const [managerId, setManagerId] = useState<string | undefined>(undefined);
   const [managerInfo, setManagerInfo] = useState<EmployeeTableResponse | null>(null);
+  const [managerInfoLoading, setManagerInfoLoading] = useState(false);
   const [openPicker, setOpenPicker] = useState(false);
 
   const [errors, setErrors] = useState<{ name?: string }>({});
 
   const isEdit = !!selectedDepartment;
+  const canSelectManager = isEdit && (selectedDepartment?.totalEmployees || 0) > 0;
 
   // Load data when editing
   useEffect(() => {
@@ -64,7 +68,6 @@ export default function DepartmentFormDialog({
         description: selectedDepartment.description || '',
       });
       setManagerId(selectedDepartment.managerId);
-      // Reset managerInfo so user sees the picker if they want to change
       setManagerInfo(null);
     } else {
       setFormData({
@@ -76,6 +79,37 @@ export default function DepartmentFormDialog({
     }
     setErrors({});
   }, [selectedDepartment, open]);
+
+  useEffect(() => {
+    const loadManagerInfo = async () => {
+      if (!open || !selectedDepartment?.managerId) {
+        setManagerInfoLoading(false);
+        return;
+      }
+
+      setManagerInfoLoading(true);
+      try {
+        const manager = await employeeService.getEmployeeById(selectedDepartment.managerId);
+        setManagerInfo({
+          id: manager.id,
+          employeeCode: manager.employeeCode,
+          fullName: manager.fullName,
+          startDate: manager.startDate,
+          departmentName: manager.department?.name,
+          positionName: manager.currentPosition?.name,
+          createdAt: manager.createdAt,
+          updatedAt: manager.updatedAt,
+          status: manager.status,
+        });
+      } catch {
+        setManagerInfo(null);
+      } finally {
+        setManagerInfoLoading(false);
+      }
+    };
+
+    loadManagerInfo();
+  }, [open, selectedDepartment?.managerId]);
 
   const validateForm = (): boolean => {
     const newErrors: { name?: string } = {};
@@ -185,7 +219,7 @@ export default function DepartmentFormDialog({
                       </Box>
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
                         <Tooltip title="Thay đổi">
-                          <IconButton size="small" onClick={() => setOpenPicker(true)} disabled={loading}>
+                          <IconButton size="small" onClick={() => setOpenPicker(true)} disabled={loading || !canSelectManager}>
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -204,15 +238,17 @@ export default function DepartmentFormDialog({
                       <PersonIcon color="action" />
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="body2" color="text.secondary">
-                          Đã có trưởng phòng (ID: {managerId})
+                          {managerInfoLoading ? 'Đang tải thông tin trưởng phòng...' : 'Đã có trưởng phòng'}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          Nhấn "Thay đổi" để chọn trưởng phòng mới
+                          {managerInfoLoading
+                            ? 'Vui lòng chờ trong giây lát'
+                            : 'Không tải được thông tin chi tiết. Nhấn "Thay đổi" để chọn lại trưởng phòng'}
                         </Typography>
                       </Box>
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
                         <Tooltip title="Thay đổi">
-                          <IconButton size="small" onClick={() => setOpenPicker(true)} disabled={loading}>
+                          <IconButton size="small" onClick={() => setOpenPicker(true)} disabled={loading || !canSelectManager}>
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -230,12 +266,18 @@ export default function DepartmentFormDialog({
                     variant="outlined"
                     startIcon={<PersonIcon />}
                     onClick={() => setOpenPicker(true)}
-                    disabled={loading}
+                    disabled={loading || !canSelectManager}
                     fullWidth
                     sx={{ justifyContent: 'flex-start', py: 1.5, borderStyle: 'dashed' }}
                   >
                     Chọn trưởng phòng...
                   </Button>
+                )}
+
+                {!canSelectManager && (
+                  <Alert severity="info" sx={{ mt: 1.5 }}>
+                    Phòng ban chưa có nhân viên. Vui lòng thêm nhân viên vào phòng ban trước khi chọn trưởng phòng.
+                  </Alert>
                 )}
               </Box>
             )}
@@ -274,6 +316,8 @@ export default function DepartmentFormDialog({
         onClose={() => setOpenPicker(false)}
         onSelect={handleManagerSelect}
         selectedEmployeeId={managerId}
+        departmentId={selectedDepartment?.id}
+        departmentName={selectedDepartment?.name}
       />
     </>
   );

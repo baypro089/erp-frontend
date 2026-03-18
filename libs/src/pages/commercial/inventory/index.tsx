@@ -193,7 +193,7 @@ function InventoryPageContent() {
             </Typography>
             <br />
             <Typography variant="caption" color="text.secondary">
-              {row.product.brand?.name || 'N/A'}
+              {row.product.brand?.name || 'Chưa có thương hiệu'}
             </Typography>
           </Box>
         </Box>

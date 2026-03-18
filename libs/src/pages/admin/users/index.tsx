@@ -131,7 +131,7 @@ function UsersPageContent() {
             setConfirmBanDialog({
                 open: true,
                 userId: null,
-                username: `${selectedRows.length} user(s)`,
+                username: `${selectedRows.length} người dùng`,
             });
         }
     };
@@ -170,7 +170,7 @@ function UsersPageContent() {
                 <Typography variant="body2" fontWeight={600}>
                     {value.fullName}
                 </Typography>
-            ) : <Typography variant="body2" fontWeight={600} color="text.secondary">N/A</Typography>,
+            ) : <Typography variant="body2" fontWeight={600} color="text.secondary">Chưa có dữ liệu</Typography>,
         },
         {
             id: 'role',
@@ -180,14 +180,14 @@ function UsersPageContent() {
                 value ? (
                     <Chip label={value.role_name} color="primary" size="small" />
                 ) : (
-                    <Typography variant="body2" fontWeight={600} color="text.secondary">N/A</Typography>
+                    <Typography variant="body2" fontWeight={600} color="text.secondary">Chưa có dữ liệu</Typography>
                 ),
         },
         {
             id: 'status',
             label: 'Trạng thái',
             minWidth: 120,
-            format: (value) => value ? <StatusChip status={statusMap[value as UserStatus]} showIcon /> : 'N/A',
+            format: (value) => value ? <StatusChip status={statusMap[value as UserStatus]} showIcon /> : 'Chưa có dữ liệu',
         },
     ];
     const searchFields = [

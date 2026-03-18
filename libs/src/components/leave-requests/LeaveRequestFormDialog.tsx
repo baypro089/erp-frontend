@@ -215,7 +215,8 @@ export default function LeaveRequestFormDialog({
       type: formData.type,
       reason: formData.reason,
       documentUrl: attachmentMode === 'url' ? documentUrlInput.trim() : undefined,
-      autoSplitIfInsufficient: formData.type === LeaveRequestType.ANNUAL && workingDays > leaveBalance,
+      autoSplitIfInsufficient:
+        formData.type === LeaveRequestType.ANNUAL && workingDays > leaveBalance ? true : undefined,
     };
 
     await onSubmit({

@@ -24,14 +24,13 @@ import {
 import {
   Calculate as CalculateIcon,
   Refresh as RefreshIcon,
-  Receipt as ReceiptIcon,
+  Search as SearchIcon,
   CheckCircle as CheckCircleIcon,
   Error as ErrorIcon,
 } from '@mui/icons-material';
 import {
   DataTable,
   PageHeader,
-  FilterBar,
   StatusChip,
   LoadingOverlay,
   Column,
@@ -85,6 +84,7 @@ function PayrollPageContent() {
   const currentDate = new Date();
   const [filterMonth, setFilterMonth] = useState(currentDate.getMonth() + 1);
   const [filterYear, setFilterYear] = useState(currentDate.getFullYear());
+  const [filterSearch, setFilterSearch] = useState('');
 
   // Pagination states
   const [page, setPage] = useState(0);
@@ -104,13 +104,14 @@ function PayrollPageContent() {
   useEffect(() => {
     dispatch(
       fetchPayslips({
+        search: filterSearch.trim() || undefined,
         month: filterMonth,
         year: filterYear,
         page: page + 1,
         pageSize: rowsPerPage,
       })
     );
-  }, [dispatch, filterMonth, filterYear, page, rowsPerPage, refreshCounter]);
+  }, [dispatch, filterMonth, filterSearch, filterYear, page, rowsPerPage, refreshCounter]);
 
   // Handle errors
   useEffect(() => {
@@ -296,10 +297,30 @@ function PayrollPageContent() {
         }}
       >
         <TextField
+          label="Tìm theo tên hoặc mã NV"
+          value={filterSearch}
+          onChange={(e) => {
+            setFilterSearch(e.target.value);
+            setPage(0);
+          }}
+          size="small"
+          placeholder="VD: NV001 hoặc Nguyễn Văn A"
+          slotProps={{
+            input: {
+              startAdornment: <SearchIcon fontSize="small" sx={{ mr: 1, color: 'text.secondary' }} />,
+            },
+          }}
+          sx={{ minWidth: 320 }}
+        />
+
+        <TextField
           select
           label="Tháng"
           value={filterMonth}
-          onChange={(e) => setFilterMonth(Number(e.target.value))}
+          onChange={(e) => {
+            setFilterMonth(Number(e.target.value));
+            setPage(0);
+          }}
           size="small"
           sx={{ minWidth: 150 }}
         >
@@ -314,7 +335,10 @@ function PayrollPageContent() {
           select
           label="Năm"
           value={filterYear}
-          onChange={(e) => setFilterYear(Number(e.target.value))}
+          onChange={(e) => {
+            setFilterYear(Number(e.target.value));
+            setPage(0);
+          }}
           size="small"
           sx={{ minWidth: 120 }}
         >

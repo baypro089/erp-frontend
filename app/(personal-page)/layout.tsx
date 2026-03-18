@@ -46,9 +46,9 @@ export default function PersonalPageLayout({
 
   // Use actual user data from Redux store
   const user = currentUser ? {
-    name: currentUser.username || 'N/A',
-    email: currentUser.email || 'N/A',
-    role: currentUser.role?.role_name || 'N/A',
+    name: currentUser.username || 'Chưa cập nhật',
+    email: currentUser.email || 'Chưa cập nhật',
+    role: currentUser.role?.role_name || 'Chưa cập nhật',
     avatar: currentUser.employee.photoUrl || '', // Assuming employee has a photoUrl field
   } : undefined;
 

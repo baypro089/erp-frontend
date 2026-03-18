@@ -52,6 +52,7 @@ export const fetchPayslips = createAsyncThunk(
   'payslip/fetchPayslips',
   async (
     params: {
+      search?: string;
       month?: number;
       year?: number;
       page?: number;
@@ -61,6 +62,7 @@ export const fetchPayslips = createAsyncThunk(
   ) => {
     try {
       const response = await payslipService.getPayslips(
+        params.search,
         params.month,
         params.year,
         params.page,

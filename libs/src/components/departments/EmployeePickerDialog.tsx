@@ -34,6 +34,8 @@ interface EmployeePickerDialogProps {
   onClose: () => void;
   onSelect: (employee: EmployeeTableResponse) => void;
   selectedEmployeeId?: string;
+  departmentId?: string;
+  departmentName?: string;
 }
 
 export default function EmployeePickerDialog({
@@ -41,6 +43,8 @@ export default function EmployeePickerDialog({
   onClose,
   onSelect,
   selectedEmployeeId,
+  departmentId,
+  departmentName,
 }: EmployeePickerDialogProps) {
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -67,7 +71,7 @@ export default function EmployeePickerDialog({
       const result = await employeeService.getEmployeesWithOptional(
         isCode ? debouncedSearch : undefined,
         !isCode && debouncedSearch ? debouncedSearch : undefined,
-        undefined,
+        departmentId,
         undefined,
         undefined,
         undefined,
@@ -84,7 +88,7 @@ export default function EmployeePickerDialog({
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, page, rowsPerPage]);
+  }, [debouncedSearch, departmentId, page, rowsPerPage]);
 
   useEffect(() => {
     if (open) {
@@ -111,7 +115,9 @@ export default function EmployeePickerDialog({
       <DialogTitle sx={{ pb: 1 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <PersonIcon color="primary" />
-          <Typography variant="h6">Chọn trưởng phòng</Typography>
+          <Typography variant="h6">
+            Chọn trưởng phòng{departmentName ? ` - ${departmentName}` : ''}
+          </Typography>
         </Box>
       </DialogTitle>
 
@@ -157,7 +163,7 @@ export default function EmployeePickerDialog({
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
                     <Typography variant="body2" color="text.secondary">
-                      Không tìm thấy nhân viên
+                      Không tìm thấy nhân viên trong phòng ban này
                     </Typography>
                   </TableCell>
                 </TableRow>

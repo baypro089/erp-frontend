@@ -92,7 +92,7 @@ function PositionsPageContent() {
     if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || operationError || 'An error occurred',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());
@@ -103,7 +103,7 @@ function PositionsPageContent() {
   const columns: Column<PositionResponse>[] = [
     {
       id: 'name',
-      label: 'Position Name',
+      label: 'Tên chức vụ',
       minWidth: 250,
       format: (value) => (
         <Typography variant="body2" fontWeight={600}>
@@ -113,12 +113,12 @@ function PositionsPageContent() {
     },
     {
       id: 'baseSalary',
-      label: 'Base Salary',
+      label: 'Lương cơ bản',
       minWidth: 150,
       align: 'left',
       format: (value) => (
         <Chip
-          label={`$${Number(value).toLocaleString()}`}
+          label={`${Number(value).toLocaleString('vi-VN')} đ`}
           size="small"
           color="primary"
           variant="outlined"
@@ -128,13 +128,13 @@ function PositionsPageContent() {
     },
     {
       id: 'createdAt',
-      label: 'Created At',
+      label: 'Ngày tạo',
       minWidth: 180,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -145,13 +145,13 @@ function PositionsPageContent() {
     },
     {
       id: 'updatedAt',
-      label: 'Updated At',
+      label: 'Cập nhật lúc',
       minWidth: 180,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -195,7 +195,7 @@ function PositionsPageContent() {
         await dispatch(updatePosition({ id: selectedPosition.id, data: data as UpdatePositionDTO })).unwrap();
         setSnackbar({
           open: true,
-          message: 'Position updated successfully',
+          message: 'Cập nhật chức vụ thành công',
           severity: 'success',
         });
       } else {
@@ -203,7 +203,7 @@ function PositionsPageContent() {
         await dispatch(createPosition(data as CreatePositionDTO)).unwrap();
         setSnackbar({
           open: true,
-          message: 'Position created successfully',
+          message: 'Tạo chức vụ thành công',
           severity: 'success',
         });
       }
@@ -220,7 +220,7 @@ function PositionsPageContent() {
       await dispatch(deletePositions(ids)).unwrap();
       setSnackbar({
         open: true,
-        message: `${ids.length} position(s) deleted successfully`,
+        message: `Đã xóa thành công ${ids.length} chức vụ`,
         severity: 'success',
       });
       setOpenDelete(false);
@@ -236,7 +236,7 @@ function PositionsPageContent() {
     dispatch(fetchPositions({}));
     setSnackbar({
       open: true,
-      message: 'Data refreshed',
+      message: 'Dữ liệu đã được làm mới',
       severity: 'success',
     });
   };
@@ -268,20 +268,20 @@ function PositionsPageContent() {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title="Position Management"
-        subtitle="Manage job positions and salary ranges"
+        title="Quản lý chức vụ"
+        subtitle="Quản lý chức danh và mức lương cơ bản"
         breadcrumbs={[
-          { label: 'Positions', icon: <WorkIcon fontSize="small" /> },
+          { label: 'Chức vụ', icon: <WorkIcon fontSize="small" /> },
         ]}
         actions={[
           {
-            label: 'Refresh',
+            label: 'Làm mới',
             onClick: handleRefresh,
             icon: <RefreshIcon />,
             variant: 'outlined',
           },
           {
-            label: 'Delete Selected',
+            label: 'Xóa mục đã chọn',
             onClick: guardAction(PERMISSIONS.POSITION.DELETE, handleBulkDelete),
             variant: 'outlined',
             color: 'error',
@@ -289,13 +289,13 @@ function PositionsPageContent() {
             hidden: selectedRows.length === 0,
           },
           {
-            label: 'Add Position',
+            label: 'Thêm chức vụ',
             onClick: guardAction(PERMISSIONS.POSITION.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
         ]}
-        tags={[{ label: `${filteredPositions.length} Total` }]}
+        tags={[{ label: `${filteredPositions.length} Tổng` }]}
       />
 
       {/* Filter Bar */}
@@ -303,8 +303,8 @@ function PositionsPageContent() {
         searchFields={[
           {
             id: 'name',
-            label: 'Position Name',
-            placeholder: 'Search by position name...',
+            label: 'Tên chức vụ',
+            placeholder: 'Tìm theo tên chức vụ...',
             value: searchName,
           },
         ]}
@@ -314,16 +314,16 @@ function PositionsPageContent() {
         filters={[
           {
             id: 'minSalary',
-            label: 'Min Salary',
+            label: 'Lương tối thiểu',
             type: 'text',
-            placeholder: 'e.g., 50000',
+            placeholder: 'Ví dụ: 5000000',
             value: filterMinSalary,
           },
           {
             id: 'maxSalary',
-            label: 'Max Salary',
+            label: 'Lương tối đa',
             type: 'text',
-            placeholder: 'e.g., 100000',
+            placeholder: 'Ví dụ: 30000000',
             value: filterMaxSalary,
           },
         ]}
@@ -354,7 +354,7 @@ function PositionsPageContent() {
         onEdit={guardFn(PERMISSIONS.POSITION.UPDATE, handleEdit)}
         onDelete={guardFn(PERMISSIONS.POSITION.DELETE, handleDelete)}
         rowKey="id"
-        emptyMessage="No positions found"
+        emptyMessage="Không tìm thấy chức vụ nào"
       />
 
       {/* Position Form Dialog */}
@@ -371,17 +371,17 @@ function PositionsPageContent() {
         open={openDelete}
         onClose={() => setOpenDelete(false)}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${selectedRows.length} Position(s)`}
+        title={`Xóa ${selectedRows.length} chức vụ`}
         message={
           selectedRows.length === 1
-            ? `Are you sure you want to delete position "${selectedRows[0]?.name}"?`
-            : `Are you sure you want to delete ${selectedRows.length} positions?`
+            ? `Bạn có chắc chắn muốn xóa chức vụ "${selectedRows[0]?.name}"?`
+            : `Bạn có chắc chắn muốn xóa ${selectedRows.length} chức vụ?`
         }
         loading={operationLoading}
       />
 
       {/* Loading Overlay */}
-      <LoadingOverlay open={loading && positions.length === 0} message="Loading positions..." />
+      <LoadingOverlay open={loading && positions.length === 0} message="Đang tải danh sách chức vụ..." />
 
       <PermissionDeniedDialog {...permissionDialogProps} />
 

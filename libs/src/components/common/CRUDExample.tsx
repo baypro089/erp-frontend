@@ -239,9 +239,8 @@ export default function CRUDExample() {
 
       {/* Filter Bar */}
       <FilterBar
-        searchValue={searchValue}
-        onSearchChange={setSearchValue}
-        searchPlaceholder="Search departments..."
+        searchFields={[{ id: 'q', label: 'Search', value: searchValue }]}
+        onSearchChange={(fieldId, value) => setSearchValue(value)}
         filters={filters}
         onFilterChange={(filterId, value) => {
           if (filterId === 'status') setFilterStatus(value);

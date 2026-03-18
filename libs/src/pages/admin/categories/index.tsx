@@ -90,7 +90,7 @@ function CategoriesPageContent() {
     if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || operationError || 'An error occurred',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());
@@ -101,7 +101,7 @@ function CategoriesPageContent() {
   const columns: Column<CategoryResponse>[] = [
     {
       id: 'name',
-      label: 'Category Name',
+      label: 'Tên danh mục',
       minWidth: 250,
       format: (value) => (
         <Typography variant="body2" fontWeight={600}>
@@ -111,7 +111,7 @@ function CategoriesPageContent() {
     },
     {
       id: 'parent',
-      label: 'Parent Category',
+      label: 'Danh mục cha',
       minWidth: 200,
       format: (value) => {
         const parent = value as CategoryResponse['parent'];
@@ -121,19 +121,19 @@ function CategoriesPageContent() {
           </Typography>
         ) : (
           <Typography variant="body2" color="text.disabled" fontStyle="italic">
-            Top Level
+            Cấp gốc
           </Typography>
         );
       },
     },
     {
       id: 'isActive',
-      label: 'Status',
+      label: 'Trạng thái',
       minWidth: 120,
       align: 'center',
       format: (value) => (
         <Chip
-          label={value ? 'Active' : 'Inactive'}
+          label={value ? 'Hoạt động' : 'Ngừng hoạt động'}
           color={value ? 'success' : 'default'}
           size="small"
           sx={{ minWidth: 80 }}
@@ -142,13 +142,13 @@ function CategoriesPageContent() {
     },
     {
       id: 'createdAt',
-      label: 'Created At',
+      label: 'Ngày tạo',
       minWidth: 180,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -159,13 +159,13 @@ function CategoriesPageContent() {
     },
     {
       id: 'updatedAt',
-      label: 'Updated At',
+      label: 'Cập nhật lúc',
       minWidth: 180,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -209,7 +209,7 @@ function CategoriesPageContent() {
         await dispatch(updateCategory({ id: selectedCategory.id, data: data as UpdateCategoryDto })).unwrap();
         setSnackbar({
           open: true,
-          message: 'Category updated successfully',
+          message: 'Cập nhật danh mục thành công',
           severity: 'success',
         });
       } else {
@@ -217,7 +217,7 @@ function CategoriesPageContent() {
         await dispatch(createCategory(data as CreateCategoryDto)).unwrap();
         setSnackbar({
           open: true,
-          message: 'Category created successfully',
+          message: 'Tạo danh mục thành công',
           severity: 'success',
         });
       }
@@ -234,7 +234,7 @@ function CategoriesPageContent() {
       await dispatch(deleteCategories(ids)).unwrap();
       setSnackbar({
         open: true,
-        message: `${ids.length} category(ies) deleted successfully`,
+        message: `Đã xóa thành công ${ids.length} danh mục`,
         severity: 'success',
       });
       setOpenDelete(false);
@@ -250,7 +250,7 @@ function CategoriesPageContent() {
     dispatch(fetchCategories({}));
     setSnackbar({
       open: true,
-      message: 'Data refreshed',
+      message: 'Dữ liệu đã được làm mới',
       severity: 'success',
     });
   };
@@ -272,20 +272,20 @@ function CategoriesPageContent() {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title="Category Management"
-        subtitle="Manage product categories and their hierarchical structure"
+        title="Quản lý danh mục"
+        subtitle="Quản lý danh mục sản phẩm và cấu trúc phân cấp"
         breadcrumbs={[
-          { label: 'Categories', icon: <CategoryIcon fontSize="small" /> },
+          { label: 'Danh mục', icon: <CategoryIcon fontSize="small" /> },
         ]}
         actions={[
           {
-            label: 'Refresh',
+            label: 'Làm mới',
             onClick: handleRefresh,
             icon: <RefreshIcon />,
             variant: 'outlined',
           },
           {
-            label: 'Delete Selected',
+            label: 'Xóa mục đã chọn',
             onClick: guardAction(PERMISSIONS.CATEGORY.DELETE, handleBulkDelete),
             variant: 'outlined',
             color: 'error',
@@ -293,13 +293,13 @@ function CategoriesPageContent() {
             hidden: selectedRows.length === 0,
           },
           {
-            label: 'Add Category',
+            label: 'Thêm danh mục',
             onClick: guardAction(PERMISSIONS.CATEGORY.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
         ]}
-        tags={[{ label: `${filteredCategories.length} Total` }]}
+        tags={[{ label: `${filteredCategories.length} Tổng` }]}
       />
 
       {/* Filter Bar */}
@@ -307,8 +307,8 @@ function CategoriesPageContent() {
         searchFields={[
           {
             id: 'name',
-            label: 'Category Name',
-            placeholder: 'Search by category name...',
+            label: 'Tên danh mục',
+            placeholder: 'Tìm theo tên danh mục...',
             value: searchName,
           },
         ]}
@@ -338,7 +338,7 @@ function CategoriesPageContent() {
         onEdit={guardFn(PERMISSIONS.CATEGORY.UPDATE, handleEdit)}
         onDelete={guardFn(PERMISSIONS.CATEGORY.DELETE, handleDelete)}
         rowKey="id"
-        emptyMessage="No categories found"
+        emptyMessage="Không tìm thấy danh mục nào"
       />
 
       {/* Category Form Dialog */}
@@ -356,17 +356,17 @@ function CategoriesPageContent() {
         open={openDelete}
         onClose={() => setOpenDelete(false)}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${selectedRows.length} Category(ies)`}
+        title={`Xóa ${selectedRows.length} danh mục`}
         message={
           selectedRows.length === 1
-            ? `Are you sure you want to delete category "${selectedRows[0]?.name}"?`
-            : `Are you sure you want to delete ${selectedRows.length} categories?`
+            ? `Bạn có chắc chắn muốn xóa danh mục "${selectedRows[0]?.name}"?`
+            : `Bạn có chắc chắn muốn xóa ${selectedRows.length} danh mục?`
         }
         loading={operationLoading}
       />
 
       {/* Loading Overlay */}
-      <LoadingOverlay open={loading && categories.length === 0} message="Loading categories..." />
+      <LoadingOverlay open={loading && categories.length === 0} message="Đang tải danh sách danh mục..." />
 
       <PermissionDeniedDialog {...permissionDialogProps} />
 

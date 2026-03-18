@@ -136,11 +136,11 @@ export default function CategoryFormDialog({
             <Select
               labelId="parent-category-label"
               label="Danh mục cha"
-              value={formData.parentId || ''}
+              value={formData.parentId ?? ''}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  parentId: e.target.value || undefined,
+                  parentId: e.target.value === '' ? (isEdit ? null : undefined) : e.target.value,
                 })
               }
             >

@@ -77,7 +77,7 @@ function HolidaysPageContent() {
     if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || operationError || 'An error occurred',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());
@@ -98,8 +98,8 @@ function HolidaysPageContent() {
 
   // Month names
   const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
   ];
 
   // Handlers
@@ -118,7 +118,7 @@ function HolidaysPageContent() {
       setOpenForm(false);
       setSnackbar({
         open: true,
-        message: 'Holiday created successfully!',
+        message: 'Tạo ngày nghỉ thành công!',
         severity: 'success',
       });
     } catch (err) {
@@ -133,7 +133,7 @@ function HolidaysPageContent() {
       setOpenSeed(false);
       setSnackbar({
         open: true,
-        message: `Successfully seeded holidays for ${year}!`,
+        message: `Tạo nhanh ngày nghỉ cho năm ${year} thành công!`,
         severity: 'success',
       });
     } catch (err) {
@@ -142,12 +142,12 @@ function HolidaysPageContent() {
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this holiday?')) {
+    if (window.confirm('Bạn có chắc chắn muốn xóa ngày nghỉ này?')) {
       try {
         await dispatch(deleteHoliday(id)).unwrap();
         setSnackbar({
           open: true,
-          message: 'Holiday deleted successfully!',
+          message: 'Xóa ngày nghỉ thành công!',
           severity: 'success',
         });
       } catch (err) {
@@ -164,17 +164,17 @@ function HolidaysPageContent() {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title="Holiday Management"
-        subtitle={`Manage and view holidays for ${selectedYear}`}
+        title="Quản lý ngày nghỉ"
+        subtitle={`Quản lý và theo dõi ngày nghỉ năm ${selectedYear}`}
         actions={[
           {
-            label: 'Auto Seed',
+            label: 'Tạo nhanh',
             onClick: guardAction(PERMISSIONS.HOLIDAY.CREATE, handleSeedClick),
             variant: 'outlined',
             icon: <AutoAwesomeIcon />,
           },
           {
-            label: 'Add Holiday',
+            label: 'Thêm ngày nghỉ',
             onClick: guardAction(PERMISSIONS.HOLIDAY.CREATE, handleCreateClick),
             variant: 'contained',
             icon: <AddIcon />,
@@ -202,7 +202,7 @@ function HolidaysPageContent() {
                   {holidays.length}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  Total Holidays
+                  Tổng số ngày nghỉ
                 </Typography>
               </Box>
             </Box>
@@ -216,7 +216,7 @@ function HolidaysPageContent() {
                   {Object.keys(holidaysByMonth).length}
                 </Typography>
                 <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  Months with Holidays
+                  Số tháng có ngày nghỉ
                 </Typography>
               </Box>
             </Box>
@@ -251,7 +251,7 @@ function HolidaysPageContent() {
                 },
               }}
               fullWidth
-              label="Select Year"
+              label="Chọn năm"
             >
               {yearOptions.map((year) => (
                 <MenuItem key={year} value={year}>
@@ -279,15 +279,15 @@ function HolidaysPageContent() {
         >
           <EventIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
-            No holidays found for {selectedYear}
+            Không tìm thấy ngày nghỉ cho năm {selectedYear}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Start by adding holidays manually or use the auto-seed feature
+            Hãy bắt đầu bằng cách thêm thủ công hoặc dùng tính năng tạo nhanh
           </Typography>
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
             <Chip
               icon={<AutoAwesomeIcon />}
-              label="Auto Seed Holidays"
+              label="Tạo nhanh ngày nghỉ"
               onClick={guardAction(PERMISSIONS.HOLIDAY.CREATE, handleSeedClick)}
               clickable
               color="primary"
@@ -295,7 +295,7 @@ function HolidaysPageContent() {
             />
             <Chip
               icon={<AddIcon />}
-              label="Add Holiday"
+              label="Thêm ngày nghỉ"
               onClick={guardAction(PERMISSIONS.HOLIDAY.CREATE, handleCreateClick)}
               clickable
               color="secondary"
@@ -323,7 +323,7 @@ function HolidaysPageContent() {
                       {monthName} {selectedYear}
                     </Typography>
                     <Chip
-                      label={`${monthHolidays.length} holiday${monthHolidays.length > 1 ? 's' : ''}`}
+                      label={`${monthHolidays.length} ngày nghỉ`}
                       size="small"
                       color="primary"
                       variant="outlined"

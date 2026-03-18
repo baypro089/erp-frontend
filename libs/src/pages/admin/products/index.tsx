@@ -98,7 +98,7 @@ function ProductsPageContent() {
     if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || operationError || 'An error occurred',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());
@@ -154,7 +154,7 @@ function ProductsPageContent() {
       align: 'right',
       format: (value) => (
         <Typography variant="body2" fontWeight={600} color="primary">
-          ${(value as number).toLocaleString()}
+          {(value as number).toLocaleString('vi-VN')} đ
         </Typography>
       ),
     },

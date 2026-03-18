@@ -89,7 +89,7 @@ function DepartmentsPageContent() {
     if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || operationError || 'An error occurred',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());
@@ -100,7 +100,7 @@ function DepartmentsPageContent() {
   const columns: Column<DepartmentResponse>[] = [
     {
       id: 'name',
-      label: 'Department Name',
+      label: 'Tên phòng ban',
       minWidth: 250,
       format: (value) => (
         <Typography variant="body2" fontWeight={600}>
@@ -110,7 +110,7 @@ function DepartmentsPageContent() {
     },
     {
       id: 'totalEmployees',
-      label: 'Total Employees',
+      label: 'Tổng nhân viên',
       minWidth: 150,
       align: 'center',
       format: (value) => (
@@ -121,13 +121,13 @@ function DepartmentsPageContent() {
     },
     {
       id: 'createdAt',
-      label: 'Created At',
+      label: 'Ngày tạo',
       minWidth: 180,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -138,13 +138,13 @@ function DepartmentsPageContent() {
     },
     {
       id: 'updatedAt',
-      label: 'Updated At',
+      label: 'Cập nhật lúc',
       minWidth: 180,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -188,7 +188,7 @@ function DepartmentsPageContent() {
         await dispatch(updateDepartment({ id: selectedDepartment.id, data: data as UpdateDepartmentDTO })).unwrap();
         setSnackbar({
           open: true,
-          message: 'Department updated successfully',
+          message: 'Cập nhật phòng ban thành công',
           severity: 'success',
         });
       } else {
@@ -196,7 +196,7 @@ function DepartmentsPageContent() {
         await dispatch(createDepartment(data as CreateDepartmentDTO)).unwrap();
         setSnackbar({
           open: true,
-          message: 'Department created successfully',
+          message: 'Tạo phòng ban thành công',
           severity: 'success',
         });
       }
@@ -213,7 +213,7 @@ function DepartmentsPageContent() {
       await dispatch(deleteDepartments(ids)).unwrap();
       setSnackbar({
         open: true,
-        message: `${ids.length} department(s) deleted successfully`,
+        message: `Đã xóa thành công ${ids.length} phòng ban`,
         severity: 'success',
       });
       setOpenDelete(false);
@@ -229,7 +229,7 @@ function DepartmentsPageContent() {
     dispatch(fetchDepartments({}));
     setSnackbar({
       open: true,
-      message: 'Data refreshed',
+      message: 'Dữ liệu đã được làm mới',
       severity: 'success',
     });
   };
@@ -251,20 +251,20 @@ function DepartmentsPageContent() {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title="Department Management"
-        subtitle="Manage company departments and organizational structure"
+        title="Quản lý phòng ban"
+        subtitle="Quản lý phòng ban và cơ cấu tổ chức công ty"
         breadcrumbs={[
-          { label: 'Departments', icon: <BusinessIcon fontSize="small" /> },
+          { label: 'Phòng ban', icon: <BusinessIcon fontSize="small" /> },
         ]}
         actions={[
           {
-            label: 'Refresh',
+            label: 'Làm mới',
             onClick: handleRefresh,
             icon: <RefreshIcon />,
             variant: 'outlined',
           },
           {
-            label: 'Delete Selected',
+            label: 'Xóa mục đã chọn',
             onClick: guardAction(PERMISSIONS.DEPARTMENT.DELETE, handleBulkDelete),
             variant: 'outlined',
             color: 'error',
@@ -272,13 +272,13 @@ function DepartmentsPageContent() {
             hidden: selectedRows.length === 0,
           },
           {
-            label: 'Add Department',
+            label: 'Thêm phòng ban',
             onClick: guardAction(PERMISSIONS.DEPARTMENT.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
         ]}
-        tags={[{ label: `${filteredDepartments.length} Total` }]}
+        tags={[{ label: `${filteredDepartments.length} Tổng` }]}
       />
 
       {/* Filter Bar */}
@@ -286,8 +286,8 @@ function DepartmentsPageContent() {
         searchFields={[
           {
             id: 'name',
-            label: 'Department Name',
-            placeholder: 'Search by department name...',
+            label: 'Tên phòng ban',
+            placeholder: 'Tìm theo tên phòng ban...',
             value: searchName,
           },
         ]}
@@ -317,7 +317,7 @@ function DepartmentsPageContent() {
         onEdit={guardFn(PERMISSIONS.DEPARTMENT.UPDATE, handleEdit)}
         onDelete={guardFn(PERMISSIONS.DEPARTMENT.DELETE, handleDelete)}
         rowKey="id"
-        emptyMessage="No departments found"
+        emptyMessage="Không tìm thấy phòng ban nào"
       />
 
       {/* Department Form Dialog */}
@@ -334,17 +334,17 @@ function DepartmentsPageContent() {
         open={openDelete}
         onClose={() => setOpenDelete(false)}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${selectedRows.length} Department(s)`}
+        title={`Xóa ${selectedRows.length} phòng ban`}
         message={
           selectedRows.length === 1
-            ? `Are you sure you want to delete department "${selectedRows[0]?.name}"?`
-            : `Are you sure you want to delete ${selectedRows.length} departments?`
+            ? `Bạn có chắc chắn muốn xóa phòng ban "${selectedRows[0]?.name}"?`
+            : `Bạn có chắc chắn muốn xóa ${selectedRows.length} phòng ban?`
         }
         loading={operationLoading}
       />
 
       {/* Loading Overlay */}
-      <LoadingOverlay open={loading && departments.length === 0} message="Loading departments..." />
+      <LoadingOverlay open={loading && departments.length === 0} message="Đang tải danh sách phòng ban..." />
 
       <PermissionDeniedDialog {...permissionDialogProps} />
 

@@ -20,7 +20,6 @@ import {
 } from '@mui/icons-material';
 import {
   DataTable,
-  DeleteConfirmDialog,
   PageHeader,
   FilterBar,
   StatusChip,
@@ -33,7 +32,6 @@ import DeletedEmployeesDialog from '@libs/src/components/employees/DeletedEmploy
 import {
   fetchEmployeesWithOptional,
   createEmployee,
-  deleteEmployees,
   clearError,
 } from '@libs/src/features/employee/employee.slice';
 import { fetchDepartments } from '@libs/src/features/department/department.slice';
@@ -70,9 +68,7 @@ function EmployeesPageContent() {
 
   // Dialog states
   const [openForm, setOpenForm] = useState(false);
-  const [openDelete, setOpenDelete] = useState(false);
   const [openDeletedDialog, setOpenDeletedDialog] = useState(false);
-  const [selectedRows, setSelectedRows] = useState<EmployeeTableResponse[]>([]);
 
   // Filter states
   const [searchFullName, setSearchFullName] = useState('');
@@ -93,7 +89,7 @@ function EmployeesPageContent() {
     severity: 'success' as 'success' | 'error',
   });
 
-  const { guardAction, guardFn, permissionDialogProps } = usePermissionGuard();
+  const { guardAction, permissionDialogProps } = usePermissionGuard();
 
   // Load data on mount
   useEffect(() => {
@@ -129,7 +125,7 @@ function EmployeesPageContent() {
     if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || operationError || 'An error occurred',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());
@@ -140,7 +136,7 @@ function EmployeesPageContent() {
   const columns: Column<EmployeeTableResponse>[] = [
     {
       id: 'employeeCode',
-      label: 'Employee Code',
+      label: 'Mã nhân viên',
       minWidth: 140,
       format: (value) => (
         <Typography variant="body2" fontWeight={500} color="primary">
@@ -150,7 +146,7 @@ function EmployeesPageContent() {
     },
     {
       id: 'fullName',
-      label: 'Full Name',
+      label: 'Họ và tên',
       minWidth: 200,
       format: (value) => (
         <Typography variant="body2" fontWeight={600}>
@@ -160,7 +156,7 @@ function EmployeesPageContent() {
     },
     {
       id: 'departmentName',
-      label: 'Department',
+      label: 'Phòng ban',
       minWidth: 150,
       format: (value) => (
         <Chip label={value} size="small" variant="outlined" color="primary" />
@@ -168,7 +164,7 @@ function EmployeesPageContent() {
     },
     {
       id: 'positionName',
-      label: 'Position',
+      label: 'Chức vụ',
       minWidth: 150,
       format: (value) => (
         <Chip label={value} size="small" variant="outlined" color="secondary" />
@@ -176,13 +172,13 @@ function EmployeesPageContent() {
     },
     {
       id: 'startDate',
-      label: 'Start Date',
+      label: 'Ngày vào làm',
       minWidth: 120,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -193,7 +189,7 @@ function EmployeesPageContent() {
     },
     {
       id: 'status',
-      label: 'Status',
+      label: 'Trạng thái',
       minWidth: 120,
       align: 'center',
       format: (value) => {
@@ -203,19 +199,20 @@ function EmployeesPageContent() {
           [Status.MATERNITY_LEAVE]: 'maternity',
           [Status.RESIGNED]: 'resigned',
           [Status.PROBATION]: 'probation',
+          [Status.TERMINATED]: 'resigned',
         };
         return <StatusChip status={statusMap[value as Status]} showIcon />;
       },
     },
     {
       id: 'createdAt',
-      label: 'Created At',
+      label: 'Ngày tạo',
       minWidth: 120,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               month: 'short',
               day: 'numeric',
               year: 'numeric',
@@ -235,43 +232,15 @@ function EmployeesPageContent() {
     router.push(`/hr/employees/${row.id}`);
   };
 
-  const handleDelete = guardFn<EmployeeTableResponse>(PERMISSIONS.EMPLOYEE.DELETE, (row) => {
-    setSelectedRows([row]);
-    setOpenDelete(true);
-  });
-
-  const handleBulkDelete = guardAction(PERMISSIONS.EMPLOYEE.DELETE, () => {
-    if (selectedRows.length > 0) {
-      setOpenDelete(true);
-    }
-  });
-
   const handleFormSubmit = async (data: CreateEmployeeDto) => {
     try {
       await dispatch(createEmployee(data)).unwrap();
       setSnackbar({
         open: true,
-        message: 'Employee created successfully',
+        message: 'Tạo nhân viên thành công',
         severity: 'success',
       });
       setOpenForm(false);
-      setRefreshCounter(prev => prev + 1);
-    } catch (err: any) {
-      // Error handled by useEffect
-    }
-  };
-
-  const handleDeleteConfirm = async () => {
-    try {
-      const ids = selectedRows.map((r) => r.id);
-      await dispatch(deleteEmployees(ids)).unwrap();
-      setSnackbar({
-        open: true,
-        message: `${ids.length} employee(s) deleted successfully`,
-        severity: 'success',
-      });
-      setOpenDelete(false);
-      setSelectedRows([]);
       setRefreshCounter(prev => prev + 1);
     } catch (err: any) {
       // Error handled by useEffect
@@ -283,7 +252,7 @@ function EmployeesPageContent() {
     setRefreshCounter(prev => prev + 1);
     setSnackbar({
       open: true,
-      message: 'Data refreshed',
+      message: 'Dữ liệu đã được làm mới',
       severity: 'success',
     });
   };
@@ -308,42 +277,34 @@ function EmployeesPageContent() {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title="Employee Management"
-        subtitle="Manage company employees and their information"
+        title="Quản lý nhân viên"
+        subtitle="Quản lý nhân sự và thông tin nhân viên"
         breadcrumbs={[
-          { label: 'Admin', href: '/' },
-          { label: 'Employees', icon: <PeopleIcon fontSize="small" /> },
+          { label: 'Quản trị', href: '/' },
+          { label: 'Nhân viên', icon: <PeopleIcon fontSize="small" /> },
         ]}
         actions={[
           {
-            label: 'Refresh',
+            label: 'Làm mới',
             onClick: handleRefresh,
             icon: <RefreshIcon />,
             variant: 'outlined',
           },
           {
-            label: 'Deleted Employees',
+            label: 'Nhân viên đã xóa',
             onClick: () => setOpenDeletedDialog(true),
             icon: <DeleteSweepIcon />,
             variant: 'outlined',
             color: 'warning',
           },
           {
-            label: 'Delete Selected',
-            onClick: handleBulkDelete,
-            variant: 'outlined',
-            color: 'error',
-            disabled: selectedRows.length === 0,
-            hidden: selectedRows.length === 0,
-          },
-          {
-            label: 'Add Employee',
+            label: 'Thêm nhân viên',
             onClick: guardAction(PERMISSIONS.EMPLOYEE.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
         ]}
-        tags={[{ label: `${totalCount} Total` }]}
+        tags={[{ label: `${totalCount} Tổng` }]}
       />
 
       {/* Filter Bar */}
@@ -351,8 +312,8 @@ function EmployeesPageContent() {
         searchFields={[
           {
             id: 'fullName',
-            label: 'Employee Name',
-            placeholder: 'Search by name...',
+            label: 'Tên nhân viên',
+            placeholder: 'Tìm theo tên nhân viên...',
             value: searchFullName,
           },
           
@@ -363,34 +324,34 @@ function EmployeesPageContent() {
         filters={[
           {
             id: 'department',
-            label: 'Department',
+            label: 'Phòng ban',
             type: 'select',
             options: departments.map((d) => ({ value: d.name, label: d.name })),
             value: filterDepartment,
           },
           {
             id: 'position',
-            label: 'Position',
+            label: 'Chức vụ',
             type: 'select',
             options: positions.map((p) => ({ value: p.name, label: p.name })),
             value: filterPosition,
           },
           {
             id: 'status',
-            label: 'Status',
+            label: 'Trạng thái',
             type: 'select',
             options: [
-              { value: Status.ACTIVE, label: 'Active' },
-              { value: Status.DRAFT, label: 'Draft' },
-              { value: Status.MATERNITY_LEAVE, label: 'Maternity Leave' },
-              { value: Status.RESIGNED, label: 'Resigned' },
-              { value: Status.PROBATION, label: 'Probation' },
+              { value: Status.ACTIVE, label: 'Đang làm việc' },
+              { value: Status.DRAFT, label: 'Nháp' },
+              { value: Status.MATERNITY_LEAVE, label: 'Nghỉ thai sản' },
+              { value: Status.RESIGNED, label: 'Đã nghỉ việc' },
+              { value: Status.PROBATION, label: 'Thử việc' },
             ],
             value: filterStatus,
           },
           {
             id: 'level',
-            label: 'Level',
+            label: 'Cấp bậc',
             type: 'select',
             options: Object.values(Level).map((l) => ({ value: l, label: l })),
             value: filterLevel,
@@ -419,13 +380,9 @@ function EmployeesPageContent() {
           setRowsPerPage(value);
           setPage(0);
         }}
-        selectable
-        selectedRows={selectedRows}
-        onSelectionChange={setSelectedRows}
         onView={handleViewDetail}
-        onDelete={handleDelete}
         rowKey="id"
-        emptyMessage="No employees found"
+        emptyMessage="Không tìm thấy nhân viên nào"
       />
 
       {/* Employee Form Dialog */}
@@ -442,22 +399,8 @@ function EmployeesPageContent() {
         onClose={() => setOpenDeletedDialog(false)}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        open={openDelete}
-        onClose={() => setOpenDelete(false)}
-        onConfirm={handleDeleteConfirm}
-        title={`Delete ${selectedRows.length} Employee(s)`}
-        message={
-          selectedRows.length === 1
-            ? `Are you sure you want to delete employee "${selectedRows[0]?.fullName}"?`
-            : `Are you sure you want to delete ${selectedRows.length} employees?`
-        }
-        loading={operationLoading}
-      />
-
       {/* Loading Overlay */}
-      <LoadingOverlay open={loading && employees.length === 0} message="Loading employees..." />
+      <LoadingOverlay open={loading && employees.length === 0} message="Đang tải danh sách nhân viên..." />
 
       {/* Snackbar */}
       <Snackbar

@@ -137,6 +137,7 @@ export default function ProfileEmployeeTab({
     [Status.DRAFT]: 'pending',
     [Status.MATERNITY_LEAVE]: 'rejected',
     [Status.PROBATION]: 'pending',
+    [Status.TERMINATED]: 'inactive',
   };
 
   const getLevelColor = (level?: Level) => {

@@ -109,6 +109,16 @@ export default function ReturnCreatePage() {
   const [reason, setReason] = useState('');
   const [refundAmount, setRefundAmount] = useState<number>(0);
   const [refundEdited, setRefundEdited] = useState(false);
+  // Refund amount input (amount + unit selector)
+  const MONEY_UNITS = {
+    ten: { label: 'Chục', multiplier: 10 },
+    hundred: { label: 'Trăm', multiplier: 100 },
+    thousand: { label: 'Nghìn', multiplier: 1_000 },
+    million: { label: 'Triệu', multiplier: 1_000_000 },
+  } as const;
+  type MoneyUnitKey = keyof typeof MONEY_UNITS;
+  const [refundAmountInput, setRefundAmountInput] = useState<number>(0);
+  const [refundAmountUnit, setRefundAmountUnit] = useState<MoneyUnitKey>('million');
 
   // ── UI state ────────────────────────────────────────────────────────────────
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -171,7 +181,13 @@ export default function ReturnCreatePage() {
   }, [items]);
 
   useEffect(() => {
-    if (!refundEdited) setRefundAmount(autoRefund);
+    if (!refundEdited) {
+      setRefundAmount(autoRefund);
+      // Update amount+unit inputs to reflect autoRefund
+      const unit: MoneyUnitKey = 'million';
+      setRefundAmountUnit(unit);
+      setRefundAmountInput(Number((autoRefund / MONEY_UNITS[unit].multiplier).toFixed(2)));
+    }
   }, [autoRefund, refundEdited]);
 
   // ── Error handling ───────────────────────────────────────────────────────────
@@ -556,24 +572,45 @@ export default function ReturnCreatePage() {
                     </Typography>
                   </Box>
 
-                  <TextField
-                    label="Tiền hoàn trả khách (có thể điều chỉnh)"
-                    type="number"
-                    fullWidth
-                    value={refundAmount}
-                    onChange={(e) => {
-                      setRefundAmount(Number(e.target.value));
-                      setRefundEdited(true);
-                    }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <Typography variant="caption">VNĐ</Typography>
-                        </InputAdornment>
-                      ),
-                    }}
-                    helperText="Có thể giảm nếu hàng hao mòn, trầy xước — thông thường trừ ~10%"
-                  />
+                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                    <TextField
+                      label="Tiền hoàn trả khách (có thể điều chỉnh)"
+                      type="number"
+                      fullWidth
+                      value={refundAmountInput}
+                      onChange={(e) => {
+                        const parsed = Number(e.target.value);
+                        const amount = Number.isNaN(parsed) ? 0 : parsed;
+                        setRefundAmountInput(amount);
+                        setRefundAmount(amount * MONEY_UNITS[refundAmountUnit].multiplier);
+                        setRefundEdited(true);
+                      }}
+                      inputProps={{ min: 0, step: 0.01 }}
+                      helperText="Có thể giảm nếu hàng hao mòn, trầy xước — thông thường trừ ~10%"
+                    />
+
+                    <TextField
+                      label="Đơn vị"
+                      select
+                      value={refundAmountUnit}
+                      onChange={(e) => {
+                        const unit = e.target.value as MoneyUnitKey;
+                        const current = Number(refundAmount) || 0;
+                        const nextAmount = current / MONEY_UNITS[unit].multiplier;
+                        setRefundAmountUnit(unit);
+                        setRefundAmountInput(Number.isFinite(nextAmount) ? Number(nextAmount.toFixed(2)) : 0);
+                        setRefundEdited(true);
+                      }}
+                      sx={{ minWidth: 140 }}
+                      disabled={false}
+                    >
+                      {Object.entries(MONEY_UNITS).map(([key, unit]) => (
+                        <MenuItem key={key} value={key}>
+                          {unit.label}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Box>
                 </Box>
               </Box>
             </Stack>

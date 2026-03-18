@@ -83,13 +83,13 @@ export default function HRDashboard() {
 
       setMaternityLeaves(activeMaternityLeaves);
     } catch (err: unknown) {
-      const message =
-        typeof err === 'object' &&
-        err !== null &&
-        'response' in err &&
-        typeof (err as { response?: { data?: { message?: string } } }).response?.data?.message === 'string'
-          ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-          : 'Không thể tải dữ liệu dashboard';
+      let message = 'Không thể tải dữ liệu dashboard';
+      try {
+        const maybe = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+        if (typeof maybe === 'string') message = maybe;
+      } catch (e) {
+        // ignore
+      }
       setError(message);
       console.error('Error fetching HR dashboard data:', err);
     } finally {

@@ -93,7 +93,7 @@ function RolesPageContent() {
     if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || operationError || 'An error occurred',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());
@@ -104,7 +104,7 @@ function RolesPageContent() {
   const columns: Column<RoleResponse>[] = [
     { 
       id: 'role_code', 
-      label: 'Role Code', 
+      label: 'Mã vai trò', 
       minWidth: 120,
       format: (value) => (
         <Typography variant="body2" fontWeight={600} sx={{ fontFamily: 'monospace' }}>
@@ -112,10 +112,10 @@ function RolesPageContent() {
         </Typography>
       ),
     },
-    { id: 'role_name', label: 'Role Name', minWidth: 200 },
+    { id: 'role_name', label: 'Tên vai trò', minWidth: 200 },
     {
       id: 'is_active',
-      label: 'Status',
+      label: 'Trạng thái',
       minWidth: 100,
       align: 'center',
       format: (value) => (
@@ -154,7 +154,7 @@ function RolesPageContent() {
         await dispatch(updateRole({ code: selectedRole.role_code, data: data as UpdateRoleDTO })).unwrap();
         setSnackbar({
           open: true,
-          message: 'Role updated successfully',
+          message: 'Cập nhật vai trò thành công',
           severity: 'success',
         });
       } else {
@@ -162,7 +162,7 @@ function RolesPageContent() {
         await dispatch(createRole(data as CreateRoleDTO)).unwrap();
         setSnackbar({
           open: true,
-          message: 'Role created successfully',
+          message: 'Tạo vai trò thành công',
           severity: 'success',
         });
       }
@@ -179,7 +179,7 @@ function RolesPageContent() {
       await dispatch(deleteRoles(codes)).unwrap();
       setSnackbar({
         open: true,
-        message: `${codes.length} role(s) deleted successfully`,
+        message: `Đã xóa thành công ${codes.length} vai trò`,
         severity: 'success',
       });
       setOpenDelete(false);
@@ -196,7 +196,7 @@ function RolesPageContent() {
     dispatch(fetchAllPermissions());
     setSnackbar({
       open: true,
-      message: 'Data refreshed',
+      message: 'Dữ liệu đã được làm mới',
       severity: 'success',
     });
   };
@@ -229,20 +229,20 @@ function RolesPageContent() {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title="Role Management"
-        subtitle="Manage system roles and permissions"
+        title="Quản lý vai trò"
+        subtitle="Quản lý vai trò và quyền trong hệ thống"
         breadcrumbs={[
-          { label: 'Roles', icon: <SecurityIcon fontSize="small" /> },
+          { label: 'Vai trò', icon: <SecurityIcon fontSize="small" /> },
         ]}
         actions={[
           {
-            label: 'Refresh',
+            label: 'Làm mới',
             onClick: handleRefresh,
             icon: <RefreshIcon />,
             variant: 'outlined',
           },
           {
-            label: 'Delete Selected',
+            label: 'Xóa mục đã chọn',
             onClick: guardAction(PERMISSIONS.ROLE.DELETE, handleBulkDelete),
             variant: 'outlined',
             color: 'error',
@@ -250,13 +250,13 @@ function RolesPageContent() {
             hidden: selectedRows.length === 0,
           },
           {
-            label: 'Add Role',
+            label: 'Thêm vai trò',
             onClick: guardAction(PERMISSIONS.ROLE.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
         ]}
-        tags={[{ label: `${filteredRoles.length} Total` }]}
+        tags={[{ label: `${filteredRoles.length} Tổng` }]}
       />
 
       {/* Filter Bar */}
@@ -264,14 +264,14 @@ function RolesPageContent() {
         searchFields={[
           {
             id: 'roleCode',
-            label: 'Role Code',
-            placeholder: 'Search by role code...',
+            label: 'Mã vai trò',
+            placeholder: 'Tìm theo mã vai trò...',
             value: searchRoleCode,
           },
           {
             id: 'roleName',
-            label: 'Role Name',
-            placeholder: 'Search by role name...',
+            label: 'Tên vai trò',
+            placeholder: 'Tìm theo tên vai trò...',
             value: searchRoleName,
           },
         ]}
@@ -282,11 +282,11 @@ function RolesPageContent() {
         filters={[
           {
             id: 'status',
-            label: 'Status',
+            label: 'Trạng thái',
             type: 'select',
             options: [
-              { value: 'true', label: 'Active' },
-              { value: 'false', label: 'Inactive' },
+              { value: 'true', label: 'Hoạt động' },
+              { value: 'false', label: 'Ngừng hoạt động' },
             ],
             value: filterStatus,
           },
@@ -318,7 +318,7 @@ function RolesPageContent() {
         onEdit={guardFn(PERMISSIONS.ROLE.UPDATE, handleEdit)}
         onDelete={guardFn(PERMISSIONS.ROLE.DELETE, handleDelete)}
         rowKey="role_code"
-        emptyMessage="No roles found"
+        emptyMessage="Không tìm thấy vai trò nào"
       />
 
       {/* Role Form Dialog */}
@@ -336,17 +336,17 @@ function RolesPageContent() {
         open={openDelete}
         onClose={() => setOpenDelete(false)}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${selectedRows.length} Role(s)`}
+        title={`Xóa ${selectedRows.length} vai trò`}
         message={
           selectedRows.length === 1
-            ? `Are you sure you want to delete role "${selectedRows[0]?.role_name}"?`
-            : `Are you sure you want to delete ${selectedRows.length} roles?`
+            ? `Bạn có chắc chắn muốn xóa vai trò "${selectedRows[0]?.role_name}"?`
+            : `Bạn có chắc chắn muốn xóa ${selectedRows.length} vai trò?`
         }
         loading={operationLoading}
       />
 
       {/* Loading Overlay */}
-      <LoadingOverlay open={loading && roles.length === 0} message="Loading roles..." />
+      <LoadingOverlay open={loading && roles.length === 0} message="Đang tải danh sách vai trò..." />
 
       <PermissionDeniedDialog {...permissionDialogProps} />
 

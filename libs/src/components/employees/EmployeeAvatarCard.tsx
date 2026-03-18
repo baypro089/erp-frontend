@@ -149,7 +149,10 @@ export default function EmployeeAvatarCard({
 
           <Box display="flex" gap={1} flexWrap="wrap" justifyContent="center">
             <StatusChip
-              status={statusMap[formData.status || employee.status || Status.DRAFT]}
+              status={
+                statusMap[formData.status || employee.status || Status.DRAFT] ||
+                require('@libs/src/utils/status.util').employeeStatusToChip(formData.status || employee.status || Status.DRAFT)
+              }
               showIcon
             />
             {(formData.level || employee.level) && (

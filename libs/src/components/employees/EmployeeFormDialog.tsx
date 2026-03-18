@@ -14,12 +14,44 @@ import {
   CircularProgress,
   MenuItem,
   Typography,
+  InputAdornment,
 } from '@mui/material';
 import type {
   EmployeeResponse,
   CreateEmployeeDto,
   UpdateEmployeeDto,
 } from '@libs/shared/types/employees.type';
+import employeeService from '@libs/src/features/employee/employee.service';
+
+const EMPLOYEE_CODE_PREFIX = 'EMP-';
+const EMPLOYEE_CODE_DIGITS = 5;
+const MIN_INIT_SALARY = 1_000_000;
+
+const SALARY_UNITS = {
+  ten: { label: 'Chục', multiplier: 10 },
+  hundred: { label: 'Trăm', multiplier: 100 },
+  thousand: { label: 'Nghìn', multiplier: 1_000 },
+  million: { label: 'Triệu', multiplier: 1_000_000 },
+} as const;
+
+type SalaryUnitKey = keyof typeof SALARY_UNITS;
+
+function generateNextEmployeeCodeFromList(employees: EmployeeResponse[]): string {
+  const maxSerial = employees.reduce((max, employee) => {
+    const code = employee.employeeCode?.trim();
+    if (!code) return max;
+
+    // Accept both EMP-00001 and legacy EMP00001 formats.
+    const match = /^EMP-?(\d+)$/i.exec(code);
+    if (!match) return max;
+
+    const serial = Number(match[1]);
+    if (Number.isNaN(serial)) return max;
+    return Math.max(max, serial);
+  }, 0);
+
+  return `${EMPLOYEE_CODE_PREFIX}${String(maxSerial + 1).padStart(EMPLOYEE_CODE_DIGITS, '0')}`;
+}
 
 interface EmployeeFormDialogProps {
   open: boolean;
@@ -54,20 +86,58 @@ export default function EmployeeFormDialog({
     currentPositionId?: string;
     initSalary?: string;
   }>({});
+  const [generatingEmployeeCode, setGeneratingEmployeeCode] = useState(false);
+  const [salaryAmountInput, setSalaryAmountInput] = useState<number>(1);
+  const [salaryUnit, setSalaryUnit] = useState<SalaryUnitKey>('million');
 
   // Reset form when dialog opens
   useEffect(() => {
+    let cancelled = false;
+
+    const initForm = async () => {
+      setGeneratingEmployeeCode(true);
+      try {
+        const employees = await employeeService.getEmployees();
+        const nextEmployeeCode = generateNextEmployeeCodeFromList(employees);
+        if (cancelled) return;
+
+        setFormData({
+          fullName: '',
+          employeeCode: nextEmployeeCode,
+          startDate: new Date(),
+          departmentId: '',
+          currentPositionId: '',
+          initSalary: MIN_INIT_SALARY,
+        });
+        setSalaryAmountInput(1);
+        setSalaryUnit('million');
+      } catch {
+        if (cancelled) return;
+        setFormData({
+          fullName: '',
+          employeeCode: `${EMPLOYEE_CODE_PREFIX}${String(1).padStart(EMPLOYEE_CODE_DIGITS, '0')}`,
+          startDate: new Date(),
+          departmentId: '',
+          currentPositionId: '',
+          initSalary: MIN_INIT_SALARY,
+        });
+        setSalaryAmountInput(1);
+        setSalaryUnit('million');
+      } finally {
+        if (!cancelled) {
+          setGeneratingEmployeeCode(false);
+          setErrors({});
+        }
+      }
+    };
+
     if (open) {
-      setFormData({
-        fullName: '',
-        employeeCode: '',
-        startDate: new Date(),
-        departmentId: '',
-        currentPositionId: '',
-        initSalary: 0,
-      });
-      setErrors({});
+      initForm();
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   const validateForm = (): boolean => {
@@ -97,6 +167,8 @@ export default function EmployeeFormDialog({
       newErrors.initSalary = 'Lương khởi điểm là bắt buộc và phải lớn hơn 0';
     } else if (isNaN(Number(formData.initSalary))) {
       newErrors.initSalary = 'Lương khởi điểm phải là một số';
+    } else if (Number(formData.initSalary) < MIN_INIT_SALARY) {
+      newErrors.initSalary = 'Lương khởi điểm không thể nhỏ hơn 1.000.000 VND';
     }
 
     setErrors(newErrors);
@@ -113,6 +185,23 @@ export default function EmployeeFormDialog({
     if (!loading) {
       onClose();
     }
+  };
+
+  const handleSalaryAmountChange = (value: string) => {
+    const parsed = Number(value);
+    const amount = Number.isNaN(parsed) ? 0 : parsed;
+    setSalaryAmountInput(amount);
+    setFormData({
+      ...formData,
+      initSalary: amount * SALARY_UNITS[salaryUnit].multiplier,
+    });
+  };
+
+  const handleSalaryUnitChange = (unit: SalaryUnitKey) => {
+    const currentSalary = Number(formData.initSalary) || 0;
+    const nextAmount = currentSalary / SALARY_UNITS[unit].multiplier;
+    setSalaryUnit(unit);
+    setSalaryAmountInput(Number.isFinite(nextAmount) ? Number(nextAmount.toFixed(2)) : 0);
   };
 
   return (
@@ -149,13 +238,20 @@ export default function EmployeeFormDialog({
           <TextField
             label="Mã nhân viên"
             value={formData.employeeCode}
-            onChange={(e) => setFormData({ ...formData, employeeCode: e.target.value })}
             error={!!errors.employeeCode}
-            helperText={errors.employeeCode}
+            helperText={errors.employeeCode || 'Mã được tự động sinh theo định dạng EMP-xxxxx'}
             fullWidth
             required
-            disabled={loading}
-            placeholder="e.g., EMP001"
+            disabled={loading || generatingEmployeeCode}
+            placeholder="EMP-00001"
+            InputProps={{
+              readOnly: true,
+              endAdornment: generatingEmployeeCode ? (
+                <InputAdornment position="end">
+                  <CircularProgress size={16} />
+                </InputAdornment>
+              ) : undefined,
+            }}
           />
 
           {/* Start Date */}
@@ -215,24 +311,44 @@ export default function EmployeeFormDialog({
             </MenuItem>
             {positions.map((pos) => (
               <MenuItem key={pos.id} value={pos.id}>
-                {pos.name} - ${pos.baseSalary.toLocaleString()}
+                {pos.name} - {pos.baseSalary.toLocaleString('vi-VN')} đ
               </MenuItem>
             ))}
           </TextField>
 
           {/* Initial Salary */}
-          <TextField
-            label="Lương khởi điểm"
-            type="number"
-            value={formData.initSalary}
-            onChange={(e) => setFormData({ ...formData, initSalary: Number(e.target.value) })}
-            error={!!errors.initSalary}
-            helperText={errors.initSalary}
-            fullWidth
-            required
-            disabled={loading}
-            placeholder="Nhập lương khởi điểm"
-          />
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+            <TextField
+              label="Lương khởi điểm"
+              type="number"
+              value={salaryAmountInput}
+              onChange={(e) => handleSalaryAmountChange(e.target.value)}
+              error={!!errors.initSalary}
+              helperText={
+                errors.initSalary ||
+                `Tương đương: ${Number(formData.initSalary || 0).toLocaleString('vi-VN')} VND`
+              }
+              fullWidth
+              required
+              disabled={loading}
+              placeholder="Nhập giá trị"
+            />
+
+            <TextField
+              label="Đơn vị"
+              select
+              value={salaryUnit}
+              onChange={(e) => handleSalaryUnitChange(e.target.value as SalaryUnitKey)}
+              disabled={loading}
+              sx={{ minWidth: 160 }}
+            >
+              {Object.entries(SALARY_UNITS).map(([key, unit]) => (
+                <MenuItem key={key} value={key}>
+                  {unit.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
         </Box>
       </DialogContent>
 

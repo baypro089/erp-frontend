@@ -248,7 +248,7 @@ export default function PortalSelectionPage() {
                               </Typography>
                               {!isAvailable && (
                                 <Chip 
-                                  label="Coming Soon" 
+                                  label="Sắp ra mắt" 
                                   size="small" 
                                   color="warning"
                                   sx={{ fontWeight: 600 }}

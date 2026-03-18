@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import type { AppDispatch, RootState } from '@libs/src/store';
@@ -27,6 +27,11 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Pagination,
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -40,17 +45,31 @@ import {
   LocalOffer as OfferIcon,
 } from '@mui/icons-material';
 import { PageHeader, LoadingOverlay } from '@libs/src/components/common';
-import { fetchProducts } from '@libs/src/features/product/product.slice';
+import { fetchStocksByWarehouse } from '@libs/src/features/product-stock/product-stock.slice';
+import { fetchWarehouses } from '@libs/src/features/warehouse/warehouse.slice';
 import { createOrder, clearError } from '@libs/src/features/order/order.slice';
 import customerService from '@libs/src/features/customer/customer.service';
-import type { ProductTableResponse } from '@libs/shared/types/product.type';
+import productService from '@libs/src/features/product/product.service';
+import type { ProductStockResponse } from '@libs/shared/types/product-stock.type';
 import type { CustomerResponse, CreateCustomerDto } from '@libs/shared/types/customer.type';
 import type { CreateOrderDto } from '@libs/shared/types/order.type';
-import type { OrderItemDto } from '@libs/shared/types/order-detail.type';
 import { CustomerTier } from '@libs/shared/enums/customer-tier.enum';
 
+interface SaleProductItem {
+  stockId: string;
+  productId: string;
+  name: string;
+  sku?: string;
+  thumbnailUrl?: string;
+  retailPrice: number;
+  stockQuantity: number;
+  warehouseId: string;
+  warehouseName: string;
+  isActive: boolean;
+}
+
 interface CartItem {
-  product: ProductTableResponse;
+  product: SaleProductItem;
   quantity: number;
   unitPrice: number; // Giá có thể điều chỉnh
 }
@@ -58,18 +77,29 @@ interface CartItem {
 export default function CreateOrderPage() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { products, loading: productsLoading } = useSelector((state: RootState) => state.product);
+  const {
+    stocks,
+    page: stockPage,
+    totalPages: stockTotalPages,
+    totalCount: stockTotalCount,
+    loading: productsLoading,
+  } = useSelector((state: RootState) => state.productStock);
+  const { warehouses, loading: warehousesLoading } = useSelector((state: RootState) => state.warehouse);
   const { operationLoading, operationError } = useSelector((state: RootState) => state.order);
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerResponse | null>(null);
   
-  // Product search
+  // Product filters
+  const [selectedWarehouseId, setSelectedWarehouseId] = useState('');
   const [productSearch, setProductSearch] = useState('');
+  const [productPage, setProductPage] = useState(1);
+  const productPageSize = 12;
   
   // Customer search
   const [customerPhone, setCustomerPhone] = useState('');
+  const [customerPhoneError, setCustomerPhoneError] = useState<string | null>(null);
   const [customerSearchLoading, setCustomerSearchLoading] = useState(false);
   const [openNewCustomerDialog, setOpenNewCustomerDialog] = useState(false);
   const [newCustomerName, setNewCustomerName] = useState('');
@@ -77,6 +107,8 @@ export default function CreateOrderPage() {
   // Order notes
   const [orderNote, setOrderNote] = useState('');
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [thumbnailMap, setThumbnailMap] = useState<Record<string, string>>({});
+  const loadedThumbnailIdsRef = useRef<Set<string>>(new Set());
 
   // Snackbar
   const [snackbar, setSnackbar] = useState({
@@ -85,10 +117,34 @@ export default function CreateOrderPage() {
     severity: 'success' as 'success' | 'error',
   });
 
-  // Load products
+  // Load warehouses
   useEffect(() => {
-    dispatch(fetchProducts({ page: 1, pageSize: 100 }));
+    dispatch(fetchWarehouses());
   }, [dispatch]);
+
+  // Auto-select first active warehouse
+  useEffect(() => {
+    if (warehouses.length > 0 && !selectedWarehouseId) {
+      const firstActiveWarehouse = warehouses.find((warehouse) => warehouse.isActive);
+      if (firstActiveWarehouse) {
+        setSelectedWarehouseId(firstActiveWarehouse.id);
+      }
+    }
+  }, [warehouses, selectedWarehouseId]);
+
+  // Load stock products by warehouse
+  useEffect(() => {
+    if (!selectedWarehouseId) return;
+
+    dispatch(
+      fetchStocksByWarehouse({
+        warehouseId: selectedWarehouseId,
+        search: productSearch.trim() || undefined,
+        page: productPage,
+        pageSize: productPageSize,
+      })
+    );
+  }, [dispatch, selectedWarehouseId, productSearch, productPage]);
 
   // Handle errors
   useEffect(() => {
@@ -102,20 +158,91 @@ export default function CreateOrderPage() {
     }
   }, [operationError, dispatch]);
 
-  // Filter products
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    p.sku?.toLowerCase().includes(productSearch.toLowerCase())
+  // Always filter by selected warehouse to avoid cross-warehouse results when searching.
+  const saleProducts: SaleProductItem[] = useMemo(
+    () =>
+      stocks
+        .filter((stock: ProductStockResponse) =>
+          selectedWarehouseId ? stock.warehouse.id === selectedWarehouseId : true
+        )
+        .map((stock: ProductStockResponse) => ({
+          stockId: stock.id,
+          productId: stock.product.id,
+          name: stock.product.name,
+          sku: stock.product.sku,
+          thumbnailUrl: stock.product.thumbnailUrl,
+          retailPrice: Number(stock.product.retailPrice),
+          stockQuantity: Number(stock.quantity),
+          warehouseId: stock.warehouse.id,
+          warehouseName: stock.warehouse.name,
+          isActive: stock.product.isActive,
+        })),
+    [stocks, selectedWarehouseId]
   );
+
+  // Load latest thumbnail URLs for products currently displayed.
+  useEffect(() => {
+    if (saleProducts.length === 0) return;
+
+    const productsToFetch = saleProducts.filter(
+      (product) => !loadedThumbnailIdsRef.current.has(product.productId)
+    );
+
+    if (productsToFetch.length === 0) return;
+
+    let isCancelled = false;
+
+    const loadThumbnails = async () => {
+      const results = await Promise.allSettled(
+        productsToFetch.map(async (product) => {
+          const thumbnail = await productService.getProductThumbnail(product.productId);
+          return {
+            productId: product.productId,
+            publicUrl: thumbnail?.publicUrl || '',
+          };
+        })
+      );
+
+      if (isCancelled) return;
+
+      const nextMap: Record<string, string> = {};
+
+      results.forEach((result, index) => {
+        const productId = productsToFetch[index].productId;
+        loadedThumbnailIdsRef.current.add(productId);
+
+        if (result.status === 'fulfilled' && result.value.publicUrl) {
+          nextMap[productId] = result.value.publicUrl;
+        }
+      });
+
+      if (Object.keys(nextMap).length > 0) {
+        setThumbnailMap((prev) => ({ ...prev, ...nextMap }));
+      }
+    };
+
+    void loadThumbnails();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [saleProducts]);
 
   // Customer search
   const handleCustomerSearch = async () => {
-    if (!customerPhone.trim()) {
+    // validate before searching
+    const phone = customerPhone.trim();
+    if (!phone) {
       setSnackbar({
         open: true,
         message: 'Vui lòng nhập số điện thoại',
         severity: 'error',
       });
+      return;
+    }
+    const phoneRegex = /^0(3|5|7|8|9)[0-9]{8}$/;
+    if (!phoneRegex.test(phone)) {
+      setSnackbar({ open: true, message: 'Số điện thoại không hợp lệ', severity: 'error' });
       return;
     }
 
@@ -179,14 +306,33 @@ export default function CreateOrderPage() {
   };
 
   // Add to cart
-  const handleAddToCart = (product: ProductTableResponse) => {
-    const existingItem = cart.find((item) => item.product.id === product.id);
+  const handleAddToCart = (product: SaleProductItem) => {
+    if (product.stockQuantity <= 0) {
+      setSnackbar({
+        open: true,
+        message: `Sản phẩm ${product.name} đã hết hàng trong kho đã chọn`,
+        severity: 'error',
+      });
+      return;
+    }
+
+    const existingItem = cart.find((item) => item.product.productId === product.productId);
     
     if (existingItem) {
+      const nextQuantity = existingItem.quantity + 1;
+      if (nextQuantity > product.stockQuantity) {
+        setSnackbar({
+          open: true,
+          message: `Số lượng vượt tồn kho của ${product.name} (tồn: ${product.stockQuantity})`,
+          severity: 'error',
+        });
+        return;
+      }
+
       setCart(
         cart.map((item) =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+          item.product.productId === product.productId
+            ? { ...item, quantity: nextQuantity }
             : item
         )
       );
@@ -204,11 +350,24 @@ export default function CreateOrderPage() {
 
   // Update quantity
   const handleUpdateQuantity = (productId: string, delta: number) => {
+    const targetItem = cart.find((item) => item.product.productId === productId);
+    if (!targetItem) return;
+
+    const nextQuantity = targetItem.quantity + delta;
+    if (delta > 0 && nextQuantity > targetItem.product.stockQuantity) {
+      setSnackbar({
+        open: true,
+        message: `Số lượng vượt tồn kho của ${targetItem.product.name} (tồn: ${targetItem.product.stockQuantity})`,
+        severity: 'error',
+      });
+      return;
+    }
+
     setCart(
       cart
         .map((item) =>
-          item.product.id === productId
-            ? { ...item, quantity: Math.max(0, item.quantity + delta) }
+          item.product.productId === productId
+            ? { ...item, quantity: Math.max(0, nextQuantity) }
             : item
         )
         .filter((item) => item.quantity > 0)
@@ -219,7 +378,7 @@ export default function CreateOrderPage() {
   const handleUpdatePrice = (productId: string, newPrice: number) => {
     setCart(
       cart.map((item) =>
-        item.product.id === productId
+        item.product.productId === productId
           ? { ...item, unitPrice: Math.max(0, newPrice) }
           : item
       )
@@ -228,7 +387,7 @@ export default function CreateOrderPage() {
 
   // Remove from cart
   const handleRemoveFromCart = (productId: string) => {
-    setCart(cart.filter((item) => item.product.id !== productId));
+    setCart(cart.filter((item) => item.product.productId !== productId));
   };
 
   // Calculate totals
@@ -260,7 +419,7 @@ export default function CreateOrderPage() {
       discountAmount: Number(discountAmount),
       note: orderNote || undefined,
       items: cart.map((item) => ({
-        productId: item.product.id,
+        productId: item.product.productId,
         quantity: Number(item.quantity),
         unitPrice: Number(item.unitPrice),
       })),
@@ -298,9 +457,15 @@ export default function CreateOrderPage() {
       [CustomerTier.GOLD]: '#FFD700',
       [CustomerTier.PLATINUM]: '#E5E4E2',
     };
+    const tierLabels: Record<CustomerTier, string> = {
+      [CustomerTier.STANDARD]: 'Thường',
+      [CustomerTier.SILVER]: 'Bạc',
+      [CustomerTier.GOLD]: 'Vàng',
+      [CustomerTier.PLATINUM]: 'Bạch kim',
+    };
     return (
       <Chip
-        label={tier}
+        label={tierLabels[tier]}
         size="small"
         sx={{ backgroundColor: colors[tier], color: 'white', fontWeight: 600 }}
       />
@@ -324,7 +489,10 @@ export default function CreateOrderPage() {
                 fullWidth
                 placeholder="Tìm sản phẩm theo tên hoặc SKU..."
                 value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
+                onChange={(e) => {
+                  setProductSearch(e.target.value);
+                  setProductPage(1);
+                }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
@@ -332,24 +500,72 @@ export default function CreateOrderPage() {
                     </InputAdornment>
                   ),
                 }}
-                sx={{ mb: 2 }}
+                sx={{ mb: 2.5 }}
               />
 
+              <FormControl fullWidth sx={{ mb: 2 }}>
+                <InputLabel id="warehouse-select-label">Kho hiển thị sản phẩm</InputLabel>
+                <Select
+                  labelId="warehouse-select-label"
+                  value={selectedWarehouseId}
+                  label="Kho hiển thị sản phẩm"
+                  onChange={(event) => {
+                    setSelectedWarehouseId(event.target.value);
+                    setProductPage(1);
+                  }}
+                  disabled={warehousesLoading}
+                >
+                  {warehouses
+                    .filter((warehouse) => warehouse.isActive)
+                    .map((warehouse) => (
+                      <MenuItem key={warehouse.id} value={warehouse.id}>
+                        {warehouse.name}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </FormControl>
+
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  {selectedWarehouseId
+                    ? `Tổng ${stockTotalCount} sản phẩm trong kho đã chọn`
+                    : 'Vui lòng chọn kho để hiển thị sản phẩm'}
+                </Typography>
+                {selectedWarehouseId && (
+                  <Chip
+                    size="small"
+                    color="info"
+                    label={`Trang ${stockPage}/${Math.max(stockTotalPages, 1)}`}
+                  />
+                )}
+              </Box>
+
               <Box sx={{ flex: 1, overflow: 'auto' }}>
-                {productsLoading ? (
+                {!selectedWarehouseId ? (
+                  <Alert severity="warning">Chưa có kho nào khả dụng để bán hàng</Alert>
+                ) : productsLoading ? (
                   <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
                     <CircularProgress />
                   </Box>
+                ) : saleProducts.length === 0 ? (
+                  <Alert severity="info">Không tìm thấy sản phẩm phù hợp trong kho đã chọn</Alert>
                 ) : (
                   <Grid container spacing={2}>
-                    {filteredProducts.map((product) => (
-                      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={product.id}>
+                    {saleProducts.map((product) => {
+                      const outOfStock = product.stockQuantity <= 0;
+
+                      return (
+                      <Grid size={{ xs: 12, sm: 6, md: 4 }} key={product.stockId}>
                         <Card>
-                          <CardActionArea onClick={() => handleAddToCart(product)}>
+                          <CardActionArea
+                            onClick={() => handleAddToCart(product)}
+                            disabled={outOfStock}
+                            sx={{ opacity: outOfStock ? 0.6 : 1 }}
+                          >
                             <CardMedia
                               component="img"
                               height="140"
-                              image={product.thumbnailUrl || '/placeholder-product.png'}
+                              image={thumbnailMap[product.productId] || product.thumbnailUrl || '/placeholder-product.png'}
                               alt={product.name}
                               sx={{ objectFit: 'cover' }}
                             />
@@ -358,7 +574,7 @@ export default function CreateOrderPage() {
                                 {product.name}
                               </Typography>
                               <Typography variant="body2" color="text.secondary" noWrap>
-                                SKU: {product.sku || 'N/A'}
+                                SKU: {product.sku || 'Không có'}
                               </Typography>
                               <Box
                                 sx={{
@@ -377,14 +593,31 @@ export default function CreateOrderPage() {
                                   color={product.stockQuantity > 0 ? 'success' : 'error'}
                                 />
                               </Box>
+                              {outOfStock && (
+                                <Typography variant="caption" color="error.main">
+                                  Hết hàng - không thể chọn
+                                </Typography>
+                              )}
                             </CardContent>
                           </CardActionArea>
                         </Card>
                       </Grid>
-                    ))}
+                      );
+                    })}
                   </Grid>
                 )}
               </Box>
+
+              {selectedWarehouseId && stockTotalPages > 1 && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                  <Pagination
+                    color="primary"
+                    page={productPage}
+                    count={stockTotalPages}
+                    onChange={(_, pageValue) => setProductPage(pageValue)}
+                  />
+                </Box>
+              )}
             </Paper>
           </Grid>
 
@@ -401,9 +634,23 @@ export default function CreateOrderPage() {
                   fullWidth
                   placeholder="Nhập số điện thoại khách hàng..."
                   value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCustomerPhone(v);
+                    // realtime validation
+                    const phoneRegex = /^0(3|5|7|8|9)[0-9]{8}$/;
+                    if (!v.trim()) {
+                      setCustomerPhoneError(null);
+                    } else if (!phoneRegex.test(v.trim())) {
+                      setCustomerPhoneError('Số điện thoại không hợp lệ');
+                    } else {
+                      setCustomerPhoneError(null);
+                    }
+                  }}
                   onKeyPress={(e) => e.key === 'Enter' && handleCustomerSearch()}
                   disabled={!!selectedCustomer}
+                  error={!!customerPhoneError}
+                  helperText={customerPhoneError || ''}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -414,7 +661,7 @@ export default function CreateOrderPage() {
                       <InputAdornment position="end">
                         <Button
                           onClick={handleCustomerSearch}
-                          disabled={customerSearchLoading}
+                          disabled={customerSearchLoading || !!customerPhoneError}
                           variant="contained"
                           size="small"
                         >
@@ -475,19 +722,22 @@ export default function CreateOrderPage() {
                   </Box>
                 ) : (
                   cart.map((item) => (
-                    <Paper key={item.product.id} variant="outlined" sx={{ p: 2, mb: 2 }}>
+                    <Paper key={item.product.productId} variant="outlined" sx={{ p: 2, mb: 2 }}>
                       <Box sx={{ display: 'flex', gap: 2 }}>
                         <Avatar
-                          src={item.product.thumbnailUrl || '/placeholder-product.png'}
+                          src={thumbnailMap[item.product.productId] || item.product.thumbnailUrl || '/placeholder-product.png'}
                           variant="rounded"
                           sx={{ width: 60, height: 60 }}
                         />
                         <Box sx={{ flex: 1 }}>
                           <Typography variant="subtitle2">{item.product.name}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Tồn kho hiện tại: {item.product.stockQuantity}
+                          </Typography>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
                             <IconButton
                               size="small"
-                              onClick={() => handleUpdateQuantity(item.product.id, -1)}
+                              onClick={() => handleUpdateQuantity(item.product.productId, -1)}
                             >
                               <RemoveIcon fontSize="small" />
                             </IconButton>
@@ -496,7 +746,7 @@ export default function CreateOrderPage() {
                             </Typography>
                             <IconButton
                               size="small"
-                              onClick={() => handleUpdateQuantity(item.product.id, 1)}
+                              onClick={() => handleUpdateQuantity(item.product.productId, 1)}
                             >
                               <AddIcon fontSize="small" />
                             </IconButton>
@@ -508,7 +758,7 @@ export default function CreateOrderPage() {
                             size="small"
                             value={item.unitPrice}
                             onChange={(e) =>
-                              handleUpdatePrice(item.product.id, Number(e.target.value))
+                              handleUpdatePrice(item.product.productId, Number(e.target.value))
                             }
                             sx={{ width: 120, mb: 1 }}
                             InputProps={{
@@ -521,7 +771,7 @@ export default function CreateOrderPage() {
                           <IconButton
                             size="small"
                             color="error"
-                            onClick={() => handleRemoveFromCart(item.product.id)}
+                            onClick={() => handleRemoveFromCart(item.product.productId)}
                           >
                             <DeleteIcon fontSize="small" />
                           </IconButton>

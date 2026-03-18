@@ -10,7 +10,6 @@ import {
   Button,
   IconButton,
   Alert,
-  InputAdornment,
 } from '@mui/material';
 import {
   Close as CloseIcon,
@@ -124,14 +123,50 @@ export default function JobHistoryFormDrawer({
     return new Intl.NumberFormat('vi-VN').format(value);
   };
 
-  const parseCurrency = (value: string) => {
-    return parseInt(value.replace(/\D/g, '')) || 0;
-  };
+  
 
   // Get today's date in YYYY-MM-DD format for min date
   const getTodayDate = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
+  };
+
+  // Salary units (amount + unit selector)
+  const SALARY_UNITS = {
+    ten: { label: 'Chục', multiplier: 10 },
+    hundred: { label: 'Trăm', multiplier: 100 },
+    thousand: { label: 'Nghìn', multiplier: 1_000 },
+    million: { label: 'Triệu', multiplier: 1_000_000 },
+  } as const;
+
+  type SalaryUnitKey = keyof typeof SALARY_UNITS;
+
+  const [salaryAmountInput, setSalaryAmountInput] = useState<number>(0);
+  const [salaryUnit, setSalaryUnit] = useState<SalaryUnitKey>('million');
+
+  // Reset amount/unit when drawer opens
+  useEffect(() => {
+    if (open) {
+      setSalaryAmountInput(0);
+      setSalaryUnit('million');
+    }
+  }, [open]);
+
+  const handleSalaryAmountChange = (value: string) => {
+    const parsed = Number(value);
+    const amount = Number.isNaN(parsed) ? 0 : parsed;
+    setSalaryAmountInput(amount);
+    setFormData((prev) => ({
+      ...prev,
+      salaryAtTime: amount * SALARY_UNITS[salaryUnit].multiplier,
+    }));
+  };
+
+  const handleSalaryUnitChange = (unit: SalaryUnitKey) => {
+    const currentSalary = Number(formData.salaryAtTime) || 0;
+    const nextAmount = currentSalary / SALARY_UNITS[unit].multiplier;
+    setSalaryUnit(unit);
+    setSalaryAmountInput(Number.isFinite(nextAmount) ? Number(nextAmount.toFixed(2)) : 0);
   };
 
   return (
@@ -199,20 +234,36 @@ export default function JobHistoryFormDrawer({
             ))}
           </TextField>
 
-          {/* Salary Input */}
-          <TextField
-            label="Mức lương mới"
-            value={formatCurrency(formData.salaryAtTime)}
-            onChange={(e) => handleChange('salaryAtTime', parseCurrency(e.target.value))}
-            error={!!errors.salaryAtTime}
-            helperText={errors.salaryAtTime}
-            disabled={loading}
-            required
-            fullWidth
-            InputProps={{
-              endAdornment: <InputAdornment position="end">VNĐ</InputAdornment>,
-            }}
-          />
+          {/* Salary Input (amount + unit) */}
+          <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+            <TextField
+              label="Mức lương mới"
+              type="number"
+              value={salaryAmountInput}
+              onChange={(e) => handleSalaryAmountChange(e.target.value)}
+              error={!!errors.salaryAtTime}
+              helperText={errors.salaryAtTime || `Tương đương: ${formatCurrency(formData.salaryAtTime)} đ`}
+              disabled={loading}
+              required
+              fullWidth
+              inputProps={{ min: 0, step: 0.01 }}
+            />
+
+            <TextField
+              label="Đơn vị"
+              select
+              value={salaryUnit}
+              onChange={(e) => handleSalaryUnitChange(e.target.value as SalaryUnitKey)}
+              disabled={loading}
+              sx={{ minWidth: 140 }}
+            >
+              {Object.entries(SALARY_UNITS).map(([key, unit]) => (
+                <MenuItem key={key} value={key}>
+                  {unit.label}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Box>
 
           {/* Start Date */}
           <TextField

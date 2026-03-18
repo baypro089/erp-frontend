@@ -90,7 +90,7 @@ function BrandsPageContent() {
     if (error || operationError) {
       setSnackbar({
         open: true,
-        message: error || operationError || 'An error occurred',
+        message: error || operationError || 'Đã xảy ra lỗi',
         severity: 'error',
       });
       dispatch(clearError());
@@ -101,7 +101,7 @@ function BrandsPageContent() {
   const columns: Column<BrandResponse>[] = [
     {
       id: 'name',
-      label: 'Brand Name',
+      label: 'Tên thương hiệu',
       minWidth: 300,
       format: (value) => (
         <Typography variant="body2" fontWeight={600}>
@@ -111,12 +111,12 @@ function BrandsPageContent() {
     },
     {
       id: 'isActive',
-      label: 'Status',
+      label: 'Trạng thái',
       minWidth: 120,
       align: 'center',
       format: (value) => (
         <Chip
-          label={value ? 'Active' : 'Inactive'}
+          label={value ? 'Hoạt động' : 'Ngừng hoạt động'}
           color={value ? 'success' : 'default'}
           size="small"
           sx={{ minWidth: 80 }}
@@ -125,13 +125,13 @@ function BrandsPageContent() {
     },
     {
       id: 'createdAt',
-      label: 'Created At',
+      label: 'Ngày tạo',
       minWidth: 180,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -142,13 +142,13 @@ function BrandsPageContent() {
     },
     {
       id: 'updatedAt',
-      label: 'Updated At',
+      label: 'Cập nhật lúc',
       minWidth: 180,
       format: (value) => {
         const date = new Date(value as Date);
         return (
           <Typography variant="body2" color="text.secondary">
-            {date.toLocaleDateString('en-US', {
+            {date.toLocaleDateString('vi-VN', {
               year: 'numeric',
               month: 'short',
               day: 'numeric',
@@ -192,7 +192,7 @@ function BrandsPageContent() {
         await dispatch(updateBrand({ id: selectedBrand.id, data: data as UpdateBrandDto })).unwrap();
         setSnackbar({
           open: true,
-          message: 'Brand updated successfully',
+          message: 'Cập nhật thương hiệu thành công',
           severity: 'success',
         });
       } else {
@@ -200,7 +200,7 @@ function BrandsPageContent() {
         await dispatch(createBrand(data as CreateBrandDto)).unwrap();
         setSnackbar({
           open: true,
-          message: 'Brand created successfully',
+          message: 'Tạo thương hiệu thành công',
           severity: 'success',
         });
       }
@@ -217,7 +217,7 @@ function BrandsPageContent() {
       await dispatch(deleteBrands(ids)).unwrap();
       setSnackbar({
         open: true,
-        message: `${ids.length} brand(s) deleted successfully`,
+        message: `Đã xóa thành công ${ids.length} thương hiệu`,
         severity: 'success',
       });
       setOpenDelete(false);
@@ -233,7 +233,7 @@ function BrandsPageContent() {
     dispatch(fetchBrands({}));
     setSnackbar({
       open: true,
-      message: 'Data refreshed',
+      message: 'Dữ liệu đã được làm mới',
       severity: 'success',
     });
   };
@@ -255,20 +255,20 @@ function BrandsPageContent() {
     <Box>
       {/* Page Header */}
       <PageHeader
-        title="Brand Management"
-        subtitle="Manage product brands and manufacturers"
+        title="Quản lý thương hiệu"
+        subtitle="Quản lý thương hiệu và nhà sản xuất sản phẩm"
         breadcrumbs={[
-          { label: 'Brands', icon: <BrandIcon fontSize="small" /> },
+          { label: 'Thương hiệu', icon: <BrandIcon fontSize="small" /> },
         ]}
         actions={[
           {
-            label: 'Refresh',
+            label: 'Làm mới',
             onClick: handleRefresh,
             icon: <RefreshIcon />,
             variant: 'outlined',
           },
           {
-            label: 'Delete Selected',
+            label: 'Xóa mục đã chọn',
             onClick: guardAction(PERMISSIONS.BRAND.DELETE, handleBulkDelete),
             variant: 'outlined',
             color: 'error',
@@ -276,13 +276,13 @@ function BrandsPageContent() {
             hidden: selectedRows.length === 0,
           },
           {
-            label: 'Add Brand',
+            label: 'Thêm thương hiệu',
             onClick: guardAction(PERMISSIONS.BRAND.CREATE, handleAdd),
             icon: <AddIcon />,
             variant: 'contained',
           },
         ]}
-        tags={[{ label: `${filteredBrands.length} Total` }]}
+        tags={[{ label: `${filteredBrands.length} Tổng` }]}
       />
 
       {/* Filter Bar */}
@@ -290,8 +290,8 @@ function BrandsPageContent() {
         searchFields={[
           {
             id: 'name',
-            label: 'Brand Name',
-            placeholder: 'Search by brand name...',
+            label: 'Tên thương hiệu',
+            placeholder: 'Tìm theo tên thương hiệu...',
             value: searchName,
           },
         ]}
@@ -321,7 +321,7 @@ function BrandsPageContent() {
         onEdit={guardFn(PERMISSIONS.BRAND.UPDATE, handleEdit)}
         onDelete={guardFn(PERMISSIONS.BRAND.DELETE, handleDelete)}
         rowKey="id"
-        emptyMessage="No brands found"
+        emptyMessage="Không tìm thấy thương hiệu nào"
       />
 
       {/* Brand Form Dialog */}
@@ -338,17 +338,17 @@ function BrandsPageContent() {
         open={openDelete}
         onClose={() => setOpenDelete(false)}
         onConfirm={handleDeleteConfirm}
-        title={`Delete ${selectedRows.length} Brand(s)`}
+        title={`Xóa ${selectedRows.length} thương hiệu`}
         message={
           selectedRows.length === 1
-            ? `Are you sure you want to delete brand "${selectedRows[0]?.name}"?`
-            : `Are you sure you want to delete ${selectedRows.length} brands?`
+            ? `Bạn có chắc chắn muốn xóa thương hiệu "${selectedRows[0]?.name}"?`
+            : `Bạn có chắc chắn muốn xóa ${selectedRows.length} thương hiệu?`
         }
         loading={operationLoading}
       />
 
       {/* Loading Overlay */}
-      <LoadingOverlay open={loading && brands.length === 0} message="Loading brands..." />
+      <LoadingOverlay open={loading && brands.length === 0} message="Đang tải danh sách thương hiệu..." />
 
       <PermissionDeniedDialog {...permissionDialogProps} />
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Drawer,
   List,
@@ -41,6 +41,8 @@ import {
   AssignmentReturn as AssignmentReturnIcon,
 } from '@mui/icons-material';
 import { usePathname, useRouter } from 'next/navigation';
+import orderService from '@libs/src/features/order/order.service';
+import { OrderStatus } from '@libs/shared/enums/order-status.enum';
 
 export interface MenuItem {
   id: string;
@@ -60,7 +62,7 @@ interface CommercialSidebarProps {
 
 const DRAWER_WIDTH = 280;
 
-const menuItems: MenuItem[] = [
+const baseMenuItems: MenuItem[] = [
   {
     id: 'dashboard',
     label: 'Dashboard',
@@ -72,7 +74,6 @@ const menuItems: MenuItem[] = [
     label: 'Đơn hàng',
     icon: <ShoppingCartIcon />,
     path: '/commercial/orders',
-    badge: 12,
     badgeColor: 'warning',
   },
   {
@@ -173,6 +174,7 @@ export default function CommercialSidebar({
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const pathname = usePathname();
   const router = useRouter();
+  const [menuBadges, setMenuBadges] = useState<Record<string, number>>({});
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   const drawerWidth = width;
@@ -191,6 +193,47 @@ export default function CommercialSidebar({
       onClose();
     }
   };
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadMenuBadges = async () => {
+      try {
+        const pendingOrders = await orderService.getOrders({
+          status: OrderStatus.PENDING,
+          page: 1,
+          pageSize: 1,
+        });
+
+        if (isCancelled) {
+          return;
+        }
+
+        setMenuBadges({
+          orders: pendingOrders.totalCount,
+        });
+      } catch {
+        if (!isCancelled) {
+          setMenuBadges({});
+        }
+      }
+    };
+
+    loadMenuBadges();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [pathname]);
+
+  const menuItems = useMemo(
+    () =>
+      baseMenuItems.map((item) => ({
+        ...item,
+        badge: menuBadges[item.id],
+      })),
+    [menuBadges],
+  );
 
   const isActive = (path?: string) => {
     if (!path) return false;

@@ -38,9 +38,9 @@ export default function HRLayout({
 
   // Use actual user data from Redux store
   const user = currentUser ? {
-    name: currentUser.username || 'User',
+    name: currentUser.username || 'Người dùng',
     email: currentUser.email || '',
-    role: currentUser.role?.role_name || 'HR',
+    role: currentUser.role?.role_name || 'Nhân sự',
     avatar: currentUser.employee.photoUrl || '', // Assuming employee has a photoUrl field
   } : undefined;
 
@@ -49,7 +49,7 @@ export default function HRLayout({
       <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: theme.palette.background.default }}>
         {/* Header */}
         <HRHeader
-          title="Human Resources"
+          title="Quản lý nhân sự"
           showMenuButton={false}
           user={user}
           notificationCount={3}

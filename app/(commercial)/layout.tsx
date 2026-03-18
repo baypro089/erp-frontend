@@ -38,9 +38,9 @@ export default function CommercialLayout({
   // Use actual user data from Redux store
   const user = currentUser
     ? {
-        name: currentUser.username || 'User',
+        name: currentUser.username || 'Người dùng',
         email: currentUser.email || '',
-        role: currentUser.role?.role_name || 'Commercial',
+        role: currentUser.role?.role_name || 'Kinh doanh',
         avatar: currentUser.employee.photoUrl || '/default-avatar.png',
       }
     : undefined;
@@ -50,7 +50,7 @@ export default function CommercialLayout({
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
         {/* Header */}
         <CommercialHeader
-          title="Commercial POS"
+          title="Bán hàng thương mại"
           showMenuButton={false}
           user={user}
           notificationCount={8}

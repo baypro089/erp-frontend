@@ -187,7 +187,7 @@ export default function AdminDashboard() {
               mb: 1,
             }}
           >
-            Admin Dashboard
+            Bảng điều khiển quản trị
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
             Tổng quan quản trị hệ thống ERP

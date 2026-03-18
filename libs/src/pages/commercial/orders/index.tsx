@@ -82,11 +82,16 @@ function OrdersPageContent() {
     severity: 'success' as 'success' | 'error',
   });
 
-  // Load data
+  // Load data (include searchQuery so searching by code triggers load)
   useEffect(() => {
     loadOrders();
     dispatch(fetchWarehouses());
-  }, [page, rowsPerPage, filterStatus, dateFrom, dateTo]);
+  }, [page, rowsPerPage, filterStatus, dateFrom, dateTo, searchQuery]);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    if (page !== 0) setPage(0);
+  }, [searchQuery]);
 
   const loadOrders = () => {
     dispatch(

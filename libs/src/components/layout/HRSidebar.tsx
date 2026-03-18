@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
     Drawer,
     List,
@@ -34,10 +34,17 @@ import {
     CheckCircle as CheckCircleIcon,
     ExitToApp as ExitToAppIcon,
     AssignmentTurnedIn as AssignmentTurnedInIcon,
+    Gavel as GavelIcon,
     AccountTree as AccountTreeIcon,
     BusinessCenter as BusinessCenterIcon,
 } from '@mui/icons-material';
 import { usePathname, useRouter } from 'next/navigation';
+import leaveRequestService from '@libs/src/features/leave-request/leave-request.service';
+import resignationRequestService from '@libs/src/features/resignation-request/resignation-request.service';
+import terminationRequestService from '@libs/src/features/termination-request/termination-request.service';
+import { LeaveRequestStatus } from '@libs/shared/enums/leave-request-status.enum';
+import { ResignationStatus } from '@libs/shared/enums/resignation-status.enum';
+import { TerminationStatus } from '@libs/shared/enums/termination-status.enum';
 
 export interface MenuItem {
     id: string;
@@ -58,7 +65,7 @@ interface HRSidebarProps {
 
 const DRAWER_WIDTH = 280;
 
-const menuItems: MenuItem[] = [
+const baseMenuItems: MenuItem[] = [
     {
         id: 'dashboards',
         label: 'Tổng quan',
@@ -76,7 +83,6 @@ const menuItems: MenuItem[] = [
         label: 'Duyệt đơn nghỉ',
         icon: <CheckCircleIcon />,
         path: '/hr/leave-approvals',
-        badge: 5,
         badgeColor: 'warning',
     },
     {
@@ -84,8 +90,14 @@ const menuItems: MenuItem[] = [
         label: 'Đơn nghỉ việc',
         icon: <AssignmentTurnedInIcon />,
         path: '/hr/resignations',
-        badge: 2,
-        badgeColor: 'info',
+        badgeColor: 'warning',
+    },
+    {
+        id: 'termination-management',
+        label: 'Yêu cầu sa thải',
+        icon: <GavelIcon />,
+        path: '/hr/terminations',
+        badgeColor: 'warning',
     },
     {
         id: 'payroll-list',
@@ -123,6 +135,7 @@ export default function HRSidebar({
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const pathname = usePathname();
     const router = useRouter();
+    const [menuBadges, setMenuBadges] = useState<Record<string, number>>({});
     // Remove collapse state
     const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
@@ -144,6 +157,49 @@ export default function HRSidebar({
             onClose();
         }
     };
+
+    useEffect(() => {
+        let isCancelled = false;
+
+        const loadMenuBadges = async () => {
+            try {
+                const [leaveResult, resignationResult, terminationResult] = await Promise.all([
+                    leaveRequestService.getLeaveRequests(LeaveRequestStatus.PENDING, undefined, undefined, 1, 1),
+                    resignationRequestService.getResignationRequests(ResignationStatus.PENDING, undefined, 1, 1),
+                    terminationRequestService.getTerminationRequests(TerminationStatus.PENDING, undefined, 1, 1),
+                ]);
+
+                if (isCancelled) {
+                    return;
+                }
+
+                setMenuBadges({
+                    'leave-approvals': leaveResult.totalCount,
+                    'resignation-management': resignationResult.totalCount,
+                    'termination-management': terminationResult.totalCount,
+                });
+            } catch {
+                if (!isCancelled) {
+                    setMenuBadges({});
+                }
+            }
+        };
+
+        loadMenuBadges();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [pathname]);
+
+    const menuItems = useMemo(
+        () =>
+            baseMenuItems.map((item) => ({
+                ...item,
+                badge: menuBadges[item.id],
+            })),
+        [menuBadges],
+    );
 
     const isActive = (path?: string) => {
         if (!path) return false;
@@ -290,13 +346,13 @@ export default function HRSidebar({
                 <Typography
                     variant="h6"
                     sx={{
-                        fontWeight: 800,
+                        fontWeight: 500,
                         color: 'white',
                         textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                         letterSpacing: 1,
                     }}
                 >
-                    HR PORTAL
+                    HUMAN RESOURCES
                 </Typography>
                 <Chip
                     label="People First"

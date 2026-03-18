@@ -63,6 +63,15 @@ interface SpecRow {
   value: string;
 }
 
+const MONEY_UNITS = {
+  ten: { label: 'Chục', multiplier: 10 },
+  hundred: { label: 'Trăm', multiplier: 100 },
+  thousand: { label: 'Nghìn', multiplier: 1_000 },
+  million: { label: 'Triệu', multiplier: 1_000_000 },
+} as const;
+
+type MoneyUnitKey = keyof typeof MONEY_UNITS;
+
 /** Chuyển tên sản phẩm thành mã SKU (loại bỏ dấu tiếng Việt, in hoa, dùng '-') */
 function generateSkuFromName(name: string): string {
   if (!name.trim()) return '';
@@ -158,6 +167,8 @@ export default function ProductForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string>('');
+  const [retailPriceAmountInput, setRetailPriceAmountInput] = useState<number>(0);
+  const [retailPriceUnit, setRetailPriceUnit] = useState<MoneyUnitKey>('million');
 
   useEffect(() => {
     dispatch(fetchBrands({}));
@@ -166,6 +177,7 @@ export default function ProductForm({
 
   useEffect(() => {
     if (selectedProduct) {
+      const defaultMoneyUnit: MoneyUnitKey = 'million';
       setFormData({
         sku: selectedProduct.sku || '',
         name: selectedProduct.name,
@@ -185,6 +197,10 @@ export default function ProductForm({
         thumbnailUrl: selectedProduct.thumbnailUrl || '',
         isActive: selectedProduct.isActive,
       });
+      setRetailPriceUnit(defaultMoneyUnit);
+      setRetailPriceAmountInput(
+        Number((selectedProduct.retailPrice / MONEY_UNITS[defaultMoneyUnit].multiplier).toFixed(2))
+      );
       setSkuIsAuto(false);
 
       let parsedSpecs: Record<string, any> = {};
@@ -212,6 +228,8 @@ export default function ProductForm({
         thumbnailUrl: '',
         isActive: true,
       });
+      setRetailPriceAmountInput(0);
+      setRetailPriceUnit('million');
       setSkuIsAuto(true);
       setSpecs([{ key: '', value: '' }]);
       setErrors({});
@@ -251,6 +269,23 @@ export default function ProductForm({
   const handleResetSku = () => {
     setSkuIsAuto(true);
     setFormData((prev) => ({ ...prev, sku: generateSkuFromName(prev.name) }));
+  };
+
+  const handleRetailPriceAmountChange = (value: string) => {
+    const parsed = Number(value);
+    const amount = Number.isNaN(parsed) ? 0 : parsed;
+    setRetailPriceAmountInput(amount);
+    setFormData({
+      ...formData,
+      retailPrice: amount * MONEY_UNITS[retailPriceUnit].multiplier,
+    });
+  };
+
+  const handleRetailPriceUnitChange = (unit: MoneyUnitKey) => {
+    const currentPrice = Number(formData.retailPrice) || 0;
+    const nextAmount = currentPrice / MONEY_UNITS[unit].multiplier;
+    setRetailPriceUnit(unit);
+    setRetailPriceAmountInput(Number.isFinite(nextAmount) ? Number(nextAmount.toFixed(2)) : 0);
   };
 
   const validateForm = (): boolean => {
@@ -823,24 +858,42 @@ export default function ProductForm({
               </Typography>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                <TextField
-                  label="Giá bán lẻ"
-                  type="number"
-                  value={formData.retailPrice}
-                  onChange={(e) =>
-                    setFormData({ ...formData, retailPrice: parseFloat(e.target.value) || 0 })
-                  }
-                  error={!!errors.retailPrice}
-                  helperText={errors.retailPrice}
-                  fullWidth
-                  required
-                  disabled={loading}
-                  slotProps={{
-                    input: {
-                      endAdornment: <InputAdornment position="end">₫</InputAdornment>,
-                    },
-                  }}
-                />
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+                  <TextField
+                    label="Giá bán lẻ"
+                    type="number"
+                    value={retailPriceAmountInput}
+                    onChange={(e) => handleRetailPriceAmountChange(e.target.value)}
+                    error={!!errors.retailPrice}
+                    helperText={
+                      errors.retailPrice ||
+                      `Tương đương: ${Number(formData.retailPrice || 0).toLocaleString('vi-VN')} đ`
+                    }
+                    fullWidth
+                    required
+                    disabled={loading}
+                    slotProps={{
+                      input: {
+                        endAdornment: <InputAdornment position="end">{MONEY_UNITS[retailPriceUnit].label}</InputAdornment>,
+                      },
+                    }}
+                  />
+
+                  <TextField
+                    label="Đơn vị"
+                    select
+                    value={retailPriceUnit}
+                    onChange={(e) => handleRetailPriceUnitChange(e.target.value as MoneyUnitKey)}
+                    disabled={loading}
+                    sx={{ minWidth: 160 }}
+                  >
+                    {Object.entries(MONEY_UNITS).map(([key, unit]) => (
+                      <MenuItem key={key} value={key}>
+                        {unit.label}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+                </Box>
 
                 <TextField
                   label="Thời gian bảo hành"

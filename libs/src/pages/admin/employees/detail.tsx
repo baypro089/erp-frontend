@@ -22,6 +22,7 @@ import {
   Save as SaveIcon,
   Cancel as CancelIcon,
   Add as AddIcon,
+  PersonOff as TerminateIcon,
 } from '@mui/icons-material';
 import { PageHeader, LoadingOverlay } from '@libs/src/components/common';
 import { usePermissionGuard } from '@libs/src/hooks';
@@ -38,12 +39,18 @@ import {
   JobHistoryTimeline,
   JobHistoryFormDrawer,
 } from '@libs/src/components/employees';
+import {
+  TerminationRequestFromEmployeeDialog,
+  type TerminationFromEmployeeErrors,
+  type TerminationFromEmployeeForm,
+} from '@libs/src/components/termination-requests';
 import { 
   fetchEmployeeById, 
   updateEmployee, 
   updateEmployeePhoto, 
   updateEmployeeCV 
 } from '@libs/src/features/employee/employee.slice';
+import { createTerminationRequest } from '@libs/src/features/termination-request/termination-request.slice';
 import employeeService from '@libs/src/features/employee/employee.service';
 import type { AttachmentResponse } from '@libs/shared/types/attachment.type';
 import { fetchDepartments } from '@libs/src/features/department/department.slice';
@@ -79,8 +86,11 @@ export default function EmployeeDetailPage() {
   const params = useParams();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { currentEmployee, loading, operationLoading } = useSelector(
+  const { currentEmployee, loading, operationLoading: employeeOperationLoading } = useSelector(
     (state: RootState) => state.employee
+  );
+  const { operationLoading: terminationOperationLoading } = useSelector(
+    (state: RootState) => state.terminationRequest
   );
   const { departments } = useSelector((state: RootState) => state.department);
   const { positions } = useSelector((state: RootState) => state.position);
@@ -91,6 +101,14 @@ export default function EmployeeDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [currentTab, setCurrentTab] = useState(0);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [openTerminateDialog, setOpenTerminateDialog] = useState(false);
+  const [terminationForm, setTerminationForm] = useState<TerminationFromEmployeeForm>({
+    terminationDate: new Date().toISOString().split('T')[0],
+    terminationReason: '',
+    document: '',
+  });
+  const [terminationErrors, setTerminationErrors] =
+    useState<TerminationFromEmployeeErrors>({});
   const [formData, setFormData] = useState<EmployeeFormData>({
     fullName: '',
     gender: '',
@@ -187,6 +205,7 @@ export default function EmployeeDetailPage() {
     [Status.DRAFT]: 'pending',
     [Status.PROBATION]: 'probation',
     [Status.RESIGNED]: 'resigned',
+    [Status.TERMINATED]: 'resigned',
   };
 
   const getLevelColor = (level?: Level) => {
@@ -278,6 +297,75 @@ export default function EmployeeDetailPage() {
     }
   };
 
+  const handleOpenTerminateDialog = () => {
+    setTerminationErrors({});
+    setTerminationForm({
+      terminationDate: new Date().toISOString().split('T')[0],
+      terminationReason: '',
+      document: '',
+    });
+    setOpenTerminateDialog(true);
+  };
+
+  const handleTerminateFormChange = (field: keyof TerminationFromEmployeeForm, value: string) => {
+    setTerminationForm((prev) => ({ ...prev, [field]: value }));
+    setTerminationErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
+  const validateTerminationForm = (): boolean => {
+    const nextErrors: TerminationFromEmployeeErrors = {};
+    const reason = terminationForm.terminationReason.trim();
+
+    if (!terminationForm.terminationDate) {
+      nextErrors.terminationDate = 'Ngày sa thải là bắt buộc';
+    }
+
+    if (!reason) {
+      nextErrors.terminationReason = 'Lý do sa thải là bắt buộc';
+    } else if (reason.length < 10) {
+      nextErrors.terminationReason = 'Lý do sa thải phải có tối thiểu 10 ký tự';
+    } else if (reason.length > 1000) {
+      nextErrors.terminationReason = 'Lý do sa thải không được vượt quá 1000 ký tự';
+    }
+
+    if (terminationForm.document.length > 255) {
+      nextErrors.document = 'Tài liệu không được vượt quá 255 ký tự';
+    }
+
+    setTerminationErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleCreateTerminationRequest = async () => {
+    if (!currentEmployee || !validateTerminationForm()) {
+      return;
+    }
+
+    try {
+      await dispatch(
+        createTerminationRequest({
+          employeeId: currentEmployee.id,
+          terminationDate: new Date(terminationForm.terminationDate),
+          terminationReason: terminationForm.terminationReason.trim(),
+          document: terminationForm.document.trim() || undefined,
+        })
+      ).unwrap();
+
+      setSnackbar({
+        open: true,
+        message: 'Đã tạo yêu cầu sa thải thành công',
+        severity: 'success',
+      });
+      setOpenTerminateDialog(false);
+    } catch (err: any) {
+      setSnackbar({
+        open: true,
+        message: err || 'Không thể tạo yêu cầu sa thải',
+        severity: 'error',
+      });
+    }
+  };
+
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
   };
@@ -363,14 +451,14 @@ export default function EmployeeDetailPage() {
                   onClick: handleCancel,
                   icon: <CancelIcon />,
                   variant: 'outlined',
-                  disabled: operationLoading,
+                  disabled: employeeOperationLoading,
                 },
                 {
                   label: 'Save',
                   onClick: handleSave,
                   icon: <SaveIcon />,
                   variant: 'contained',
-                  disabled: operationLoading,
+                  disabled: employeeOperationLoading,
                 },
               ]
             : [
@@ -385,6 +473,13 @@ export default function EmployeeDetailPage() {
                   onClick: guardAction(PERMISSIONS.EMPLOYEE.UPDATE, handleEdit),
                   icon: <EditIcon />,
                   variant: 'contained',
+                },
+                {
+                  label: 'Sa thải',
+                  onClick: guardAction(PERMISSIONS.TERMINATION_REQUEST.CREATE, handleOpenTerminateDialog),
+                  icon: <TerminateIcon />,
+                  variant: 'contained',
+                  color: 'error',
                 },
               ]
         }
@@ -542,6 +637,17 @@ export default function EmployeeDetailPage() {
       </Snackbar>
 
       <PermissionDeniedDialog {...permissionDialogProps} />
+
+      <TerminationRequestFromEmployeeDialog
+        open={openTerminateDialog}
+        employee={currentEmployee}
+        form={terminationForm}
+        errors={terminationErrors}
+        loading={terminationOperationLoading}
+        onClose={() => setOpenTerminateDialog(false)}
+        onChange={handleTerminateFormChange}
+        onSubmit={handleCreateTerminationRequest}
+      />
     </Box>
   );
 }

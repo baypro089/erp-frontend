@@ -150,7 +150,10 @@ export default function WorkInformationCard({
               </TextField>
             ) : (
               <Box display="flex" alignItems="center" mt={0.5}>
-                <StatusChip status={statusMap[employee.status]} showIcon />
+                <StatusChip
+                  status={statusMap[employee.status] || require('@libs/src/utils/status.util').employeeStatusToChip(employee.status)}
+                  showIcon
+                />
               </Box>
             )}
           </Grid>

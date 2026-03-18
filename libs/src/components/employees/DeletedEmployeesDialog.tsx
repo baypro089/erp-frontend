@@ -103,14 +103,9 @@ export default function DeletedEmployeesDialog({ open, onClose }: DeletedEmploye
       minWidth: 120,
       align: 'center',
       format: (value) => {
-        const statusMap: Record<Status, 'active' | 'pending' | 'maternity' | 'resigned' | 'probation'> = {
-          [Status.ACTIVE]: 'active',
-          [Status.DRAFT]: 'pending',
-          [Status.MATERNITY_LEAVE]: 'maternity',
-          [Status.RESIGNED]: 'resigned',
-          [Status.PROBATION]: 'probation',
-        };
-        return <StatusChip status={statusMap[value as Status]} showIcon />;
+        // Map employee enum/status to StatusChip-compatible string
+        const { employeeStatusToChip } = require('@libs/src/utils/status.util');
+        return <StatusChip status={employeeStatusToChip(value as Status)} showIcon />;
       },
     },
     {

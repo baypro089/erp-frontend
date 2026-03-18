@@ -435,7 +435,7 @@ export default function CreateImportReceiptPage() {
                       {/* Product Selection */}
                       <TableCell>
                         <TextField
-                          value={item.product ? `${item.product.name} (${item.product.sku || 'N/A'})` : ''}
+                          value={item.product ? `${item.product.name} (${item.product.sku || 'Không có SKU'})` : ''}
                           onClick={() => handleOpenProductDialog(index)}
                           placeholder="Nhấn để chọn sản phẩm"
                           size="small"
@@ -499,7 +499,7 @@ export default function CreateImportReceiptPage() {
                             {item.scannedSerials.length}/{item.quantity}
                           </Button>
                         ) : (
-                          <Chip label="N/A" size="small" variant="outlined" disabled />
+                          <Chip label="Không áp dụng" size="small" variant="outlined" disabled />
                         )}
                       </TableCell>
 
