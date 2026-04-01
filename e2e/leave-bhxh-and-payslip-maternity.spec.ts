@@ -63,7 +63,7 @@ async function mockAuthAndRole(
 }
 
 test.describe('Leave Approval - BHXH Claim', () => {
-  test('ADMIN thấy nút BHXH và claim thành công cho đơn thai sản đã duyệt', async ({ page }) => {
+  test('ADMIN thấy nút BHXH và duyệt thành công cho đơn nghỉ ốm đã duyệt', async ({ page }) => {
     const permissions = [
       'ACCESS_HR_PORTAL',
       'LEAVE_REQUEST_VIEW',
@@ -82,19 +82,19 @@ test.describe('Leave Approval - BHXH Claim', () => {
           data: {
             items: [
               {
-                id: 'lr-maternity-1',
+                id: 'lr-sick-1',
                 employee: {
                   id: 'emp-01',
                   employeeCode: 'EMP-0001',
                   fullName: 'Nguyen Thi A',
                 },
                 startDate: '2026-01-10T00:00:00.000Z',
-                endDate: '2026-07-10T00:00:00.000Z',
-                duration: 180,
-                reason: 'Nghỉ thai sản',
+                endDate: '2026-01-12T00:00:00.000Z',
+                duration: 3,
+                reason: 'Nghỉ ốm có giấy khám bệnh',
                 isBhxhClaimed: false,
                 status: 'APPROVED',
-                type: 'MATERNITY',
+                type: 'SICK',
                 approverId: 'manager-1',
                 createdAt: '2026-01-01T00:00:00.000Z',
                 updatedAt: '2026-01-01T00:00:00.000Z',
@@ -107,26 +107,26 @@ test.describe('Leave Approval - BHXH Claim', () => {
       });
     });
 
-    await page.route('**/leave-requests/lr-maternity-1/bhxh-claim', async (route) => {
+    await page.route('**/leave-requests/lr-sick-1/bhxh-claim', async (route) => {
       bhxhClaimCalled = true;
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
           data: {
-            id: 'lr-maternity-1',
+            id: 'lr-sick-1',
             employee: {
               id: 'emp-01',
               employeeCode: 'EMP-0001',
               fullName: 'Nguyen Thi A',
             },
             startDate: '2026-01-10T00:00:00.000Z',
-            endDate: '2026-07-10T00:00:00.000Z',
-            duration: 180,
-            reason: 'Nghỉ thai sản',
+            endDate: '2026-01-12T00:00:00.000Z',
+            duration: 3,
+            reason: 'Nghỉ ốm có giấy khám bệnh',
             isBhxhClaimed: true,
             status: 'APPROVED',
-            type: 'MATERNITY',
+            type: 'SICK',
             approverId: 'manager-1',
             createdAt: '2026-01-01T00:00:00.000Z',
             updatedAt: '2026-01-02T00:00:00.000Z',
@@ -139,11 +139,17 @@ test.describe('Leave Approval - BHXH Claim', () => {
     await expect(page).not.toHaveURL(/\/auth\/login/);
     await expect(page.locator('.MuiTableContainer-root').first()).toBeVisible({ timeout: 15_000 });
 
+    const viewButton = page.locator('button:has(svg[data-testid="VisibilityIcon"])').first();
+    await expect(viewButton).toBeVisible();
+    await viewButton.click();
+    await expect(page.getByText('Chi tiết đơn nghỉ phép')).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: 'Đóng' }).click();
+
     const bhxhButton = page.locator('button:has(svg[data-testid="AssignmentTurnedInIcon"])').first();
     await expect(bhxhButton).toBeVisible();
     await bhxhButton.click();
 
-    await expect(page.getByText('Đã xác nhận quyết toán BHXH')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Duyệt BHXH cho đơn nghỉ ốm thành công')).toBeVisible({ timeout: 10_000 });
     expect(bhxhClaimCalled).toBeTruthy();
   });
 
@@ -164,19 +170,19 @@ test.describe('Leave Approval - BHXH Claim', () => {
           data: {
             items: [
               {
-                id: 'lr-maternity-2',
+                id: 'lr-sick-2',
                 employee: {
                   id: 'emp-02',
                   employeeCode: 'EMP-0002',
                   fullName: 'Tran Thi B',
                 },
                 startDate: '2026-02-01T00:00:00.000Z',
-                endDate: '2026-08-01T00:00:00.000Z',
-                duration: 180,
-                reason: 'Nghỉ thai sản',
+                endDate: '2026-02-02T00:00:00.000Z',
+                duration: 2,
+                reason: 'Nghỉ ốm',
                 isBhxhClaimed: false,
                 status: 'APPROVED',
-                type: 'MATERNITY',
+                type: 'SICK',
                 approverId: 'manager-1',
                 createdAt: '2026-01-15T00:00:00.000Z',
                 updatedAt: '2026-01-15T00:00:00.000Z',

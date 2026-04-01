@@ -11,8 +11,8 @@ setup('authenticate as admin', async ({ page }) => {
         fs.mkdirSync(authDir, { recursive: true });
     }
 
-    const username = process.env.E2E_USERNAME ?? 'admin';
-    const password = process.env.E2E_PASSWORD ?? '123456';
+    const username = process.env.E2E_USERNAME ?? 'EMP-0037';
+    const password = process.env.E2E_PASSWORD ?? '123456aA@';
 
     await page.goto('/auth/login');
 

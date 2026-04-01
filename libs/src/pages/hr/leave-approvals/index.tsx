@@ -28,6 +28,7 @@ import {
 } from '@libs/src/components/common';
 import {
   ApproveRejectDialog,
+  LeaveRequestDetailDialog,
 } from '@libs/src/components/leave-requests';
 import {
   fetchLeaveRequests,
@@ -61,7 +62,6 @@ function LeaveApprovalsPageContent() {
   const {
     leaveRequests,
     totalCount,
-    totalPages,
     loading,
     error,
     operationLoading,
@@ -77,6 +77,7 @@ function LeaveApprovalsPageContent() {
 
   // Dialog states
   const [openApproveReject, setOpenApproveReject] = useState(false);
+  const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const [approveRejectAction, setApproveRejectAction] = useState<'approve' | 'reject'>('approve');
   const [selectedLeaveRequest, setSelectedLeaveRequest] = useState<LeaveRequestResponse | null>(null);
 
@@ -161,6 +162,7 @@ function LeaveApprovalsPageContent() {
   // Handle errors
   useEffect(() => {
     if (error || operationError) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSnackbar({
         open: true,
         message: error || operationError || 'Đã xảy ra lỗi',
@@ -176,7 +178,7 @@ function LeaveApprovalsPageContent() {
       id: 'employee.fullName',
       label: 'Nhân viên',
       minWidth: 180,
-      format: (value: any, row: LeaveRequestResponse) => (
+      format: (_value: unknown, row: LeaveRequestResponse) => (
         <Typography variant="body2" fontWeight={600}>
           {row.employee.fullName}
         </Typography>
@@ -257,14 +259,14 @@ function LeaveApprovalsPageContent() {
       minWidth: 140,
       align: 'center',
       format: (value: boolean, row: LeaveRequestResponse) => {
-        if (row.type !== LeaveRequestType.MATERNITY) {
+        if (row.type !== LeaveRequestType.SICK) {
           return <Typography variant="body2" color="text.secondary">Không áp dụng</Typography>;
         }
 
         return (
           <StatusChip
             status={value ? 'active' : 'pending'}
-            label={value ? 'Đã quyết toán' : 'Chưa quyết toán'}
+            label={value ? 'Đã duyệt BHXH' : 'Chưa duyệt BHXH'}
             showIcon
           />
         );
@@ -315,7 +317,7 @@ function LeaveApprovalsPageContent() {
           await dispatch(claimBhxhLeaveRequest(row.id)).unwrap();
           setSnackbar({
             open: true,
-            message: 'Đã xác nhận quyết toán BHXH',
+            message: 'Duyệt BHXH cho đơn nghỉ ốm thành công',
             severity: 'success',
           });
           setRefreshCounter((prev) => prev + 1);
@@ -330,13 +332,18 @@ function LeaveApprovalsPageContent() {
       hidden: (row: LeaveRequestResponse) => {
         return (
           !canClaimBhxh ||
-          row.type !== LeaveRequestType.MATERNITY ||
+          row.type !== LeaveRequestType.SICK ||
           row.status !== LeaveRequestStatus.APPROVED ||
           row.isBhxhClaimed
         );
       },
     },
   ];
+
+  const handleViewDetail = (row: LeaveRequestResponse) => {
+    setSelectedLeaveRequest(row);
+    setOpenDetailDialog(true);
+  };
 
   // Handlers
   const handleApproveReject = async (status: LeaveRequestStatus, reason?: string) => {
@@ -472,6 +479,7 @@ function LeaveApprovalsPageContent() {
           setPage(0);
         }}
         actions={approvalActions}
+        onView={guardFn<LeaveRequestResponse>(PERMISSIONS.LEAVE_REQUEST.VIEW, handleViewDetail)}
         emptyMessage="Chưa có đơn nghỉ phép nào"
         rowKey="id"
       />
@@ -487,6 +495,15 @@ function LeaveApprovalsPageContent() {
         action={approveRejectAction}
         leaveRequest={selectedLeaveRequest}
         loading={operationLoading}
+      />
+
+      <LeaveRequestDetailDialog
+        open={openDetailDialog}
+        onClose={() => {
+          setOpenDetailDialog(false);
+          setSelectedLeaveRequest(null);
+        }}
+        leaveRequest={selectedLeaveRequest}
       />
 
       {/* Snackbar */}
