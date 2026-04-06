@@ -31,7 +31,7 @@ export type LeaveRequestCreateDto = {
 
 export type CreateLeaveRequestPayload = {
   data: LeaveRequestCreateDto;
-  documentFile?: File;
+  documentFile?: any;
 }
 
 export type CalculateWorkingDaysDto = {

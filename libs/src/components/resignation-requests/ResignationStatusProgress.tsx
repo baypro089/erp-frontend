@@ -18,11 +18,11 @@ import {
   Check as CompletedIcon,
   Cancel as RejectedIcon,
 } from '@mui/icons-material';
-import type { ResighnationRequestResponse } from '@libs/shared/types/resignation-request.type';
+import type { ResignationRequestResponse } from '@libs/shared/types/resignation-request.type';
 import { ResignationStatus } from '@libs/shared/enums/resignation-status.enum';
 
 interface ResignationStatusProgressProps {
-  resignation: ResighnationRequestResponse;
+  resignation: ResignationRequestResponse;
 }
 
 export default function ResignationStatusProgress({

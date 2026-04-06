@@ -216,7 +216,7 @@ test.describe('Commercial Business Logic – Order Management', () => {
 
     async function expandFilters(page: import('@playwright/test').Page) {
         // FilterBar collapses filter options by default; click "Filters" to expand
-        const filtersBtn = page.getByRole('button', { name: /Filters/ });
+        const filtersBtn = page.getByRole('button', { name: /Filters|Bộ lọc/i });
         await filtersBtn.click();
         await page.waitForTimeout(350); // wait for Collapse animation
     }
@@ -237,10 +237,10 @@ test.describe('Commercial Business Logic – Order Management', () => {
             .filter({ has: page.locator('label', { hasText: 'Trạng thái' }) })
             .locator('[role="combobox"]');
         await statusSelect.click();
-        // The listbox should contain the known statuses
-        await expect(page.getByRole('option', { name: 'Chờ xuất' })).toBeVisible({ timeout: 5_000 });
-        await expect(page.getByRole('option', { name: 'Đã xuất' })).toBeVisible();
-        await expect(page.getByRole('option', { name: 'Đã hủy' })).toBeVisible();
+        // The listbox should contain the known statuses (localized or raw enum labels)
+        await expect(page.getByRole('option', { name: /Chờ xuất|Pending/i })).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByRole('option', { name: /Đã xuất|Completed/i })).toBeVisible();
+        await expect(page.getByRole('option', { name: /Đã hủy|Cancelled/i })).toBeVisible();
         // Close menu
         await page.keyboard.press('Escape');
     });
@@ -252,7 +252,7 @@ test.describe('Commercial Business Logic – Order Management', () => {
             .filter({ has: page.locator('label', { hasText: 'Trạng thái' }) })
             .locator('[role="combobox"]');
         await statusSelect.click();
-        await page.getByRole('option', { name: 'Chờ xuất' }).click();
+        await page.getByRole('option', { name: /Chờ xuất|Pending/i }).first().click();
         // After selection, the page fires a new API request → wait for it
         await page.waitForLoadState('networkidle');
         // Table must still be visible after filter is applied

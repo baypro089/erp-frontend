@@ -118,24 +118,24 @@ test.describe('Admin CRUD – Brands', () => {
     test('opens Add Brand dialog via button', async ({ page }) => {
         await gotoBrandsReady(page);
 
-        await page.getByRole('button', { name: 'Add Brand' }).click();
+        await page.getByRole('button', { name: /Add Brand|Thêm thương hiệu/i }).click();
 
         // Dialog with title "Add New Brand" must appear
         await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 10_000 });
-        await expect(page.getByRole('heading', { name: 'Add New Brand' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Add New Brand|Thêm thương hiệu mới/i })).toBeVisible();
     });
 
     test('shows validation error when submitting empty brand name', async ({ page }) => {
         await gotoBrandsReady(page);
 
-        await page.getByRole('button', { name: 'Add Brand' }).click();
+        await page.getByRole('button', { name: /Add Brand|Thêm thương hiệu/i }).click();
         await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 10_000 });
 
         // Submit without filling the name field
-        await page.getByRole('button', { name: 'Create' }).click();
+        await page.getByRole('button', { name: /Create|Tạo mới/i }).click();
 
         // Inline validation error should appear
-        await expect(page.getByText('Brand name is required')).toBeVisible({ timeout: 5_000 });
+        await expect(page.getByText(/Brand name is required|Tên thương hiệu là bắt buộc/i)).toBeVisible({ timeout: 5_000 });
 
         // Dialog stays open
         await expect(page.locator('[role="dialog"]')).toBeVisible();
@@ -144,10 +144,10 @@ test.describe('Admin CRUD – Brands', () => {
     test('Cancel button closes the dialog without creating', async ({ page }) => {
         await gotoBrandsReady(page);
 
-        await page.getByRole('button', { name: 'Add Brand' }).click();
+        await page.getByRole('button', { name: /Add Brand|Thêm thương hiệu/i }).click();
         await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 10_000 });
 
-        await page.getByRole('button', { name: 'Cancel' }).click();
+        await page.getByRole('button', { name: /Cancel|Hủy/i }).click();
 
         // Dialog must be gone
         await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 5_000 });
@@ -156,14 +156,14 @@ test.describe('Admin CRUD – Brands', () => {
     test('creates a new brand successfully', async ({ page }) => {
         await gotoBrandsReady(page);
 
-        await page.getByRole('button', { name: 'Add Brand' }).click();
+        await page.getByRole('button', { name: /Add Brand|Thêm thương hiệu/i }).click();
         await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 10_000 });
 
         // Fill in the brand name (scope to dialog to avoid matching the filter bar input)
-        await page.locator('[role="dialog"]').getByRole('textbox', { name: 'Brand Name' }).fill(brandName);
+        await page.locator('[role="dialog"]').getByRole('textbox', { name: /Brand Name|Tên thương hiệu/i }).fill(brandName);
 
         // Submit
-        await page.getByRole('button', { name: 'Create' }).click();
+        await page.getByRole('button', { name: /Create|Tạo mới/i }).click();
 
         // Dialog must close after successful creation
         await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 15_000 });

@@ -4,7 +4,7 @@ type RoleResponse = {
     role_code: string;
     role_name: string;
     is_active: boolean;
-    permissions?: PermissionResponse[];
+    permissions: PermissionResponse[];
 }
 
 type CreateRoleDTO = {

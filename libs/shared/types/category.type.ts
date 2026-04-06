@@ -11,13 +11,13 @@ export type CategoryResponse = {
 
 export type CreateCategoryDto = {
     name: string;
-    parentId?: string | null;
+    parentId?: string;
     isActive?: boolean;
 }
 
 export type UpdateCategoryDto = {
     name?: string;
-    parentId?: string | null;
+    parentId?: string;
     isActive?: boolean;
 }
 

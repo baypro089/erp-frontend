@@ -63,7 +63,7 @@ export type UpdateEmployeeDto = {
   currentPositionId?: string;
   managerId?: string;
   status?: Status;
-  dependentCount: number;
+  dependentCount?: number;
 };
 
 

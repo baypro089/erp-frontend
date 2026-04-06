@@ -1,19 +1,17 @@
 import api from '@libs/src/services/api.service';
-import { UserResponse } from '@libs/shared/types/users.type';
 
 type loginRequest = {
     username: string;
     password: string;
 }
 
-type loginResponse = {
-    responseData: UserResponse;
-    message: string;
+type AuthUser = {
+    id: string;
+    role: string;
 }
 
-const login = async (data: loginRequest): Promise<UserResponse> => {
-  const response = await api.post('/auth/login', data);
-  return response.data.user;
+const login = async (data: loginRequest): Promise<void> => {
+    await api.post('/auth/login', data);
 };
 
 const logout = async () => {
@@ -21,7 +19,7 @@ const logout = async () => {
     return response.data.message;
 }
 
-const me = async (): Promise<{id: string, role: string}> => {
+const me = async (): Promise<AuthUser> => {
     const response = await api.get('/auth/me');
     return response.data;
 }

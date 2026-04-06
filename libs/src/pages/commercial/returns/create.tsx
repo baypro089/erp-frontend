@@ -90,6 +90,24 @@ const ORDER_STATUS_LABELS: Record<string, string> = {
   [OrderStatus.CANCELLED]: 'Đã hủy',
 };
 
+const formatBackendBusinessError = (message: string): string => {
+  const normalized = message.toLowerCase();
+
+  if (
+    normalized.includes('overflow') ||
+    normalized.includes('luy ke') ||
+    normalized.includes('lũy kế')
+  ) {
+    return `Vượt số lượng trả cho phép theo lũy kế: ${message}`;
+  }
+
+  if (normalized.includes('sold')) {
+    return `Serial không còn hợp lệ để trả hàng: ${message}`;
+  }
+
+  return message;
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ReturnCreatePage() {
@@ -193,7 +211,11 @@ export default function ReturnCreatePage() {
   // ── Error handling ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (operationError) {
-      setSnackbar({ open: true, message: operationError, severity: 'error' });
+      setSnackbar({
+        open: true,
+        message: formatBackendBusinessError(operationError),
+        severity: 'error',
+      });
       dispatch(clearError());
     }
   }, [operationError, dispatch]);
@@ -201,24 +223,52 @@ export default function ReturnCreatePage() {
   // ─── Row handlers ──────────────────────────────────────────────────────────
 
   const toggleSelect = useCallback((idx: number) => {
-    setItems((prev) =>
-      prev.map((item, i) =>
-        i === idx ? { ...item, selected: !item.selected } : item
-      )
-    );
+    setItems((prev) => {
+      const target = prev[idx];
+      if (!target) return prev;
+
+      if (target.selected) {
+        return prev.map((item, i) => (i === idx ? { ...item, selected: false } : item));
+      }
+
+      const totalPurchasedForProduct = prev
+        .filter((item) => item.productId === target.productId)
+        .reduce((sum, item) => sum + item.purchasedQty, 0);
+
+      const selectedQtyForProduct = prev.reduce((sum, item, i) => {
+        if (i === idx || !item.selected || item.productId !== target.productId) {
+          return sum;
+        }
+
+        return sum + (item.hasSerialNumber ? 1 : item.quantity);
+      }, 0);
+
+      const nextQty = target.hasSerialNumber ? 1 : target.quantity;
+      if (selectedQtyForProduct + nextQty > totalPurchasedForProduct) {
+        setSnackbar({
+          open: true,
+          message: 'Tổng số lượng trả cho cùng sản phẩm vượt số lượng đã mua',
+          severity: 'error',
+        });
+        return prev;
+      }
+
+      return prev.map((item, i) => (i === idx ? { ...item, selected: true } : item));
+    });
   }, []);
 
   const handleSerialChange = useCallback((idx: number, value: string) => {
     setItems((prev) =>
       prev.map((item, i) => {
         if (i !== idx) return item;
-        const trimmed = value.trim().toUpperCase();
+        const normalizedValue = value.toUpperCase();
+        const trimmed = normalizedValue.trim();
         const isValid = item.assignedSerials
           .map((s) => s.toUpperCase())
           .includes(trimmed);
         return {
           ...item,
-          serialInput: value,
+          serialInput: normalizedValue,
           serialStatus: trimmed === '' ? 'idle' : isValid ? 'valid' : 'invalid',
         };
       })
@@ -226,32 +276,143 @@ export default function ReturnCreatePage() {
   }, []);
 
   const handleQuantityChange = useCallback((idx: number, delta: number) => {
-    setItems((prev) =>
-      prev.map((item, i) => {
-        if (i !== idx) return item;
-        const next = Math.min(Math.max(1, item.quantity + delta), item.purchasedQty);
-        return { ...item, quantity: next };
-      })
-    );
+    setItems((prev) => {
+      const target = prev[idx];
+      if (!target || target.hasSerialNumber) {
+        return prev;
+      }
+
+      const next = Math.min(Math.max(1, target.quantity + delta), target.purchasedQty);
+      if (next === target.quantity) {
+        return prev;
+      }
+
+      if (target.selected) {
+        const totalPurchasedForProduct = prev
+          .filter((item) => item.productId === target.productId)
+          .reduce((sum, item) => sum + item.purchasedQty, 0);
+
+        const selectedQtyExcludingCurrent = prev.reduce((sum, item, i) => {
+          if (i === idx || !item.selected || item.productId !== target.productId) {
+            return sum;
+          }
+
+          return sum + (item.hasSerialNumber ? 1 : item.quantity);
+        }, 0);
+
+        if (selectedQtyExcludingCurrent + next > totalPurchasedForProduct) {
+          setSnackbar({
+            open: true,
+            message: 'Tổng số lượng trả cho cùng sản phẩm vượt số lượng đã mua',
+            severity: 'error',
+          });
+          return prev;
+        }
+      }
+
+      return prev.map((item, i) => (i === idx ? { ...item, quantity: next } : item));
+    });
   }, []);
 
   // ─── Validation ────────────────────────────────────────────────────────────
 
   const selectedItems = items.filter((item) => item.selected);
 
-  const isFormValid = useMemo(() => {
-    if (selectedItems.length === 0) return false;
-    if (!warehouseId) return false;
-    if (!reason.trim()) return false;
+  const totalPurchasedByProduct = useMemo(() => {
+    const totalMap = new Map<string, number>();
 
-    // All selected serial items must be valid
+    for (const item of items) {
+      const current = totalMap.get(item.productId) ?? 0;
+      totalMap.set(item.productId, current + item.purchasedQty);
+    }
+
+    return totalMap;
+  }, [items]);
+
+  const selectedQuantityByProduct = useMemo(() => {
+    const totalMap = new Map<string, number>();
+
+    for (const item of selectedItems) {
+      const quantity = item.hasSerialNumber ? 1 : item.quantity;
+      const current = totalMap.get(item.productId) ?? 0;
+      totalMap.set(item.productId, current + quantity);
+    }
+
+    return totalMap;
+  }, [selectedItems]);
+
+  const overflowProductIds = useMemo(() => {
+    const overflowSet = new Set<string>();
+
+    for (const [productId, selectedQty] of selectedQuantityByProduct) {
+      const purchasedQty = totalPurchasedByProduct.get(productId) ?? 0;
+      if (selectedQty > purchasedQty) {
+        overflowSet.add(productId);
+      }
+    }
+
+    return overflowSet;
+  }, [selectedQuantityByProduct, totalPurchasedByProduct]);
+
+  const duplicatedSerials = useMemo(() => {
+    const serialCounter = new Map<string, number>();
+
+    for (const item of selectedItems) {
+      if (!item.hasSerialNumber) {
+        continue;
+      }
+
+      const serial = item.serialInput.trim().toUpperCase();
+      if (!serial) {
+        continue;
+      }
+
+      serialCounter.set(serial, (serialCounter.get(serial) ?? 0) + 1);
+    }
+
+    return new Set(
+      Array.from(serialCounter.entries())
+        .filter(([, count]) => count > 1)
+        .map(([serial]) => serial)
+    );
+  }, [selectedItems]);
+
+  const hasDuplicateSerialAcrossForm = duplicatedSerials.size > 0;
+
+  const validationHint = useMemo(() => {
+    if (selectedItems.length === 0) {
+      return 'Vui lòng chọn ít nhất một sản phẩm để trả';
+    }
+
+    if (!warehouseId) {
+      return 'Vui lòng chọn kho tiếp nhận';
+    }
+
+    if (!reason.trim()) {
+      return 'Vui lòng nhập lý do trả hàng';
+    }
+
     const serialItemsOk = selectedItems
       .filter((i) => i.hasSerialNumber)
       .every((i) => i.serialStatus === 'valid');
-    if (!serialItemsOk) return false;
+    if (!serialItemsOk) {
+      return 'Vui lòng nhập serial hợp lệ cho sản phẩm có serial';
+    }
 
-    return true;
-  }, [selectedItems, warehouseId, reason]);
+    if (hasDuplicateSerialAcrossForm) {
+      return 'Không được nhập trùng serial ở nhiều dòng trong cùng form';
+    }
+
+    if (overflowProductIds.size > 0) {
+      return 'Tổng số lượng trả của cùng sản phẩm vượt số lượng đã mua';
+    }
+
+    return '';
+  }, [selectedItems, warehouseId, reason, hasDuplicateSerialAcrossForm, overflowProductIds]);
+
+  const isFormValid = useMemo(() => {
+    return validationHint === '';
+  }, [validationHint]);
 
   // ─── Submit ────────────────────────────────────────────────────────────────
 
@@ -265,8 +426,22 @@ export default function ReturnCreatePage() {
       return;
     }
 
+    if (!selectedOrder) {
+      return;
+    }
+
+    if (!isFormValid) {
+      setConfirmOpen(false);
+      setSnackbar({
+        open: true,
+        message: validationHint || 'Thông tin trả hàng chưa hợp lệ',
+        severity: 'error',
+      });
+      return;
+    }
+
     const dto: CreateReturnRequestDto = {
-      orderId: selectedOrder!.id,
+      orderId: selectedOrder.id,
       warehouseId,
       reason,
       items: selectedItems.map((item) => ({
@@ -440,15 +615,31 @@ export default function ReturnCreatePage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {items.map((item, idx) => (
-                  <ItemRow
-                    key={item.orderItemId}
-                    item={item}
-                    onToggle={() => toggleSelect(idx)}
-                    onSerialChange={(val) => handleSerialChange(idx, val)}
-                    onQuantityChange={(delta) => handleQuantityChange(idx, delta)}
-                  />
-                ))}
+                {items.map((item, idx) => {
+                  const normalizedSerial = item.serialInput.trim().toUpperCase();
+                  const duplicateSerial =
+                    item.selected &&
+                    item.hasSerialNumber &&
+                    normalizedSerial !== '' &&
+                    duplicatedSerials.has(normalizedSerial);
+
+                  const productOverflow =
+                    item.selected && overflowProductIds.has(item.productId);
+
+                  return (
+                    <ItemRow
+                      key={item.orderItemId}
+                      item={item}
+                      duplicateSerial={duplicateSerial}
+                      productOverflow={productOverflow}
+                      selectedProductQty={selectedQuantityByProduct.get(item.productId) ?? 0}
+                      purchasedProductQty={totalPurchasedByProduct.get(item.productId) ?? 0}
+                      onToggle={() => toggleSelect(idx)}
+                      onSerialChange={(val) => handleSerialChange(idx, val)}
+                      onQuantityChange={(delta) => handleQuantityChange(idx, delta)}
+                    />
+                  );
+                })}
                 {items.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
@@ -658,11 +849,7 @@ export default function ReturnCreatePage() {
             Hủy
           </Button>
           <Tooltip
-            title={
-              !isFormValid
-                ? 'Vui lòng chọn sản phẩm, nhập serial hợp lệ, chọn kho và điền lý do'
-                : ''
-            }
+            title={!isFormValid ? validationHint : ''}
           >
             <span>
               <Button
@@ -773,14 +960,29 @@ export default function ReturnCreatePage() {
 
 interface ItemRowProps {
   item: ReturnItem;
+  duplicateSerial: boolean;
+  productOverflow: boolean;
+  selectedProductQty: number;
+  purchasedProductQty: number;
   onToggle: () => void;
   onSerialChange: (val: string) => void;
   onQuantityChange: (delta: number) => void;
 }
 
-function ItemRow({ item, onToggle, onSerialChange, onQuantityChange }: ItemRowProps) {
+function ItemRow({
+  item,
+  duplicateSerial,
+  productOverflow,
+  selectedProductQty,
+  purchasedProductQty,
+  onToggle,
+  onSerialChange,
+  onQuantityChange,
+}: ItemRowProps) {
   const serialBorderColor =
-    item.serialStatus === 'valid'
+    duplicateSerial
+      ? 'error.main'
+      : item.serialStatus === 'valid'
       ? 'success.main'
       : item.serialStatus === 'invalid'
       ? 'error.main'
@@ -877,7 +1079,11 @@ function ItemRow({ item, onToggle, onSerialChange, onQuantityChange }: ItemRowPr
                         </InputAdornment>
                       ),
                       endAdornment:
-                        item.serialStatus === 'valid' ? (
+                        duplicateSerial ? (
+                          <InputAdornment position="end">
+                            <CancelIcon color="error" />
+                          </InputAdornment>
+                        ) : item.serialStatus === 'valid' ? (
                           <InputAdornment position="end">
                             <CheckIcon color="success" />
                           </InputAdornment>
@@ -888,56 +1094,73 @@ function ItemRow({ item, onToggle, onSerialChange, onQuantityChange }: ItemRowPr
                         ) : null,
                     }}
                   />
-                  {item.serialStatus === 'invalid' && (
+                  {duplicateSerial && (
+                    <Alert severity="error" sx={{ mt: 1, maxWidth: 420, py: 0 }}>
+                      Serial đang bị trùng ở dòng khác trong cùng form. Vui lòng nhập serial khác.
+                    </Alert>
+                  )}
+                  {!duplicateSerial && item.serialStatus === 'invalid' && (
                     <Alert severity="error" sx={{ mt: 1, maxWidth: 360, py: 0 }}>
                       Mã Serial không thuộc đơn hàng này!
                     </Alert>
                   )}
-                  {item.serialStatus === 'valid' && (
+                  {!duplicateSerial && item.serialStatus === 'valid' && (
                     <Alert severity="success" sx={{ mt: 1, maxWidth: 360, py: 0 }}>
                       Serial hợp lệ — đã xác nhận
+                    </Alert>
+                  )}
+                  {productOverflow && (
+                    <Alert severity="error" sx={{ mt: 1, maxWidth: 500, py: 0 }}>
+                      Tổng số lượng trả của sản phẩm này đang là {selectedProductQty}, vượt quá số lượng đã mua {purchasedProductQty}.
                     </Alert>
                   )}
                 </Box>
               ) : (
                 /* ── Case B: Non-serial product ──────────────────── */
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Typography variant="body2" color="text.secondary">
-                    Số lượng trả:
-                  </Typography>
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onQuantityChange(-1);
-                      }}
-                      disabled={item.quantity <= 1}
-                    >
-                      <RemoveIcon fontSize="small" />
-                    </IconButton>
-                    <Typography
-                      variant="body1"
-                      fontWeight={700}
-                      minWidth={32}
-                      textAlign="center"
-                    >
-                      {item.quantity}
+                <Box>
+                  <Box display="flex" alignItems="center" gap={2}>
+                    <Typography variant="body2" color="text.secondary">
+                      Số lượng trả:
                     </Typography>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onQuantityChange(1);
-                      }}
-                      disabled={item.quantity >= item.purchasedQty}
-                    >
-                      <AddIcon fontSize="small" />
-                    </IconButton>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onQuantityChange(-1);
+                        }}
+                        disabled={item.quantity <= 1}
+                      >
+                        <RemoveIcon fontSize="small" />
+                      </IconButton>
+                      <Typography
+                        variant="body1"
+                        fontWeight={700}
+                        minWidth={32}
+                        textAlign="center"
+                      >
+                        {item.quantity}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onQuantityChange(1);
+                        }}
+                        disabled={item.quantity >= item.purchasedQty}
+                      >
+                        <AddIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">
+                      / Tối đa: <strong>{item.purchasedQty}</strong>
+                    </Typography>
                   </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    / Tối đa: <strong>{item.purchasedQty}</strong>
-                  </Typography>
+                  {productOverflow && (
+                    <Alert severity="error" sx={{ mt: 1, maxWidth: 500, py: 0 }}>
+                      Tổng số lượng trả của sản phẩm này đang là {selectedProductQty}, vượt quá số lượng đã mua {purchasedProductQty}.
+                    </Alert>
+                  )}
                 </Box>
               )}
             </Box>

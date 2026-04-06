@@ -63,6 +63,46 @@ interface FulfillItem {
   confirmed: boolean; // For non-serial items
 }
 
+const extractBackendMessage = (error: any, fallback: string): string => {
+  const message = error?.response?.data?.message;
+
+  if (typeof message === 'string' && message.trim()) {
+    return message;
+  }
+
+  if (Array.isArray(message) && message.length > 0) {
+    return message.filter(Boolean).join(', ');
+  }
+
+  if (message && typeof message === 'object') {
+    const nestedMessage = (message as { message?: unknown }).message;
+    if (typeof nestedMessage === 'string' && nestedMessage.trim()) {
+      return nestedMessage;
+    }
+    if (Array.isArray(nestedMessage) && nestedMessage.length > 0) {
+      return nestedMessage.filter(Boolean).join(', ');
+    }
+  }
+
+  if (typeof error?.message === 'string' && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
+const getUniqueSerialCount = (item: FulfillItem): number => {
+  if (!item.hasSerial) {
+    return 0;
+  }
+
+  const normalizedSerials = item.scannedSerials
+    .map((serial) => serial.trim().toUpperCase())
+    .filter(Boolean);
+
+  return new Set(normalizedSerials).size;
+};
+
 export default function FulfillmentPage() {
   return (
     <PermissionGuard 
@@ -131,14 +171,14 @@ function FulfillmentPageContent() {
         orderItemId: item.id,
         productId: item.product.id,
         productName: item.product.name,
-      hasSerial: item.product.hasSerialNumber,
-      requiredQuantity: item.quantity,
-      scannedSerials: [],
-      confirmed: false,
-    }));
-    
-    setFulfillItems(items);
-    setOpenFulfillDialog(true);
+        hasSerial: item.product.hasSerialNumber,
+        requiredQuantity: item.quantity,
+        scannedSerials: [],
+        confirmed: false,
+      }));
+
+      setFulfillItems(items);
+      setOpenFulfillDialog(true);
     } catch (error) {
       setSnackbar({
         open: true,
@@ -164,7 +204,7 @@ function FulfillmentPageContent() {
       return;
     }
 
-    const serialNumber = scanInput.trim();
+    const serialNumber = scanInput.trim().toUpperCase();
 
     try {
       // Verify serial exists and is available
@@ -175,6 +215,16 @@ function FulfillmentPageContent() {
       if (itemIndex === -1) return;
 
       const item = fulfillItems[itemIndex];
+
+      if (getUniqueSerialCount(item) >= item.requiredQuantity) {
+        setSnackbar({
+          open: true,
+          message: `Đã đủ serial cho sản phẩm ${item.productName}`,
+          severity: 'error',
+        });
+        setScanInput('');
+        return;
+      }
 
       // Verify serial belongs to correct product
       if (serial.product.id !== item.productId) {
@@ -188,7 +238,10 @@ function FulfillmentPageContent() {
       }
 
       // Check if already scanned
-      if (item.scannedSerials.includes(serialNumber)) {
+      const normalizedScannedSet = new Set(
+        item.scannedSerials.map((scanned) => scanned.trim().toUpperCase())
+      );
+      if (normalizedScannedSet.has(serialNumber)) {
         setSnackbar({
           open: true,
           message: 'Serial đã được quét',
@@ -214,13 +267,13 @@ function FulfillmentPageContent() {
       setScanInput('');
 
       // Auto-close scan if complete
-      if (updatedItems[itemIndex].scannedSerials.length === item.requiredQuantity) {
+      if (getUniqueSerialCount(updatedItems[itemIndex]) === item.requiredQuantity) {
         setScanningForItemId(null);
       }
     } catch (error: any) {
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Serial không hợp lệ',
+        message: extractBackendMessage(error, 'Serial không hợp lệ'),
         severity: 'error',
       });
       setScanInput('');
@@ -253,7 +306,7 @@ function FulfillmentPageContent() {
   // Check if all items ready
   const allItemsReady = fulfillItems.every((item) =>
     item.hasSerial
-      ? item.scannedSerials.length === item.requiredQuantity
+      ? getUniqueSerialCount(item) === item.requiredQuantity
       : item.confirmed
   );
 
@@ -277,17 +330,90 @@ function FulfillmentPageContent() {
       return;
     }
 
+    if (!selectedOrder) {
+      return;
+    }
+
+    const expectedItemIds = Array.from(new Set(selectedOrder.items.map((item) => item.id)));
+    const fulfillItemMap = new Map<string, FulfillItem>();
+    const duplicatedOrderItemIds = new Set<string>();
+
+    for (const item of fulfillItems) {
+      if (fulfillItemMap.has(item.orderItemId)) {
+        duplicatedOrderItemIds.add(item.orderItemId);
+        continue;
+      }
+      fulfillItemMap.set(item.orderItemId, item);
+    }
+
+    if (duplicatedOrderItemIds.size > 0) {
+      setSnackbar({
+        open: true,
+        message: 'Dữ liệu xuất kho không hợp lệ: trùng orderItemId trong payload',
+        severity: 'error',
+      });
+      return;
+    }
+
+    const missingOrderItemIds = expectedItemIds.filter((id) => !fulfillItemMap.has(id));
+    if (missingOrderItemIds.length > 0) {
+      setSnackbar({
+        open: true,
+        message: 'Dữ liệu xuất kho không hợp lệ: thiếu orderItemId của đơn hàng',
+        severity: 'error',
+      });
+      return;
+    }
+
+    const payloadItems: FulfillItemDto[] = [];
+    for (const itemId of expectedItemIds) {
+      const item = fulfillItemMap.get(itemId);
+      if (!item) {
+        continue;
+      }
+
+      const payloadItem: FulfillItemDto = {
+        orderItemId: item.orderItemId,
+      };
+
+      if (item.hasSerial) {
+        const normalizedSerials = item.scannedSerials
+          .map((serial) => serial.trim().toUpperCase())
+          .filter(Boolean);
+        const uniqueSerials = Array.from(new Set(normalizedSerials));
+
+        if (uniqueSerials.length !== normalizedSerials.length) {
+          setSnackbar({
+            open: true,
+            message: `Serial bị trùng trong cùng item: ${item.productName}`,
+            severity: 'error',
+          });
+          return;
+        }
+
+        if (uniqueSerials.length !== item.requiredQuantity) {
+          setSnackbar({
+            open: true,
+            message: `Số serial chưa đủ cho sản phẩm ${item.productName}`,
+            severity: 'error',
+          });
+          return;
+        }
+
+        payloadItem.scannedSerials = uniqueSerials;
+      }
+
+      payloadItems.push(payloadItem);
+    }
+
     const fulfillDto: FulfillOrderDto = {
       warehouseId: selectedWarehouseId,
-      items: fulfillItems.map((item) => ({
-        orderItemId: item.orderItemId,
-        scannedSerials: item.hasSerial ? item.scannedSerials : undefined,
-      })),
+      items: payloadItems,
     };
 
     try {
       await dispatch(
-        fulfillOrder({ orderId: selectedOrder!.id, data: fulfillDto })
+        fulfillOrder({ orderId: selectedOrder.id, data: fulfillDto })
       ).unwrap();
       
       setSnackbar({
@@ -391,7 +517,7 @@ function FulfillmentPageContent() {
     if (!item.hasSerial) {
       return item.confirmed ? 100 : 0;
     }
-    return (item.scannedSerials.length / item.requiredQuantity) * 100;
+    return (getUniqueSerialCount(item) / item.requiredQuantity) * 100;
   };
 
   const ordersToShow = activeTab === 0 ? pendingOrders : shippedOrders;
@@ -530,7 +656,7 @@ function FulfillmentPageContent() {
                       <Chip
                         label={
                           item.hasSerial
-                            ? `${item.scannedSerials.length}/${item.requiredQuantity}`
+                            ? `${getUniqueSerialCount(item)}/${item.requiredQuantity}`
                             : 'Chưa xác nhận'
                         }
                         color={isComplete ? 'success' : 'warning'}

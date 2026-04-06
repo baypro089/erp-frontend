@@ -11,7 +11,14 @@ export const login = createAsyncThunk(
         try {
             return await authService.login(data);
         } catch (err: any) {
-            return rejectWithValue(err.response?.data?.message || "Login failed");
+            const status = err.response?.status;
+            const apiMessage = err.response?.data?.message;
+
+            if (status === 401) {
+                return rejectWithValue(apiMessage && apiMessage !== 'Unauthorized' ? apiMessage : 'Invalid credentials');
+            }
+
+            return rejectWithValue(apiMessage || "Invalid credentials");
         }
     }
 );

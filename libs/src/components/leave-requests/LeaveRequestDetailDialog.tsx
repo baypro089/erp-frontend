@@ -38,11 +38,21 @@ const leaveStatusLabels: Record<LeaveRequestStatus, string> = {
     [LeaveRequestStatus.CANCELLED]: 'Đã hủy',
 };
 
+const DATE_FORMATTER = new Intl.DateTimeFormat('vi-VN', {
+    timeZone: 'UTC',
+});
+
 function formatDate(value?: Date | string) {
     if (!value) {
         return '-';
     }
-    return new Date(value).toLocaleDateString('vi-VN');
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+        return '-';
+    }
+
+    return DATE_FORMATTER.format(date);
 }
 
 function InfoRow({ label, value }: { label: string; value: ReactNode }) {

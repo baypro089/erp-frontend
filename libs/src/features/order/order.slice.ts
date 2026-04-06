@@ -9,6 +9,34 @@ import type {
 } from '@libs/shared/types/order.type';
 import { OrderStatus } from '@libs/shared/enums/order-status.enum';
 
+const extractErrorMessage = (error: any, fallback: string): string => {
+  const message = error?.response?.data?.message;
+
+  if (typeof message === 'string' && message.trim()) {
+    return message;
+  }
+
+  if (Array.isArray(message) && message.length > 0) {
+    return message.filter(Boolean).join(', ');
+  }
+
+  if (message && typeof message === 'object') {
+    const nestedMessage = (message as { message?: unknown }).message;
+    if (typeof nestedMessage === 'string' && nestedMessage.trim()) {
+      return nestedMessage;
+    }
+    if (Array.isArray(nestedMessage) && nestedMessage.length > 0) {
+      return nestedMessage.filter(Boolean).join(', ');
+    }
+  }
+
+  if (typeof error?.message === 'string' && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 interface OrderState {
   orders: OrderTableReponse[];
   pagedOrders: OrderListResponse | null;
@@ -53,7 +81,7 @@ export const fetchOrders = createAsyncThunk(
       const response = await orderService.getOrders(params);
       return response;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch orders');
+      return rejectWithValue(extractErrorMessage(error, 'Failed to fetch orders'));
     }
   }
 );
@@ -65,7 +93,7 @@ export const fetchOrderById = createAsyncThunk(
       const response = await orderService.getOrderById(id);
       return response;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fetch order');
+      return rejectWithValue(extractErrorMessage(error, 'Failed to fetch order'));
     }
   }
 );
@@ -77,7 +105,7 @@ export const createOrder = createAsyncThunk(
       const response = await orderService.createOrder(data);
       return response;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create order');
+      return rejectWithValue(extractErrorMessage(error, 'Failed to create order'));
     }
   }
 );
@@ -92,7 +120,7 @@ export const fulfillOrder = createAsyncThunk(
       const response = await orderService.fulfillOrder(orderId, data);
       return response;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to fulfill order');
+      return rejectWithValue(extractErrorMessage(error, 'Failed to fulfill order'));
     }
   }
 );
@@ -119,7 +147,7 @@ export const updateOrderStatus = createAsyncThunk(
       );
       return response;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to update order status');
+      return rejectWithValue(extractErrorMessage(error, 'Failed to update order status'));
     }
   }
 );

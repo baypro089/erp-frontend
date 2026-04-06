@@ -52,7 +52,9 @@ test.describe('Authentication flows', () => {
     });
 
     test('login with correct credentials redirects away from login page', async ({ page }) => {
-        await loginAs(page, 'admin', '123456');
+        const username = process.env.E2E_USERNAME ?? 'EMP-0037';
+        const password = process.env.E2E_PASSWORD ?? '123456aA@';
+        await loginAs(page, username, password);
 
         // Should no longer be on the login page
         await expect(page).not.toHaveURL(/\/auth\/login/);

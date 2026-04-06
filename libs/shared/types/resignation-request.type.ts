@@ -2,7 +2,7 @@ import { EmployeeResponse } from "./employees.type";
 import { PagedResult } from "./pagedResult.type";
 import { UserResponse } from "./users.type";
 
-type ResighnationRequestResponse = {
+type ResignationRequestResponse = {
     id: string;
     employee: EmployeeResponse;
     approver?: UserResponse;
@@ -24,10 +24,10 @@ type CreateResignationRequest = {
     handoverNote: string;
 }
 
-type ResighnationRequestListResponse = PagedResult<ResighnationRequestResponse>;
+type ResignationRequestListResponse = PagedResult<ResignationRequestResponse>;
 
 export type {
-    ResighnationRequestResponse,
+    ResignationRequestResponse,
     CreateResignationRequest,
-    ResighnationRequestListResponse
+    ResignationRequestListResponse
 };

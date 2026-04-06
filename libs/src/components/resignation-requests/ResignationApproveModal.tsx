@@ -13,13 +13,13 @@ import {
   Alert,
 } from '@mui/material';
 import { CheckCircle, Warning } from '@mui/icons-material';
-import type { ResighnationRequestResponse } from '@libs/shared/types/resignation-request.type';
+import type { ResignationRequestResponse } from '@libs/shared/types/resignation-request.type';
 
 interface ResignationApproveModalProps {
   open: boolean;
   onClose: () => void;
   onConfirm: (approvedLastDay: Date, hrNote?: string) => Promise<void>;
-  resignation: ResighnationRequestResponse | null;
+  resignation: ResignationRequestResponse | null;
   loading?: boolean;
 }
 

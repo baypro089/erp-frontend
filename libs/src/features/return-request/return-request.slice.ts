@@ -8,6 +8,34 @@ import type {
 } from '@libs/shared/types/return-request.type';
 import type { OrderResponse } from '@libs/shared/types/order.type';
 
+const extractErrorMessage = (error: any, fallback: string): string => {
+  const message = error?.response?.data?.message;
+
+  if (typeof message === 'string' && message.trim()) {
+    return message;
+  }
+
+  if (Array.isArray(message) && message.length > 0) {
+    return message.filter(Boolean).join(', ');
+  }
+
+  if (message && typeof message === 'object') {
+    const nestedMessage = (message as { message?: unknown }).message;
+    if (typeof nestedMessage === 'string' && nestedMessage.trim()) {
+      return nestedMessage;
+    }
+    if (Array.isArray(nestedMessage) && nestedMessage.length > 0) {
+      return nestedMessage.filter(Boolean).join(', ');
+    }
+  }
+
+  if (typeof error?.message === 'string' && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+};
+
 interface ReturnRequestState {
   returnRequests: ReturnRequesTableResponse[];
   pagedReturnRequests: ReturnRequesTableListResponse | null;
@@ -41,7 +69,7 @@ export const fetchReturnRequests = createAsyncThunk(
     try {
       return await returnRequestService.getReturnRequests(params);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Lấy danh sách thất bại');
+      return rejectWithValue(extractErrorMessage(error, 'Lấy danh sách thất bại'));
     }
   }
 );
@@ -52,7 +80,7 @@ export const fetchReturnRequestById = createAsyncThunk(
     try {
       return await returnRequestService.getReturnRequestById(id);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Lấy chi tiết thất bại');
+      return rejectWithValue(extractErrorMessage(error, 'Lấy chi tiết thất bại'));
     }
   }
 );
@@ -63,7 +91,7 @@ export const createReturnRequest = createAsyncThunk(
     try {
       return await returnRequestService.createReturnRequest(data);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Tạo phiếu trả hàng thất bại');
+      return rejectWithValue(extractErrorMessage(error, 'Tạo phiếu trả hàng thất bại'));
     }
   }
 );
@@ -74,7 +102,7 @@ export const searchOrdersForReturn = createAsyncThunk(
     try {
       return await returnRequestService.searchOrders(query);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Tìm kiếm thất bại');
+      return rejectWithValue(extractErrorMessage(error, 'Tìm kiếm thất bại'));
     }
   }
 );
@@ -85,7 +113,7 @@ export const fetchOrderForReturn = createAsyncThunk(
     try {
       return await returnRequestService.getOrderById(orderId);
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || 'Lấy đơn hàng thất bại');
+      return rejectWithValue(extractErrorMessage(error, 'Lấy đơn hàng thất bại'));
     }
   }
 );

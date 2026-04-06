@@ -1,15 +1,15 @@
 import api from '@libs/src/services/api.service';
 import type {
-  ResighnationRequestResponse,
+  ResignationRequestResponse,
   CreateResignationRequest,
-  ResighnationRequestListResponse,
+  ResignationRequestListResponse,
 } from '@libs/shared/types/resignation-request.type';
 
 class ResignationRequestService {
   private readonly BASE_URL = '/resignation-requests';
 
   // Create a new resignation request
-  async createResignationRequest(data: CreateResignationRequest): Promise<ResighnationRequestResponse> {
+  async createResignationRequest(data: CreateResignationRequest): Promise<ResignationRequestResponse> {
     const response = await api.post<any>(this.BASE_URL, data);
     return response.data.data;
   }
@@ -20,7 +20,7 @@ class ResignationRequestService {
     employeeName?: string,
     page?: number,
     pageSize?: number,
-  ): Promise<ResighnationRequestListResponse> {
+  ): Promise<ResignationRequestListResponse> {
     const params: any = {};
     if (status) params.status = status;
     if (employeeName) params.employeeName = employeeName;
@@ -32,13 +32,13 @@ class ResignationRequestService {
   }
 
   // Get resignation request by ID
-  async getResignationRequestById(id: string): Promise<ResighnationRequestResponse> {
+  async getResignationRequestById(id: string): Promise<ResignationRequestResponse> {
     const response = await api.get<any>(`${this.BASE_URL}/${id}`);
     return response.data.data;
   }
 
   // Get my resignation requests
-  async getMyResignationRequests(employeeId: string): Promise<ResighnationRequestResponse[]> {
+  async getMyResignationRequests(employeeId: string): Promise<ResignationRequestResponse[]> {
     const response = await api.get<any>(`${this.BASE_URL}/employee/${employeeId}`);
     return response.data.data;
   }
@@ -48,7 +48,7 @@ class ResignationRequestService {
     id: string,
     approvedLastDay: Date,
     hrNote?: string
-  ): Promise<ResighnationRequestResponse> {
+  ): Promise<ResignationRequestResponse> {
     const response = await api.put<any>(`${this.BASE_URL}/${id}/approve`, {
       id,
       approvedLastDay: approvedLastDay.toISOString(),
@@ -61,7 +61,7 @@ class ResignationRequestService {
   async rejectResignationRequest(
     id: string,
     hrNote: string
-  ): Promise<ResighnationRequestResponse> {
+  ): Promise<ResignationRequestResponse> {
     const response = await api.put<any>(`${this.BASE_URL}/${id}/reject`, {
       hrNote,
     });

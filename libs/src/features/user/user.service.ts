@@ -3,8 +3,8 @@ import type { UserResponse, UserFilterAndPaged, CreateUserDto, UpdateUserDto } f
 
 const userService = {
   async getUsers(): Promise<UserResponse[]> {
-    const response = await apiService.get<UserResponse[]>('/users');
-    return response.data;
+    const response = await apiService.get<{ data: UserResponse[] }>('/users');
+    return response.data.data;
   },
 
   async getUsersWithOptional(
@@ -40,13 +40,13 @@ const userService = {
   },
 
   async createUser(data: CreateUserDto): Promise<UserResponse> {
-    const response = await apiService.post<UserResponse>('/users', data);
-    return response.data;
+    const response = await apiService.post<{ data: UserResponse }>('/users', data);
+    return response.data.data;
   },
 
   async updateUser(id: string, data: UpdateUserDto): Promise<UserResponse> {
-    const response = await apiService.put<UserResponse>(`/users/${id}`, data);
-    return response.data;
+    const response = await apiService.put<{ data: UserResponse }>(`/users/${id}`, data);
+    return response.data.data;
   },
 
   async banUser(id: string): Promise<void> {

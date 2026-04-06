@@ -105,38 +105,38 @@ test.describe('HR CRUD – Departments', () => {
 
     test('opens Add Department dialog via button', async ({ page }) => {
         await gotoDepartmentsReady(page);
-        await page.getByRole('button', { name: 'Add Department' }).click();
+        await page.getByRole('button', { name: /Add Department|Thêm phòng ban/i }).click();
         await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 10_000 });
-        await expect(page.getByRole('heading', { name: 'Add New Department' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Add New Department|Thêm phòng ban mới/i })).toBeVisible();
     });
 
     test('shows validation error when submitting empty department name', async ({ page }) => {
         await gotoDepartmentsReady(page);
-        await page.getByRole('button', { name: 'Add Department' }).click();
+        await page.getByRole('button', { name: /Add Department|Thêm phòng ban/i }).click();
         await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 10_000 });
 
-        await page.getByRole('button', { name: 'Create' }).click();
-        await expect(page.getByText('Department name is required')).toBeVisible({ timeout: 5_000 });
+        await page.getByRole('button', { name: /Create|Tạo mới/i }).click();
+        await expect(page.getByText(/Department name is required|Tên phòng ban là bắt buộc/i)).toBeVisible({ timeout: 5_000 });
         await expect(page.locator('[role="dialog"]')).toBeVisible();
     });
 
     test('Cancel button closes the dialog without creating', async ({ page }) => {
         await gotoDepartmentsReady(page);
-        await page.getByRole('button', { name: 'Add Department' }).click();
+        await page.getByRole('button', { name: /Add Department|Thêm phòng ban/i }).click();
         await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 10_000 });
 
-        await page.getByRole('button', { name: 'Cancel' }).click();
+        await page.getByRole('button', { name: /Cancel|Hủy/i }).click();
         await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 5_000 });
     });
 
     test('creates a new department successfully', async ({ page }) => {
         await gotoDepartmentsReady(page);
-        await page.getByRole('button', { name: 'Add Department' }).click();
+        await page.getByRole('button', { name: /Add Department|Thêm phòng ban/i }).click();
         await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 10_000 });
 
         // Scope to dialog to avoid strict mode violation with the filter bar field
-        await page.locator('[role="dialog"]').getByRole('textbox', { name: 'Department Name' }).fill(deptName);
-        await page.getByRole('button', { name: 'Create' }).click();
+        await page.locator('[role="dialog"]').getByRole('textbox', { name: /Department Name|Tên phòng ban/i }).fill(deptName);
+        await page.getByRole('button', { name: /Create|Tạo mới/i }).click();
 
         // Dialog closes on success
         await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 15_000 });
@@ -145,7 +145,7 @@ test.describe('HR CRUD – Departments', () => {
         await page.waitForLoadState('networkidle');
         await expect(page.locator('.MuiTableContainer-root').first()).toBeVisible({ timeout: 20_000 });
         // Use the search field to filter — departments page does client-side search
-        await page.locator('input[placeholder="Search by department name..."]').fill(deptName);
+        await page.locator('input[placeholder="Tìm theo tên phòng ban..."]').fill(deptName);
         // New department now visible in the filtered list
         await expect(page.getByText(deptName)).toBeVisible({ timeout: 10_000 });
     });
@@ -156,8 +156,8 @@ test.describe('HR CRUD – Departments', () => {
 // Tests: correct default month/year pre-fill, description text, cancel action
 // ---------------------------------------------------------------------------
 test.describe('HR Business Logic – Payroll Generation Dialog', () => {
-    // The current date in the test environment is March 2026
-    const CURRENT_MONTH_LABEL = '03/2026';
+    const now = new Date();
+    const CURRENT_MONTH_LABEL = `${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
 
     async function gotoPayrollReady(page: import('@playwright/test').Page) {
         await page.goto('/hr/payroll');
@@ -180,11 +180,11 @@ test.describe('HR Business Logic – Payroll Generation Dialog', () => {
         await expect(page.locator('[role="dialog"]').getByText('Tính lương hàng loạt')).toBeVisible();
     });
 
-    test('dialog pre-fills current month and year in confirmation text (03/2026)', async ({ page }) => {
+    test('dialog pre-fills current month and year in confirmation text', async ({ page }) => {
         await gotoPayrollReady(page);
         await page.getByRole('button', { name: 'Tính lương tháng này' }).click();
         await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 10_000 });
-        // Confirmation sentence: "tính lương cho tất cả nhân viên trong tháng 03/2026"
+        // Confirmation sentence: "tính lương cho tất cả nhân viên trong tháng mm/yyyy"
         await expect(page.locator('[role="dialog"]').getByText(CURRENT_MONTH_LABEL)).toBeVisible();
     });
 

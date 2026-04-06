@@ -1,15 +1,15 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import resignationRequestService from './resignation-request.service';
 import type {
-  ResighnationRequestResponse,
+  ResignationRequestResponse,
   CreateResignationRequest,
-  ResighnationRequestListResponse,
+  ResignationRequestListResponse,
 } from '@libs/shared/types/resignation-request.type';
 import { ResignationStatus } from '@libs/shared/enums/resignation-status.enum';
 
 interface ResignationRequestState {
-  resignationRequests: ResighnationRequestResponse[];
-  currentResignationRequest: ResighnationRequestResponse | null;
+  resignationRequests: ResignationRequestResponse[];
+  currentResignationRequest: ResignationRequestResponse | null;
   totalCount: number;
   totalPages: number;
   loading: boolean;

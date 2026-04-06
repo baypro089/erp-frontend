@@ -37,7 +37,7 @@ import {
   clearError,
 } from '@libs/src/features/resignation-request/resignation-request.slice';
 import type {
-  ResighnationRequestResponse,
+  ResignationRequestResponse,
 } from '@libs/shared/types/resignation-request.type';
 import { ResignationStatus } from '@libs/shared/enums/resignation-status.enum';
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
@@ -79,7 +79,7 @@ function HRResignationPageContent() {
   // Dialog states
   const [openApprove, setOpenApprove] = useState(false);
   const [openReject, setOpenReject] = useState(false);
-  const [selectedResignation, setSelectedResignation] = useState<ResighnationRequestResponse | null>(null);
+  const [selectedResignation, setSelectedResignation] = useState<ResignationRequestResponse | null>(null);
 
   // Tab state (0 = All, 1 = Pending)
   const [currentTab, setCurrentTab] = useState(1); // Default to Pending
@@ -171,12 +171,12 @@ function HRResignationPageContent() {
   }, [error, operationError, dispatch]);
 
   // Define table columns
-  const columns: Column<ResighnationRequestResponse>[] = [
+  const columns: Column<ResignationRequestResponse>[] = [
     {
       id: 'employee.fullName',
       label: 'Nhân viên',
       minWidth: 180,
-      format: (value: any, row: ResighnationRequestResponse) => (
+      format: (value: any, row: ResignationRequestResponse) => (
         <Typography variant="body2" fontWeight={600}>
           {row.employee.fullName}
         </Typography>
@@ -268,21 +268,21 @@ function HRResignationPageContent() {
       icon: <ApproveIcon />,
       label: 'Duyệt',
       color: 'success' as const,
-      onClick: guardFn<ResighnationRequestResponse>(PERMISSIONS.RESIGNATION_REQUEST.APPROVE, (row) => {
+      onClick: guardFn<ResignationRequestResponse>(PERMISSIONS.RESIGNATION_REQUEST.APPROVE, (row) => {
         setSelectedResignation(row);
         setOpenApprove(true);
       }),
-      hidden: (row: ResighnationRequestResponse) => row.status !== ResignationStatus.PENDING,
+      hidden: (row: ResignationRequestResponse) => row.status !== ResignationStatus.PENDING,
     },
     {
       icon: <RejectIcon />,
       label: 'Từ chối',
       color: 'error' as const,
-      onClick: guardFn<ResighnationRequestResponse>(PERMISSIONS.RESIGNATION_REQUEST.APPROVE, (row) => {
+      onClick: guardFn<ResignationRequestResponse>(PERMISSIONS.RESIGNATION_REQUEST.APPROVE, (row) => {
         setSelectedResignation(row);
         setOpenReject(true);
       }),
-      hidden: (row: ResighnationRequestResponse) => row.status !== ResignationStatus.PENDING,
+      hidden: (row: ResignationRequestResponse) => row.status !== ResignationStatus.PENDING,
     },
   ];
 

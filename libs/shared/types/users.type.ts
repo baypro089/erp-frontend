@@ -15,8 +15,8 @@ type UserResponse = {
     username: string;
     email: string;
     role: RoleResponse;
-    employee: EmployeeResponse;
-    isActive: boolean; // dòng này là thuộc tính thừa, không cần hiển thị ra ngoài
+    employee?: EmployeeResponse;
+    isActive: boolean;
     createdAt: Date;
     updatedAt: Date;
     status?: UserStatus;

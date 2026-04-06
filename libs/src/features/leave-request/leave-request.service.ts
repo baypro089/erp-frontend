@@ -14,8 +14,10 @@ class LeaveRequestService {
   // Create a new leave request
   async createLeaveRequest(payload: CreateLeaveRequestPayload): Promise<LeaveRequestResponse> {
     const { data, documentFile } = payload;
+    const hasDocumentUrl = !!data.documentUrl;
 
-    if (!documentFile) {
+    // URL mode and file mode both use multipart for a consistent backend contract.
+    if (!documentFile && !hasDocumentUrl) {
       const response = await api.post<any>(this.BASE_URL, {
         ...data,
         startDate: data.startDate.toISOString(),
@@ -33,6 +35,9 @@ class LeaveRequestService {
     }
     formData.append('type', data.type);
     formData.append('reason', data.reason);
+    if (typeof data.autoSplitIfInsufficient === 'boolean') {
+      formData.append('autoSplitIfInsufficient', String(data.autoSplitIfInsufficient));
+    }
     if (data.documentUrl) {
       formData.append('documentUrl', data.documentUrl);
     }

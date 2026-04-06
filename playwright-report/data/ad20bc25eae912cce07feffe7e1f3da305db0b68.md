@@ -1,0 +1,127 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - img [ref=e7]
+          - generic [ref=e10]:
+            - generic [ref=e11]: Bảng điều khiển quản trị
+            - generic [ref=e12]: Bảng điều khiển hệ thống
+        - generic [ref=e13]:
+          - generic:
+            - img
+          - textbox "Tìm kiếm..." [ref=e15]
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - img [ref=e18]
+            - generic [ref=e21]:
+              - generic [ref=e22]: Tổng người dùng
+              - paragraph [ref=e23]: "128"
+          - generic [ref=e24]:
+            - img [ref=e25]
+            - generic [ref=e28]:
+              - generic [ref=e29]: Đang hoạt động
+              - paragraph [ref=e30]: "42"
+          - generic [ref=e31]:
+            - img [ref=e32]
+            - generic [ref=e35]:
+              - generic [ref=e36]: Hệ thống
+              - paragraph [ref=e37]: Hoạt động tốt
+        - generic [ref=e38]:
+          - button "Thông báo" [ref=e39] [cursor=pointer]:
+            - generic [ref=e40]:
+              - img [ref=e41]
+              - generic [ref=e43]: "5"
+          - button "Tài khoản" [ref=e44] [cursor=pointer]:
+            - generic [ref=e45]: A
+    - generic [ref=e48]:
+      - generic [ref=e50]:
+        - img [ref=e52]
+        - heading "ADMIN PANEL" [level=6] [ref=e55]
+        - generic [ref=e57]: Control System
+        - button [ref=e58] [cursor=pointer]:
+          - img [ref=e59]
+      - separator [ref=e61]
+      - list [ref=e63]:
+        - button "Tổng quan" [ref=e65] [cursor=pointer]:
+          - img [ref=e67]
+          - generic [ref=e70]: Tổng quan
+        - button "Phòng ban" [ref=e72] [cursor=pointer]:
+          - img [ref=e74]
+          - generic [ref=e77]: Phòng ban
+        - button "Chức vụ" [ref=e79] [cursor=pointer]:
+          - img [ref=e81]
+          - generic [ref=e84]: Chức vụ
+        - button "Vai trò" [ref=e86] [cursor=pointer]:
+          - img [ref=e88]
+          - generic [ref=e91]: Vai trò
+        - button "Người dùng" [ref=e93] [cursor=pointer]:
+          - img [ref=e95]
+          - generic [ref=e98]: Người dùng
+        - button "Ngày nghỉ lễ" [ref=e100] [cursor=pointer]:
+          - img [ref=e102]
+          - generic [ref=e105]: Ngày nghỉ lễ
+        - button "Danh mục" [ref=e107] [cursor=pointer]:
+          - img [ref=e109]
+          - generic [ref=e112]: Danh mục
+        - button "Thương hiệu" [ref=e114] [cursor=pointer]:
+          - img [ref=e116]
+          - generic [ref=e119]: Thương hiệu
+        - button "Sản phẩm" [ref=e121] [cursor=pointer]:
+          - img [ref=e123]
+          - generic [ref=e127]: Sản phẩm
+        - button "Cấu hình Lương" [ref=e129] [cursor=pointer]:
+          - img [ref=e131]
+          - generic [ref=e134]: Cấu hình Lương
+        - button "Báo cáo" [ref=e136] [cursor=pointer]:
+          - img [ref=e138]
+          - generic [ref=e141]: Báo cáo
+      - separator [ref=e142]
+      - generic [ref=e143]:
+        - text: © 2026 ERP System
+        - generic [ref=e144]: Admin Module
+    - main [ref=e145]:
+      - generic [ref=e148]:
+        - generic [ref=e149]:
+          - generic [ref=e150]:
+            - heading "Bảng điều khiển quản trị" [level=4] [ref=e151]
+            - paragraph [ref=e152]: Tổng quan quản trị hệ thống ERP
+          - generic [ref=e153]:
+            - generic [ref=e155]:
+              - combobox [ref=e156] [cursor=pointer]: Tháng này
+              - textbox: this-month
+              - img
+              - group
+            - generic [ref=e157]:
+              - generic [ref=e158]: Từ ngày
+              - generic [ref=e159]:
+                - textbox "Từ ngày" [ref=e160]: 2026-04-01
+                - group:
+                  - generic: Từ ngày
+            - generic [ref=e161]:
+              - generic [ref=e162]: Đến ngày
+              - generic [ref=e163]:
+                - textbox "Đến ngày" [ref=e164]: 2026-04-30
+                - group:
+                  - generic: Đến ngày
+        - alert [ref=e165]:
+          - img [ref=e167]
+          - generic [ref=e169]: Không thể tải dữ liệu dashboard
+  - generic [ref=e174] [cursor=pointer]:
+    - button "Open Next.js Dev Tools" [ref=e175]:
+      - img [ref=e176]
+    - generic [ref=e179]:
+      - button "Open issues overlay" [ref=e180]:
+        - generic [ref=e181]:
+          - generic [ref=e182]: "1"
+          - generic [ref=e183]: "2"
+        - generic [ref=e184]:
+          - text: Issue
+          - generic [ref=e185]: s
+      - button "Collapse issues badge" [ref=e186]:
+        - img [ref=e187]
+  - alert [ref=e189]
+```
