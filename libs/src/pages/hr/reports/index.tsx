@@ -96,17 +96,46 @@ function HrReportsPageContent() {
 
   // Helper functions to get allowance and deduction from details
   const getAllowance = useCallback((details: Record<string, number> = {}) => {
-    if (!salaryComponents.length) return 0;
-    return salaryComponents
-      .filter(comp => comp.type === 'ALLOWANCE' || comp.type === 'BONUS')
-      .reduce((total, comp) => total + (details[comp.code] || 0), 0);
+    if (!details || Object.keys(details).length === 0) return 0;
+
+    // Support both component schemas:
+    // - New: EARNING / DEDUCTION
+    // - Legacy: ALLOWANCE / BONUS / DEDUCTION
+    if (salaryComponents.length > 0) {
+      return salaryComponents
+        .filter((comp) => {
+          const type = (comp.type || '').toUpperCase();
+          return type === 'EARNING' || type === 'ALLOWANCE' || type === 'BONUS';
+        })
+        .reduce((total, comp) => total + (Number(details[comp.code]) || 0), 0);
+    }
+
+    // Fallback when component catalog is not available
+    return Object.entries(details).reduce((total, [key, value]) => {
+      const upperKey = key.toUpperCase();
+      if (upperKey.includes('DEDUCTION') || upperKey.includes('TAX')) {
+        return total;
+      }
+      return total + (Number(value) || 0);
+    }, 0);
   }, [salaryComponents]);
 
   const getDeduction = useCallback((details: Record<string, number> = {}) => {
-    if (!salaryComponents.length) return 0;
-    return salaryComponents
-      .filter(comp => comp.type === 'DEDUCTION')
-      .reduce((total, comp) => total + (details[comp.code] || 0), 0);
+    if (!details || Object.keys(details).length === 0) return 0;
+
+    if (salaryComponents.length > 0) {
+      return salaryComponents
+        .filter((comp) => (comp.type || '').toUpperCase() === 'DEDUCTION')
+        .reduce((total, comp) => total + (Number(details[comp.code]) || 0), 0);
+    }
+
+    return Object.entries(details).reduce((total, [key, value]) => {
+      const upperKey = key.toUpperCase();
+      if (upperKey.includes('DEDUCTION') || upperKey.includes('TAX')) {
+        return total + (Number(value) || 0);
+      }
+      return total;
+    }, 0);
   }, [salaryComponents]);
 
   // Format currency

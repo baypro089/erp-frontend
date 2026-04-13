@@ -135,7 +135,7 @@ export default function ProfileEmployeeTab({
     [Status.ACTIVE]: 'active',
     [Status.RESIGNED]: 'inactive',
     [Status.DRAFT]: 'pending',
-    [Status.MATERNITY_LEAVE]: 'rejected',
+    [Status.MATERNITY_LEAVE]: 'inactive',
     [Status.PROBATION]: 'pending',
     [Status.TERMINATED]: 'inactive',
   };

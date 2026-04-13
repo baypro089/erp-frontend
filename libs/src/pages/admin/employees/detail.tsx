@@ -86,6 +86,7 @@ export default function EmployeeDetailPage() {
   const params = useParams();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+  const { user: authUser } = useSelector((state: RootState) => state.auth);
   const { currentEmployee, loading, operationLoading: employeeOperationLoading } = useSelector(
     (state: RootState) => state.employee
   );
@@ -136,6 +137,10 @@ export default function EmployeeDetailPage() {
   });
 
   const employeeId = params?.id as string;
+  const roleCode =
+    (typeof authUser?.role === 'string' ? authUser.role : authUser?.role?.role_code)?.toUpperCase() ||
+    '';
+  const isAdminRole = roleCode === 'ADMIN';
 
   const { guardAction, permissionDialogProps } = usePermissionGuard();
 
@@ -474,13 +479,17 @@ export default function EmployeeDetailPage() {
                   icon: <EditIcon />,
                   variant: 'contained',
                 },
-                {
-                  label: 'Sa thải',
-                  onClick: guardAction(PERMISSIONS.TERMINATION_REQUEST.CREATE, handleOpenTerminateDialog),
-                  icon: <TerminateIcon />,
-                  variant: 'contained',
-                  color: 'error',
-                },
+                ...(isAdminRole
+                  ? [
+                      {
+                        label: 'Sa thải',
+                        onClick: guardAction(PERMISSIONS.TERMINATION_REQUEST.CREATE, handleOpenTerminateDialog),
+                        icon: <TerminateIcon />,
+                        variant: 'contained',
+                        color: 'error',
+                      },
+                    ]
+                  : []),
               ]
         }
       />

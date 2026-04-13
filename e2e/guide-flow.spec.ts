@@ -4,6 +4,7 @@ import path from 'path';
 
 const README_PATH = path.join(process.cwd(), 'mockups', 'README.md');
 const OUTPUT_DIR = path.join(process.cwd(), 'mockups', 'ui-pages');
+const CAPTURE_VIEWPORT = { width: 1920, height: 1080 };
 
 type LoginCredentials = {
   username: string;
@@ -49,7 +50,8 @@ function getStepFileName(step: number, slug: string): string {
 
 async function captureStep(page: Page, step: number, slug: string) {
   const filePath = path.join(OUTPUT_DIR, getStepFileName(step, slug));
-  await page.waitForTimeout(400);
+  await page.waitForLoadState('networkidle');
+  await page.waitForTimeout(650);
   await page.screenshot({ path: filePath, fullPage: true });
   console.log(`[guide-flow] captured step ${String(step).padStart(2, '0')}: ${slug}`);
 }
@@ -148,7 +150,7 @@ async function getBrandSeedName(page: Page, fallbackSeed: string): Promise<strin
 }
 
 test.describe('Guide flow with real data and screenshots', () => {
-  test.setTimeout(35 * 60_000);
+  test.setTimeout(70 * 60_000);
 
   test('capture ultra detailed real usage flow across portals', async ({ browser }) => {
     ensureOutputDir();
@@ -162,7 +164,10 @@ test.describe('Guide flow with real data and screenshots', () => {
     let step = 1;
     const timestamp = Date.now();
 
-    const adminContext = await browser.newContext({ baseURL: 'http://localhost:4000' });
+    const adminContext = await browser.newContext({
+      baseURL: 'http://localhost:4000',
+      viewport: CAPTURE_VIEWPORT,
+    });
     const adminPage = await adminContext.newPage();
 
     await loginToPortalSelection(adminPage, credentials);
@@ -285,7 +290,10 @@ test.describe('Guide flow with real data and screenshots', () => {
 
     await adminContext.close();
 
-    const commercialContext = await browser.newContext({ baseURL: 'http://localhost:4000' });
+    const commercialContext = await browser.newContext({
+      baseURL: 'http://localhost:4000',
+      viewport: CAPTURE_VIEWPORT,
+    });
     const commercialPage = await commercialContext.newPage();
 
     await loginToPortalSelection(commercialPage, credentials);
@@ -391,7 +399,10 @@ test.describe('Guide flow with real data and screenshots', () => {
 
     await commercialContext.close();
 
-    const hrContext = await browser.newContext({ baseURL: 'http://localhost:4000' });
+    const hrContext = await browser.newContext({
+      baseURL: 'http://localhost:4000',
+      viewport: CAPTURE_VIEWPORT,
+    });
     const hrPage = await hrContext.newPage();
 
     await loginToPortalSelection(hrPage, credentials);
@@ -463,5 +474,403 @@ test.describe('Guide flow with real data and screenshots', () => {
     }
 
     await hrContext.close();
+
+    const deepCommercialContext = await browser.newContext({
+      baseURL: 'http://localhost:4000',
+      viewport: CAPTURE_VIEWPORT,
+    });
+    const deepCommercialPage = await deepCommercialContext.newPage();
+
+    await loginToPortalSelection(deepCommercialPage, credentials);
+    await waitForPageReady(deepCommercialPage);
+    await openPortalFromSelection(deepCommercialPage, 'Commercial Portal', /\/commercial\//);
+    await waitForPageReady(deepCommercialPage);
+
+    await deepCommercialPage.goto('/commercial/sales/create', { waitUntil: 'networkidle' });
+    await captureStep(deepCommercialPage, step++, 'commercial-sales-create-open');
+
+    const warehouseSelect = deepCommercialPage.getByRole('combobox', { name: /Kho hiển thị sản phẩm/i }).first();
+    if (await warehouseSelect.isVisible().catch(() => false)) {
+      await warehouseSelect.click();
+      await captureStep(deepCommercialPage, step++, 'commercial-sales-create-warehouse-dropdown');
+      await deepCommercialPage.keyboard.press('Escape').catch(() => undefined);
+    } else {
+      await captureStep(deepCommercialPage, step++, 'commercial-sales-create-warehouse-dropdown');
+    }
+
+    const productSearchBox = deepCommercialPage.locator('input[placeholder="Tìm sản phẩm theo tên hoặc SKU..."]');
+    if (await productSearchBox.isVisible().catch(() => false)) {
+      await productSearchBox.fill('a').catch(() => undefined);
+      await waitForPageReady(deepCommercialPage);
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-sales-create-product-search');
+
+    const firstProductCard = deepCommercialPage.locator('.MuiCardActionArea-root').first();
+    if (await firstProductCard.isVisible().catch(() => false)) {
+      await firstProductCard.click().catch(() => undefined);
+      await deepCommercialPage.waitForTimeout(300);
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-sales-create-product-added-to-cart');
+
+    const customerPhoneBox = deepCommercialPage.locator('input[placeholder="Nhập số điện thoại khách hàng..."]');
+    if (await customerPhoneBox.isVisible().catch(() => false)) {
+      await customerPhoneBox.fill(`09${String(timestamp).slice(-8)}`).catch(() => undefined);
+      const findCustomerBtn = deepCommercialPage.getByRole('button', { name: 'Tìm' }).first();
+      if (await findCustomerBtn.isVisible().catch(() => false)) {
+        await findCustomerBtn.click().catch(() => undefined);
+      }
+      await deepCommercialPage.waitForTimeout(400);
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-sales-create-customer-search');
+
+    const newCustomerDialog = deepCommercialPage.getByRole('dialog').filter({ hasText: 'Khách hàng mới' });
+    if (await newCustomerDialog.isVisible().catch(() => false)) {
+      await newCustomerDialog.getByRole('textbox', { name: 'Tên khách hàng' }).fill(`Khach E2E ${timestamp}`).catch(() => undefined);
+      await newCustomerDialog.getByRole('button', { name: 'Tạo khách hàng' }).click().catch(() => undefined);
+      await deepCommercialPage.waitForTimeout(500);
+    }
+
+    const discountBox = deepCommercialPage.getByRole('textbox', { name: 'Chiết khấu' }).first();
+    if (await discountBox.isVisible().catch(() => false)) {
+      await discountBox.fill('5000').catch(() => undefined);
+    }
+    await deepCommercialPage.locator('textarea[placeholder="Ghi chú đơn hàng..."]').fill('Don hang tao tu guide flow').catch(() => undefined);
+    await captureStep(deepCommercialPage, step++, 'commercial-sales-create-discount-note');
+
+    const createOrderBtn = deepCommercialPage.getByRole('button', { name: 'TẠO ĐƠN HÀNG' }).first();
+    const canCreateOrder = await createOrderBtn.isEnabled().catch(() => false);
+    await captureStep(deepCommercialPage, step++, 'commercial-sales-create-submit');
+    if (canCreateOrder) {
+      await createOrderBtn.click().catch(() => undefined);
+      await deepCommercialPage.waitForURL(/\/commercial\/orders/, { timeout: 20_000 }).catch(() => undefined);
+    }
+
+    if (!/\/commercial\/orders/.test(deepCommercialPage.url())) {
+      await deepCommercialPage.goto('/commercial/orders', { waitUntil: 'networkidle' });
+    }
+    await waitForDataTable(deepCommercialPage);
+    await captureStep(deepCommercialPage, step++, 'commercial-orders-post-create');
+
+    const firstOrderActionBtn = deepCommercialPage.locator('.MuiTableBody-root tr button').first();
+    if (await firstOrderActionBtn.isVisible().catch(() => false)) {
+      await firstOrderActionBtn.click().catch(() => undefined);
+      await deepCommercialPage.waitForTimeout(500);
+    }
+    if (!/\/commercial\/orders\/.+/.test(deepCommercialPage.url())) {
+      await deepCommercialPage.goto('/commercial/orders', { waitUntil: 'networkidle' });
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-order-detail-open');
+
+    if (!/\/commercial\/orders\/.+/.test(deepCommercialPage.url())) {
+      await deepCommercialPage.goto('/commercial/orders', { waitUntil: 'networkidle' });
+      await deepCommercialPage.getByRole('button', { name: 'Tạo đơn hàng' }).first().click().catch(() => undefined);
+      await deepCommercialPage.goto('/commercial/warehouse/fulfillment', { waitUntil: 'networkidle' });
+    } else {
+      const goFulfillmentBtn = deepCommercialPage.getByRole('button', { name: 'Đi xuất kho' }).first();
+      if (await goFulfillmentBtn.isVisible().catch(() => false)) {
+        await goFulfillmentBtn.click().catch(() => undefined);
+      } else {
+        await deepCommercialPage.goto('/commercial/warehouse/fulfillment', { waitUntil: 'networkidle' });
+      }
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-order-detail-go-fulfillment');
+
+    await deepCommercialPage.waitForURL(/\/commercial\/warehouse\/fulfillment/, { timeout: 15_000 }).catch(() => undefined);
+    await waitForPageReady(deepCommercialPage);
+    await captureStep(deepCommercialPage, step++, 'commercial-fulfillment-pending-list');
+
+    const fulfillBtn = deepCommercialPage.getByRole('button', { name: 'Xuất hàng' }).first();
+    if (await fulfillBtn.isVisible().catch(() => false)) {
+      await fulfillBtn.click().catch(() => undefined);
+      await deepCommercialPage.waitForTimeout(400);
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-fulfillment-open-dialog');
+
+    const fulfillDialogWarehouse = deepCommercialPage.getByRole('combobox', { name: /Chọn kho xuất hàng/i }).first();
+    if (await fulfillDialogWarehouse.isVisible().catch(() => false)) {
+      await fulfillDialogWarehouse.click().catch(() => undefined);
+      const warehouseOptions = deepCommercialPage.getByRole('option');
+      if ((await warehouseOptions.count().catch(() => 0)) > 0) {
+        await warehouseOptions.first().click().catch(() => undefined);
+      } else {
+        await deepCommercialPage.keyboard.press('Escape').catch(() => undefined);
+      }
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-fulfillment-warehouse-selected');
+
+    const scanBtn = deepCommercialPage.getByRole('button', { name: /Quét Serial/i }).first();
+    if (await scanBtn.isVisible().catch(() => false)) {
+      await scanBtn.click().catch(() => undefined);
+    } else {
+      const confirmCheckbox = deepCommercialPage.getByRole('checkbox').first();
+      if (await confirmCheckbox.isVisible().catch(() => false)) {
+        await confirmCheckbox.check().catch(() => undefined);
+      }
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-fulfillment-item-confirmation');
+
+    const confirmFulfillBtn = deepCommercialPage.getByRole('button', { name: 'XÁC NHẬN XUẤT KHO' }).first();
+    if (await confirmFulfillBtn.isEnabled().catch(() => false)) {
+      await confirmFulfillBtn.click().catch(() => undefined);
+      await deepCommercialPage.waitForTimeout(500);
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-fulfillment-post-check');
+
+    await deepCommercialPage.goto('/commercial/inventory/imports', { waitUntil: 'networkidle' });
+    await waitForDataTable(deepCommercialPage);
+    await captureStep(deepCommercialPage, step++, 'commercial-imports-list');
+
+    const createImportBtn = deepCommercialPage.getByRole('button', { name: 'Tạo phiếu nhập' }).first();
+    if (await createImportBtn.isVisible().catch(() => false)) {
+      await createImportBtn.click().catch(() => undefined);
+    } else {
+      await deepCommercialPage.goto('/commercial/inventory/imports/create', { waitUntil: 'networkidle' });
+    }
+    await deepCommercialPage.waitForURL(/\/commercial\/inventory\/imports\/create/, { timeout: 15_000 }).catch(() => undefined);
+    await captureStep(deepCommercialPage, step++, 'commercial-import-create-page');
+
+    const importWarehouse = deepCommercialPage.getByRole('combobox', { name: 'Chọn Kho' }).first();
+    if (await importWarehouse.isVisible().catch(() => false)) {
+      await importWarehouse.click().catch(() => undefined);
+      const importWarehouseOption = deepCommercialPage.getByRole('option').first();
+      if (await importWarehouseOption.isVisible().catch(() => false)) {
+        await importWarehouseOption.click().catch(() => undefined);
+      }
+    }
+
+    const supplierInput = deepCommercialPage.getByRole('textbox', { name: 'Nhà cung cấp' }).first();
+    if (await supplierInput.isVisible().catch(() => false)) {
+      await supplierInput.click().catch(() => undefined);
+      await deepCommercialPage.waitForTimeout(300);
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-import-header-filled');
+
+    const importSupplierDialog = deepCommercialPage.getByRole('dialog').filter({ hasText: 'Chọn Nhà Cung Cấp' });
+    if (await importSupplierDialog.isVisible().catch(() => false)) {
+      const selectSupplierBtn = importSupplierDialog.getByRole('button', { name: 'Chọn' }).first();
+      if (await selectSupplierBtn.isVisible().catch(() => false)) {
+        await selectSupplierBtn.click().catch(() => undefined);
+      } else {
+        await importSupplierDialog.getByRole('button', { name: 'Đóng' }).click().catch(() => undefined);
+      }
+      await deepCommercialPage.waitForTimeout(350);
+    }
+
+    await deepCommercialPage.getByRole('button', { name: 'Thêm sản phẩm' }).click().catch(() => undefined);
+    await captureStep(deepCommercialPage, step++, 'commercial-import-add-item-row');
+
+    const productPickerInput = deepCommercialPage.getByRole('textbox', { name: /Nhấn để chọn sản phẩm/i }).first();
+    if (await productPickerInput.isVisible().catch(() => false)) {
+      await productPickerInput.click().catch(() => undefined);
+      await deepCommercialPage.waitForTimeout(300);
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-import-product-select-dialog');
+
+    const productDialog = deepCommercialPage.getByRole('dialog').filter({ hasText: 'Chọn Sản Phẩm' });
+    if (await productDialog.isVisible().catch(() => false)) {
+      const selectProductBtn = productDialog.getByRole('button', { name: 'Chọn' }).first();
+      if (await selectProductBtn.isVisible().catch(() => false)) {
+        await selectProductBtn.click().catch(() => undefined);
+        await deepCommercialPage.waitForTimeout(500);
+      } else {
+        await productDialog.getByRole('button', { name: 'Đóng' }).click().catch(() => undefined);
+      }
+    }
+
+    const numberInputs = deepCommercialPage.locator('input[type="number"]');
+    const numberInputCount = await numberInputs.count().catch(() => 0);
+    if (numberInputCount >= 2) {
+      await numberInputs.nth(numberInputCount - 2).fill('100000').catch(() => undefined);
+      await numberInputs.nth(numberInputCount - 1).fill('1').catch(() => undefined);
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-import-item-filled');
+
+    const saveImportBtn = deepCommercialPage.getByRole('button', { name: 'Lưu & Nhập kho' }).first();
+    if (await saveImportBtn.isVisible().catch(() => false)) {
+      await saveImportBtn.click().catch(() => undefined);
+      await deepCommercialPage.waitForTimeout(500);
+    }
+    await captureStep(deepCommercialPage, step++, 'commercial-import-submit-attempt');
+
+    await deepCommercialContext.close();
+
+    const deepAdminContext = await browser.newContext({
+      baseURL: 'http://localhost:4000',
+      viewport: CAPTURE_VIEWPORT,
+    });
+    const deepAdminPage = await deepAdminContext.newPage();
+
+    await loginToPortalSelection(deepAdminPage, credentials);
+    await waitForPageReady(deepAdminPage);
+    await openPortalFromSelection(deepAdminPage, 'Admin Portal', /\/admin\//);
+    await waitForPageReady(deepAdminPage);
+
+    await deepAdminPage.goto('/admin/products', { waitUntil: 'networkidle' });
+    await waitForDataTable(deepAdminPage);
+    await captureStep(deepAdminPage, step++, 'admin-products-list-crud');
+
+    await deepAdminPage.getByRole('button', { name: 'Thêm sản phẩm' }).click().catch(() => undefined);
+    await deepAdminPage.waitForURL(/\/admin\/products\/create/, { timeout: 15_000 }).catch(() => undefined);
+    await captureStep(deepAdminPage, step++, 'admin-products-create-page');
+
+    const createdProductName = `SP E2E ${timestamp}`;
+    const nameInput = deepAdminPage.getByRole('textbox', { name: 'Tên sản phẩm' }).first();
+    if (await nameInput.isVisible().catch(() => false)) {
+      await nameInput.fill(createdProductName).catch(() => undefined);
+    }
+    await captureStep(deepAdminPage, step++, 'admin-products-create-form-filled-basic');
+
+    const createProductBtn = deepAdminPage.getByRole('button', { name: 'Tạo sản phẩm' }).first();
+    if (await createProductBtn.isVisible().catch(() => false)) {
+      await createProductBtn.click().catch(() => undefined);
+      await deepAdminPage.waitForTimeout(400);
+    }
+    await captureStep(deepAdminPage, step++, 'admin-products-create-validation-errors');
+
+    const brandSelect = deepAdminPage.getByRole('combobox', { name: 'Thương hiệu' }).first();
+    if (await brandSelect.isVisible().catch(() => false)) {
+      await brandSelect.click().catch(() => undefined);
+      const brandOption = deepAdminPage.getByRole('option').first();
+      if (await brandOption.isVisible().catch(() => false)) {
+        await brandOption.click().catch(() => undefined);
+      }
+    }
+
+    const categorySelect = deepAdminPage.getByRole('combobox', { name: 'Danh mục' }).first();
+    if (await categorySelect.isVisible().catch(() => false)) {
+      await categorySelect.click().catch(() => undefined);
+      const categoryOption = deepAdminPage.getByRole('option').first();
+      if (await categoryOption.isVisible().catch(() => false)) {
+        await categoryOption.click().catch(() => undefined);
+      }
+    }
+
+    const retailPriceInput = deepAdminPage.getByRole('spinbutton', { name: 'Giá bán lẻ' }).first();
+    if (await retailPriceInput.isVisible().catch(() => false)) {
+      await retailPriceInput.fill('1').catch(() => undefined);
+    }
+    await captureStep(deepAdminPage, step++, 'admin-products-create-filled-required');
+
+    if (await createProductBtn.isVisible().catch(() => false)) {
+      await createProductBtn.click().catch(() => undefined);
+      await deepAdminPage.waitForURL(/\/admin\/products$/, { timeout: 20_000 }).catch(() => undefined);
+      await waitForPageReady(deepAdminPage);
+    }
+    await captureStep(deepAdminPage, step++, 'admin-products-created-list');
+
+    const searchNameInput = deepAdminPage.locator('input[placeholder="Tìm theo tên sản phẩm..."]').first();
+    if (await searchNameInput.isVisible().catch(() => false)) {
+      await searchNameInput.fill(createdProductName).catch(() => undefined);
+      await deepAdminPage.waitForTimeout(500);
+    }
+
+    const createdProductRow = deepAdminPage.locator('.MuiTableBody-root tr').filter({ hasText: createdProductName }).first();
+    if (await createdProductRow.isVisible().catch(() => false)) {
+      await createdProductRow.locator('button').nth(1).click().catch(() => undefined);
+      await deepAdminPage.waitForURL(/\/admin\/products\/.+\/edit/, { timeout: 15_000 }).catch(() => undefined);
+    }
+    await captureStep(deepAdminPage, step++, 'admin-products-edit-page');
+
+    const editRetailPriceInput = deepAdminPage.getByRole('spinbutton', { name: 'Giá bán lẻ' }).first();
+    if (await editRetailPriceInput.isVisible().catch(() => false)) {
+      await editRetailPriceInput.fill('2').catch(() => undefined);
+    }
+    const saveChangesBtn = deepAdminPage.getByRole('button', { name: 'Lưu thay đổi' }).first();
+    if (await saveChangesBtn.isVisible().catch(() => false)) {
+      await saveChangesBtn.click().catch(() => undefined);
+      await deepAdminPage.waitForURL(/\/admin\/products$/, { timeout: 20_000 }).catch(() => undefined);
+      await deepAdminPage.waitForTimeout(400);
+    }
+    await captureStep(deepAdminPage, step++, 'admin-products-updated');
+
+    if (await searchNameInput.isVisible().catch(() => false)) {
+      await searchNameInput.fill(createdProductName).catch(() => undefined);
+      await deepAdminPage.waitForTimeout(500);
+    }
+    const updatedProductRow = deepAdminPage.locator('.MuiTableBody-root tr').filter({ hasText: createdProductName }).first();
+    if (await updatedProductRow.isVisible().catch(() => false)) {
+      await updatedProductRow.locator('button').nth(2).click().catch(() => undefined);
+      await deepAdminPage.waitForTimeout(300);
+    }
+    await captureStep(deepAdminPage, step++, 'admin-products-delete-confirm');
+
+    const deleteConfirmBtn = deepAdminPage.getByRole('button', { name: 'Xóa' }).first();
+    if (await deleteConfirmBtn.isVisible().catch(() => false)) {
+      await deleteConfirmBtn.click().catch(() => undefined);
+      await deepAdminPage.waitForTimeout(500);
+    }
+    await captureStep(deepAdminPage, step++, 'admin-products-deleted');
+
+    await deepAdminContext.close();
+
+    const personalContext = await browser.newContext({ baseURL: 'http://localhost:4000' });
+    const personalPage = await personalContext.newPage();
+
+    await loginToPortalSelection(personalPage, credentials);
+    await waitForPageReady(personalPage);
+
+    await personalPage.goto('/personal-page', { waitUntil: 'networkidle' });
+    await captureStep(personalPage, step++, 'personal-home-page');
+
+    await personalPage.waitForTimeout(300);
+    await captureStep(personalPage, step++, 'personal-home-cards');
+
+    await personalPage.goto('/personal-page/profile', { waitUntil: 'networkidle' });
+    await captureStep(personalPage, step++, 'personal-profile-page');
+
+    await personalPage.goto('/personal-page/my-leaves', { waitUntil: 'networkidle' });
+    await waitForDataTable(personalPage);
+    await captureStep(personalPage, step++, 'personal-my-leaves-page');
+
+    const leaveRequestBtn = personalPage.getByRole('button', { name: 'Xin nghỉ phép' }).first();
+    if (await leaveRequestBtn.isVisible().catch(() => false)) {
+      await leaveRequestBtn.click().catch(() => undefined);
+      await personalPage.waitForTimeout(350);
+    }
+    await captureStep(personalPage, step++, 'personal-leave-request-dialog');
+
+    const leaveDialog = personalPage.getByRole('dialog').filter({ hasText: 'Xin Nghỉ Phép' });
+    if (await leaveDialog.isVisible().catch(() => false)) {
+      await leaveDialog.getByRole('button', { name: 'Gửi đơn' }).click().catch(() => undefined);
+      await personalPage.waitForTimeout(350);
+    }
+    await captureStep(personalPage, step++, 'personal-leave-request-validation-errors');
+
+    await personalPage.goto('/personal-page/my-payslips', { waitUntil: 'networkidle' });
+    await waitForDataTable(personalPage);
+    await captureStep(personalPage, step++, 'personal-payslips-page');
+
+    const monthSelect = personalPage.getByRole('combobox', { name: 'Tháng' }).first();
+    if (await monthSelect.isVisible().catch(() => false)) {
+      await monthSelect.click().catch(() => undefined);
+      await personalPage.keyboard.press('Escape').catch(() => undefined);
+    }
+    await captureStep(personalPage, step++, 'personal-payslips-filters');
+
+    await personalPage.goto('/personal-page/my-resignation', { waitUntil: 'networkidle' });
+    await waitForPageReady(personalPage);
+    await captureStep(personalPage, step++, 'personal-resignation-page');
+
+    const createResignationBtn = personalPage.getByRole('button', { name: 'Tạo đơn xin thôi việc' }).first();
+    if (await createResignationBtn.isVisible().catch(() => false)) {
+      await createResignationBtn.click().catch(() => undefined);
+      await personalPage.waitForTimeout(350);
+    }
+    await captureStep(personalPage, step++, 'personal-resignation-form-dialog');
+
+    const resignationDialog = personalPage.getByRole('dialog').filter({ hasText: 'Tạo đơn xin thôi việc' });
+    if (await resignationDialog.isVisible().catch(() => false)) {
+      await resignationDialog.getByRole('button', { name: 'Gửi đơn xin thôi việc' }).click().catch(() => undefined);
+      await personalPage.waitForTimeout(350);
+    }
+    await captureStep(personalPage, step++, 'personal-resignation-form-validation');
+
+    if (await resignationDialog.isVisible().catch(() => false)) {
+      await resignationDialog.getByRole('button', { name: 'Hủy' }).click().catch(() => undefined);
+      await personalPage.waitForTimeout(300);
+    }
+    await captureStep(personalPage, step++, 'personal-resignation-form-closed');
+
+    await personalContext.close();
   });
 });

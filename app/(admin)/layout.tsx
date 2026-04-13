@@ -42,7 +42,7 @@ export default function MainLayout({
     name: currentUser.username || 'Người dùng',
     email: currentUser.email || '',
     role: currentUser.role?.role_name || 'Quản trị viên',
-    avatar: currentUser.employee.photoUrl || '', // Assuming employee has a photoUrl field
+    avatar: currentUser.employee?.photoUrl ?? '', // Assuming employee has a photoUrl field
   } : undefined;
 
   return (
