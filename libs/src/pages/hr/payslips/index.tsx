@@ -37,7 +37,7 @@ import {
 } from '@libs/src/features/payslip/payslip.slice';
 import type { PayslipResponse, PaySlipTableResponse } from '@libs/shared/types/payslips.type';
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 import { CacheService } from '@libs/src/services/cache.service';
 
 export default function EmployeePayslipsPage() {
@@ -104,7 +104,7 @@ export default function EmployeePayslipsPage() {
     console.log('🔍 Auth user:', user);
     if (user?.id) {
       console.log('🔍 Fetching user by id:', user.id);
-      dispatch(fetchUserById(user.id));
+      dispatch(fetchCurrentUserById(user.id));
     } else {
       console.warn('⚠️ User id not found in auth state');
     }

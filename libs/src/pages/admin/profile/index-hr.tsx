@@ -15,7 +15,7 @@ import {
 } from '@mui/icons-material';
 import { PageHeader, LoadingOverlay } from '@libs/src/components/common';
 import { ProfileAccountTab, ProfileEmployeeTab } from '@libs/src/components/profile';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 import { 
     updateEmployee,
     updateEmployeePhoto,
@@ -89,7 +89,7 @@ export default function HRProfilePage() {
             try {
                 const result = await dispatch(checkAuth()).unwrap();
                 if (result?.id) {
-                    dispatch(fetchUserById(result.id));
+                    dispatch(fetchCurrentUserById(result.id));
                 }
             } catch (error) {
                 console.error('Failed to check auth:', error);
@@ -219,7 +219,7 @@ export default function HRProfilePage() {
             // Reload user data
             const result = await dispatch(checkAuth()).unwrap();
             if (result?.id) {
-                dispatch(fetchUserById(result.id));
+                dispatch(fetchCurrentUserById(result.id));
             }
         } catch (err: any) {
             setSnackbar({
@@ -246,7 +246,7 @@ export default function HRProfilePage() {
             // Also reload user data
             const result = await dispatch(checkAuth()).unwrap();
             if (result?.id) {
-                dispatch(fetchUserById(result.id));
+                dispatch(fetchCurrentUserById(result.id));
             }
         } catch (err: any) {
             setSnackbar({

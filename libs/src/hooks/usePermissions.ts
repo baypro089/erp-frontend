@@ -11,7 +11,7 @@ import type { PermissionCode } from '@libs/shared/constants/permissions.constant
  * falling back to a direct API call when the role is stored only as a code string.
  *
  * Source priority:
- *  1. state.user.currentUser.role.permissions  (populated by fetchUserById in layouts)
+ *  1. state.user.currentUser.role.permissions  (populated by fetchCurrentUserById in layouts)
  *  2. state.auth.user.role.permissions         (populated after login)
  *  3. API call to /roles/:code                 (when role is stored as a plain code string)
  */

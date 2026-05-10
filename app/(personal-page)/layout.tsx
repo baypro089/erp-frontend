@@ -7,7 +7,7 @@ import type { AppDispatch, RootState } from '@libs/src/store';
 import { checkAuth } from '@libs/src/features/auth/auth.slice';
 import PersonalPageHeader from '@libs/src/components/layout/PersonalPageHeader';
 import PersonalPageSidebar from '@libs/src/components/layout/PersonalPageSidebar';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 
 export default function PersonalPageLayout({
   children,
@@ -25,7 +25,7 @@ export default function PersonalPageLayout({
       try {
         const result = await dispatch(checkAuth()).unwrap();
         if (result?.id) {
-          dispatch(fetchUserById(result.id));
+          dispatch(fetchCurrentUserById(result.id));
         }
       } catch (error) {
         console.error('Failed to check auth:', error);

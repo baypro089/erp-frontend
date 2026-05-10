@@ -245,7 +245,7 @@ function OrderDetailPageContent() {
       <div class="section-title">Thông tin đơn hàng</div>
       <div class="info-grid" style="grid-template-columns:1fr 1fr">
         <div><div class="label">Mã đơn hàng</div><div class="value" style="color:#1565c0">${order.code}</div></div>
-        <div><div class="label">Người tạo</div><div class="value">${order.creator.username}</div></div>
+        <div><div class="label">Người tạo</div><div class="value">${order.creator.employee?.fullName} (${order.creator.username})</div></div>
         <div><div class="label">Ngày tạo</div><div class="value">${fmtDate(order.createdAt)}</div></div>
         <div><div class="label">Cập nhật</div><div class="value">${fmtDate(order.updatedAt)}</div></div>
       </div>
@@ -297,7 +297,7 @@ function OrderDetailPageContent() {
     <div class="sig-box">
       <div class="sig-title">Nhân viên bán hàng</div>
       <div class="sig-sub">(Ký, ghi rõ họ tên)</div><br/><br/>
-      <div class="sig-name">${order.creator.username}</div>
+      <div class="sig-name">${order.creator.employee?.fullName} (${order.creator.username})</div>
     </div>
   </div>
   <p class="note">Đây là chứng từ bán hàng hợp lệ. Vui lòng giữ lại để đối chiếu khi cần.<br/>In lúc: ${new Date().toLocaleString('vi-VN')}</p>
@@ -477,7 +477,9 @@ function OrderDetailPageContent() {
                   <Typography variant="caption" color="text.secondary">
                     Người tạo
                   </Typography>
-                  <Typography variant="body1">{currentOrder.creator.username}</Typography>
+                  <Typography variant="body1">
+                    {currentOrder.creator.employee?.fullName} ({currentOrder.creator.username})
+                  </Typography>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
                   <Typography variant="caption" color="text.secondary">

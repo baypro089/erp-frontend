@@ -39,7 +39,7 @@ import type {
 } from '@libs/shared/types/resignation-request.type';
 import { ResignationStatus } from '@libs/shared/enums/resignation-status.enum';
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 import { fetchEmployeeById } from '@libs/src/features/employee/employee.slice';
 
 export default function EmployeeResignationPage() {
@@ -82,7 +82,7 @@ export default function EmployeeResignationPage() {
   // Load detailed user info when auth user is available
   useEffect(() => {
     if (user?.id) {
-      dispatch(fetchUserById(user.id));
+      dispatch(fetchCurrentUserById(user.id));
     }
   }, [dispatch, user?.id]);
 

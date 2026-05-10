@@ -41,7 +41,7 @@ import type {
 } from '@libs/shared/types/resignation-request.type';
 import { ResignationStatus } from '@libs/shared/enums/resignation-status.enum';
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 import { fetchRoleByCode } from '@libs/src/features/role/role.slice';
 import { PORTAL_PERMISSIONS } from '@libs/shared/constants/portal-permissions.constant';
 import { CacheService } from '@libs/src/services/cache.service';
@@ -113,7 +113,7 @@ function HRResignationPageContent() {
   // Load detailed user info when auth user is available
   useEffect(() => {
     if (user?.id) {
-      dispatch(fetchUserById(user.id));
+      dispatch(fetchCurrentUserById(user.id));
     }
   }, [dispatch, user?.id]);
 

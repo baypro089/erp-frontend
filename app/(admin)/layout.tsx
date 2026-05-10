@@ -8,7 +8,7 @@ import { Box, Toolbar, useTheme } from '@mui/material';
 import ClientOnly from '@libs/src/components/ClientOnly';
 import AdminSidebar from '@libs/src/components/layout/AdminSidebar';
 import AdminHeader from '@libs/src/components/layout/AdminHeader';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 import { checkAuth } from '@libs/src/features/auth/auth.slice';
 
 export default function MainLayout({
@@ -27,7 +27,7 @@ export default function MainLayout({
       try {
         const result = await dispatch(checkAuth()).unwrap();
         if (result?.id) {
-          dispatch(fetchUserById(result.id));
+          dispatch(fetchCurrentUserById(result.id));
         }
       } catch (error) {
         console.error('Failed to check auth:', error);

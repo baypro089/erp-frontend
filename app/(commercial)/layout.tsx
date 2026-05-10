@@ -7,7 +7,7 @@ import { Box, Toolbar, useTheme } from '@mui/material';
 import ClientOnly from '@libs/src/components/ClientOnly';
 import CommercialSidebar from '@libs/src/components/layout/CommercialSidebar';
 import CommercialHeader from '@libs/src/components/layout/CommercialHeader';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 import { checkAuth } from '@libs/src/features/auth/auth.slice';
 
 export default function CommercialLayout({
@@ -25,7 +25,7 @@ export default function CommercialLayout({
       try {
         const result = await dispatch(checkAuth()).unwrap();
         if (result?.id) {
-          dispatch(fetchUserById(result.id));
+          dispatch(fetchCurrentUserById(result.id));
         }
       } catch (error) {
         console.error('Failed to check auth:', error);

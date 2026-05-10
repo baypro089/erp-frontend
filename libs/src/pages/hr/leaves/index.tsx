@@ -37,7 +37,7 @@ import type {
 } from '@libs/shared/types/leave-requests.type';
 import { LeaveRequestStatus, LeaveRequestType } from '@libs/shared/enums/leave-request-status.enum';
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 import { fetchRoleByCode } from '@libs/src/features/role/role.slice';
 import { CacheService } from '@libs/src/services/cache.service';
 
@@ -88,7 +88,7 @@ export default function LeavesPage() {
   // Load detailed user info when auth user is available
   useEffect(() => {
     if (user?.id) {
-      dispatch(fetchUserById(user.id));
+      dispatch(fetchCurrentUserById(user.id));
     }
   }, [dispatch, user?.id]);
 
@@ -236,7 +236,7 @@ export default function LeavesPage() {
       setRefreshCounter(prev => prev + 1);
       // Refresh user data to update leave balance
       if (user?.id) {
-        dispatch(fetchUserById(user.id));
+        dispatch(fetchCurrentUserById(user.id));
       }
     } catch (err: any) {
       setSnackbar({
@@ -251,7 +251,7 @@ export default function LeavesPage() {
     await CacheService.refreshCache();
     setRefreshCounter(prev => prev + 1);
     if (user?.id) {
-      dispatch(fetchUserById(user.id));
+      dispatch(fetchCurrentUserById(user.id));
     }
   };
 

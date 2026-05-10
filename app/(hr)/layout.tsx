@@ -7,7 +7,7 @@ import { Box, Toolbar, useTheme } from '@mui/material';
 import ClientOnly from '@libs/src/components/ClientOnly';
 import HRSidebar from '@libs/src/components/layout/HRSidebar';
 import HRHeader from '@libs/src/components/layout/HRHeader';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 import { checkAuth } from '@libs/src/features/auth/auth.slice';
 import { Metadata } from 'next';
 
@@ -26,7 +26,7 @@ export default function HRLayout({
       try {
         const result = await dispatch(checkAuth()).unwrap();
         if (result?.id) {
-          dispatch(fetchUserById(result.id));
+          dispatch(fetchCurrentUserById(result.id));
         }
       } catch (error) {
         console.error('Failed to check auth:', error);

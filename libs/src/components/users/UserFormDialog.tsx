@@ -27,7 +27,7 @@ import {
   Lock,
   Badge,
 } from '@mui/icons-material';
-import { createUser, updateUser, fetchUserById, clearCurrentUser } from '@libs/src/features/user/user.slice';
+import { createUser, updateUser, fetchUserById, clearEditingUser } from '@libs/src/features/user/user.slice';
 import { fetchEmployees } from '@libs/src/features/employee/employee.slice';
 import { fetchRoles } from '@libs/src/features/role/role.slice';
 import type { CreateUserDto, UpdateUserDto, UserResponse } from '@libs/shared/types/users.type';
@@ -49,8 +49,9 @@ export default function UserFormDialog({
   mode = 'create' 
 }: UserFormDialogProps) {
   const dispatch = useDispatch<AppDispatch>();
-  const { currentUser, operationLoading, operationError } = useSelector((state: RootState) => state.user);
-  const { employees } = useSelector((state: RootState) => state.employee);
+  const { editingUser, operationLoading, operationError } = useSelector((state: RootState) => state.user);
+  const { allEmployees } = useSelector((state: RootState) => state.employee);
+
   const { roles } = useSelector((state: RootState) => state.role);
 
   const [formData, setFormData] = useState({
@@ -88,32 +89,32 @@ export default function UserFormDialog({
   }, [dispatch, open, mode, userId]);
 
   useEffect(() => {
-    console.log('Populate effect - mode:', mode, 'currentUser:', currentUser, 'roles length:', roles.length, 'userId:', userId); // Debug log
+    console.log('Populate effect - mode:', mode, 'editingUser:', editingUser, 'roles length:', roles.length, 'userId:', userId); // Debug log
     
-    if (mode === 'edit' && currentUser && roles.length > 0 && userId) {
+    if (mode === 'edit' && editingUser && roles.length > 0 && userId) {
       // Verify currentUser matches the userId being edited
-      console.log('Checking currentUser.id:', currentUser.id, 'vs userId:', userId); // Debug log
-      if (currentUser.id !== userId) {
+      console.log('Checking editingUser.id:', editingUser.id, 'vs userId:', userId); // Debug log
+      if (editingUser.id !== userId) {
         console.log('ID mismatch - waiting for correct user data'); // Debug log
         return; // Wait for correct user data
       }
       
-      console.log('Populating form with:', currentUser); // Debug log
+      console.log('Populating form with:', editingUser); // Debug log
       setFormData({
-        username: currentUser.username || '',
+        username: editingUser.username || '',
         password: '',
-        email: currentUser.email || '',
-        roleCode: currentUser.role?.role_code || '',
-        status: currentUser.status || UserStatus.ACTIVE,
+        email: editingUser.email || '',
+        roleCode: editingUser.role?.role_code || '',
+        status: editingUser.status || UserStatus.ACTIVE,
       });
     }
-  }, [currentUser, mode, roles, userId]);
+  }, [editingUser, mode, roles, userId]);
 
   // Filter employees without user account
   // Since we're using fetchEmployees which returns EmployeeTableResponse[], 
   // we need to check using the full employees list from fetchEmployeesWithOptional
   // For now, show all employees - backend should filter
-  const availableEmployees = employees;
+  const availableEmployees = allEmployees.filter((emp) => !emp.userId);
 
   const handleEmployeeChange = (employeeId: string) => {
     setSelectedEmployee(employeeId);
@@ -157,7 +158,7 @@ export default function UserFormDialog({
     });
     setSelectedEmployee('');
     setShowPassword(false);
-    dispatch(clearCurrentUser()); // Clear currentUser when closing dialog
+    dispatch(clearEditingUser());
     onClose();
   };
 
@@ -320,7 +321,7 @@ export default function UserFormDialog({
               </Box>
 
               {/* System Information - Only in edit mode */}
-              {isEditMode && currentUser && (
+              {isEditMode && editingUser && (
                 <>
                   <Typography variant="subtitle2" color="primary" sx={{ mt: 2 }}>
                     Thông tin hệ thống
@@ -328,14 +329,14 @@ export default function UserFormDialog({
                   <Box display="flex" gap={2}>
                     <TextField
                       label="Ngày tạo"
-                      value={currentUser.createdAt ? new Date(currentUser.createdAt).toLocaleString() : 'N/A'}
+                      value={editingUser.createdAt ? new Date(editingUser.createdAt).toLocaleString() : 'N/A'}
                       disabled
                       fullWidth
                       helperText="Ngày tạo tài khoản"
                     />
                     <TextField
                       label="Cập nhật lần cuối"
-                      value={currentUser.updatedAt ? new Date(currentUser.updatedAt).toLocaleString() : 'N/A'}
+                      value={editingUser.updatedAt ? new Date(editingUser.updatedAt).toLocaleString() : 'N/A'}
                       disabled
                       fullWidth
                       helperText="Ngày chỉnh sửa cuối"
@@ -343,7 +344,7 @@ export default function UserFormDialog({
                   </Box>
                   <TextField
                     label="Đăng nhập lần cuối"
-                    value={currentUser.lastLogin ? new Date(currentUser.lastLogin).toLocaleString() : 'Chưa đăng nhập'}
+                    value={editingUser.lastLogin ? new Date(editingUser.lastLogin).toLocaleString() : 'Chưa đăng nhập'}
                     disabled
                     fullWidth
                     helperText="Thời điểm đăng nhập lần cuối"

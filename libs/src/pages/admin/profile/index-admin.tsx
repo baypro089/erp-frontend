@@ -11,7 +11,7 @@ import {
 } from '@mui/icons-material';
 import { PageHeader, LoadingOverlay } from '@libs/src/components/common';
 import { ProfileAccountTab } from '@libs/src/components/profile';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 import { checkAuth } from '@libs/src/features/auth/auth.slice';
 
 export default function AdminProfilePage() {
@@ -32,7 +32,7 @@ export default function AdminProfilePage() {
       try {
         const result = await dispatch(checkAuth()).unwrap();
         if (result?.id) {
-          dispatch(fetchUserById(result.id));
+          dispatch(fetchCurrentUserById(result.id));
         }
       } catch (error) {
         console.error('Failed to check auth:', error);

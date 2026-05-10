@@ -46,7 +46,7 @@ import { PORTAL_PERMISSIONS } from '@libs/shared/constants/portal-permissions.co
 import { CacheService } from '@libs/src/services/cache.service';
 import { fetchCurrentUser } from '@libs/src/features/auth/auth.slice';
 import { fetchRoleByCode } from '@libs/src/features/role/role.slice';
-import { fetchUserById } from '@libs/src/features/user/user.slice';
+import { fetchCurrentUserById } from '@libs/src/features/user/user.slice';
 import employeeService from '@libs/src/features/employee/employee.service';
 import userService from '@libs/src/features/user/user.service';
 import {
@@ -175,7 +175,7 @@ function HRTerminationsPageContent() {
 
   useEffect(() => {
     if (user?.id) {
-      dispatch(fetchUserById(user.id));
+      dispatch(fetchCurrentUserById(user.id));
     }
   }, [dispatch, user?.id]);
 

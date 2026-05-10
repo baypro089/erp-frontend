@@ -5,6 +5,7 @@ import type { UserResponse, UserFilterAndPaged, CreateUserDto, UpdateUserDto } f
 interface UserState {
   users: UserResponse[];
   currentUser: UserResponse | null;
+  editingUser: UserResponse | null;
   totalCount: number;
   totalPages: number;
   loading: boolean;
@@ -16,6 +17,7 @@ interface UserState {
 const initialState: UserState = {
   users: [],
   currentUser: null,
+  editingUser: null,
   totalCount: 0,
   totalPages: 0,
   loading: false,
@@ -84,6 +86,18 @@ export const fetchUserById = createAsyncThunk(
   }
 );
 
+export const fetchCurrentUserById = createAsyncThunk(
+  'user/fetchCurrentUserById',
+  async (id: string, { rejectWithValue }) => {
+    try {
+      const response = await userService.getUserById(id);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch user');
+    }
+  }
+);
+
 export const createUser = createAsyncThunk(
   'user/createUser',
   async (data: CreateUserDto, { rejectWithValue }) => {
@@ -132,6 +146,9 @@ const userSlice = createSlice({
     clearCurrentUser: (state) => {
       state.currentUser = null;
     },
+    clearEditingUser: (state) => {
+      state.editingUser = null;
+    },
   },
   extraReducers: (builder) => {
     // Fetch users
@@ -175,9 +192,24 @@ const userSlice = createSlice({
       })
       .addCase(fetchUserById.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentUser = action.payload; // Now properly unwrapped in service
+        state.editingUser = action.payload; // Now properly unwrapped in service
       })
       .addCase(fetchUserById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload as string;
+      });
+
+    // Fetch current user by ID
+    builder
+      .addCase(fetchCurrentUserById.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchCurrentUserById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.currentUser = action.payload; // Now properly unwrapped in service
+      })
+      .addCase(fetchCurrentUserById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });
@@ -227,5 +259,5 @@ const userSlice = createSlice({
   },
 });
 
-export const { clearError, clearCurrentUser } = userSlice.actions;
+export const { clearError, clearCurrentUser, clearEditingUser } = userSlice.actions;
 export default userSlice.reducer;

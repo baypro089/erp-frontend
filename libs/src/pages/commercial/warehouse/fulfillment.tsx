@@ -106,7 +106,7 @@ const getUniqueSerialCount = (item: FulfillItem): number => {
 export default function FulfillmentPage() {
   return (
     <PermissionGuard 
-      permission={PERMISSIONS.ORDER.VIEW}
+      permission={PERMISSIONS.ORDER.FULFILL}
       fallbackPath="/commercial/orders"
     >
       <FulfillmentPageContent />
